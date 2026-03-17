@@ -1,0 +1,93 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * { box-sizing: border-box; }
+
+  body {
+    @apply bg-ink-950 text-ink-100 font-body antialiased;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { @apply bg-ink-900; }
+  ::-webkit-scrollbar-thumb { @apply bg-ink-600 rounded-full; }
+}
+
+@layer components {
+  .card {
+    @apply bg-ink-900 border border-ink-800 rounded-2xl;
+  }
+
+  .btn-primary {
+    @apply bg-lime-300 text-ink-950 font-display font-600 text-sm px-5 py-2.5 rounded-xl
+    hover:bg-lime-400 active:scale-95 transition-all duration-150 inline-flex items-center gap-2;
+  }
+
+  .btn-ghost {
+    @apply text-ink-400 hover:text-ink-100 hover:bg-ink-800 px-4 py-2 rounded-xl
+    transition-all duration-150 inline-flex items-center gap-2 text-sm;
+  }
+
+  .btn-outline {
+    @apply border border-ink-700 text-ink-200 hover:border-lime-300 hover:text-lime-300
+    px-4 py-2 rounded-xl transition-all duration-150 inline-flex items-center gap-2 text-sm;
+  }
+
+  .input {
+    @apply bg-ink-800 border border-ink-700 text-ink-100 placeholder-ink-500
+    rounded-xl px-4 py-2.5 text-sm w-full
+    focus:outline-none focus:border-lime-300 focus:ring-1 focus:ring-lime-300/30
+    transition-all duration-150;
+  }
+
+  .label {
+    @apply text-ink-400 text-xs font-display font-500 uppercase tracking-wider mb-1.5 block;
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-500 font-display;
+  }
+
+  .nav-link {
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-xl text-ink-400 hover:text-ink-100
+    hover:bg-ink-800 transition-all duration-150 text-sm font-body;
+  }
+
+  .nav-link.active {
+    @apply bg-ink-800 text-lime-300;
+  }
+
+  .page-title {
+    @apply font-display font-700 text-2xl text-ink-50 tracking-tight;
+  }
+
+  .section-title {
+    @apply font-display font-600 text-lg text-ink-100;
+  }
+
+  .stat-card {
+    @apply card p-5 flex flex-col gap-1;
+  }
+
+  .table-row {
+    @apply border-b border-ink-800 hover:bg-ink-800/50 transition-colors;
+  }
+
+  .tag-lime { @apply badge bg-lime-300/10 text-lime-300 border border-lime-300/20; }
+  .tag-sky  { @apply badge bg-sky-400/10  text-sky-400  border border-sky-400/20; }
+  .tag-red  { @apply badge bg-red-400/10  text-red-400  border border-red-400/20; }
+  .tag-amber{ @apply badge bg-amber-400/10 text-amber-400 border border-amber-400/20; }
+}
+
+@layer utilities {
+  .font-500 { font-weight: 500; }
+  .font-600 { font-weight: 600; }
+  .font-700 { font-weight: 700; }
+  .font-800 { font-weight: 800; }
+  .animate-delay-100 { animation-delay: 100ms; }
+  .animate-delay-200 { animation-delay: 200ms; }
+  .animate-delay-300 { animation-delay: 300ms; }
+}
