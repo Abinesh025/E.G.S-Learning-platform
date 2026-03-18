@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { testService } from '../../services/api'
+import api from '../../services/api'
 import { FileText, Plus, Trash2, X, PlusCircle, MinusCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -13,9 +13,10 @@ export default function StaffTests() {
   const [form, setForm] = useState({ title: '',subject:' ', duration: 30, questions: [emptyQuestion()] })
 
   const load = () => {
-    testService.getAll()
-      .then(res => setTests(res?.data || []))
-      .catch(() => toast.error('Failed to load tests'))
+    setLoading(true)
+    api.get('/staff/tests')
+      .then(res => setTests(res.data?.data || []))
+      .catch((err) => toast.error(err.response?.data?.message || 'Failed to load tests'))
       .finally(() => setLoading(false))
   }
 
@@ -57,8 +58,8 @@ const handleSave = async (e) => {
 
   setSaving(true)
   try {
-    const res = await testService.create(form)
-    setTests(t => [res.data, ...t])
+    const res = await api.post('/tests', form)
+    setTests(t => [res.data?.data || res.data, ...t])
     setForm({ title: '', subject:'', duration: 30, questions: [emptyQuestion()] })
     setShowForm(false)
     
@@ -72,13 +73,13 @@ const handleSave = async (e) => {
 }
 
   const handleDelete = async (id) => {
-    if (!confirm('Delete this test?')) return
+    if (!window.confirm('Delete this test?')) return
     try {
-      await testService.delete(id)
+      await api.delete(`/staff/tests/${id}`)
       setTests(t => t.filter(x => x._id !== id))
       toast.success('Test deleted')
-    } catch {
-      toast.error('Delete failed')
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Delete failed')
     }
   }
 

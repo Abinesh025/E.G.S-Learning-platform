@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { materialService } from '../../services/api'
+import api from '../../services/api'
 import { BookOpen, Upload, Trash2, Video, Mic, File, Plus, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -30,9 +30,9 @@ export default function StaffMaterials() {
   // Load materials
   const loadMaterials = () => {
     setLoading(true)
-    materialService.getAll()
+    api.get('/staff/materials')
       .then(res => setMaterials(res.data?.data || []))
-      .catch(() => toast.error('Failed to load materials'))
+      .catch((err) => toast.error(err.response?.data?.message || 'Failed to load materials'))
       .finally(() => setLoading(false))
   }
 
@@ -56,7 +56,7 @@ export default function StaffMaterials() {
       Object.entries(form).forEach(([k, v]) => fd.append(k, v))
       fd.append('file', file)
 
-      const res = await materialService.upload(fd, {
+      const res = await api.post('/materials/upload', fd, {
         onUploadProgress: (p) => setProgress(Math.round((p.loaded * 100) / p.total)),
       })
 
@@ -76,13 +76,13 @@ export default function StaffMaterials() {
 
   // Delete material
   const handleDelete = async (id) => {
-    if (!confirm('Delete this material?')) return
+    if (!window.confirm('Delete this material?')) return
     try {
-      await materialService.delete(id)
+      await api.delete(`/staff/materials/${id}`)
       setMaterials(m => m.filter(x => x._id !== id))
       toast.success('Deleted')
-    } catch {
-      toast.error('Delete failed')
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Delete failed')
     }
   }
 

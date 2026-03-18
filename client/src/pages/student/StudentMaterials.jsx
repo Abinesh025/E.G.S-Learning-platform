@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
-import { materialService } from '../../services/api'
+import { studentService } from '../../services/api'
+import { getSocket } from '../../services/socket'
+import { useAuth } from '../../context/AuthContext'
 import { BookOpen, Video, Mic, File, Download, Search, Filter } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -11,17 +13,26 @@ const typeConfig = {
 }
 
 export default function StudentMaterials() {
+  const { token } = useAuth()
   const [materials, setMaterials] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('all')
 
   useEffect(() => {
-    materialService.getAll()
-      .then(res => setMaterials(res?.data || []))
-      .catch(() => toast.error('Failed to load materials'))
-      .finally(() => setLoading(false))
-  }, [])
+    const fetchItems = () => {
+      setLoading(true)
+      studentService.getMaterials()
+        .then(res => setMaterials(res.data || []))
+        .catch(() => toast.error('Failed to load materials'))
+        .finally(() => setLoading(false))
+    }
+    fetchItems()
+    const socket = getSocket(token)
+    const handleDataChanged = (type) => { if (type === 'material') fetchItems() }
+    socket.on('data_changed', handleDataChanged)
+    return () => socket.off('data_changed', handleDataChanged)
+  }, [token])
 
   const filtered = materials?.filter(m => {
     const matchSearch = m.title?.toLowerCase().includes(search.toLowerCase())
@@ -98,9 +109,9 @@ export default function StudentMaterials() {
                   <span className="text-ink-600 text-xs">
                     {m.uploadedBy?.name || 'Instructor'}
                   </span>
-                  {m.filePath && (
+                  {m.fileUrl && (
                     <a
-                      href={`/uploads/${m.filePath}`}
+                      href={m.fileUrl}
                       download
                       className="btn-ghost py-1 px-2 text-xs"
                     >

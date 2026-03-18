@@ -1,11 +1,14 @@
-import { useEffect, useState } from 'react'
-import axios from '../../api/axios'
+import api from '../../services/api'
+import { getSocket } from '../../services/socket'
+import { useAuth } from '../../context/AuthContext'
 import { Pencil, Trash2, Plus } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { useEffect, useState } from 'react'
 
 const empty = { name: '', email: '', phone: '', department: '', password: '' }
 
 export default function AdminStaff() {
+  const { token } = useAuth()
   const [staff, setStaff]       = useState([])
   const [loading, setLoading]   = useState(true)
   const [showModal, setShowModal] = useState(false)
@@ -13,38 +16,46 @@ export default function AdminStaff() {
   const [form, setForm]         = useState(empty)
   const [search, setSearch]     = useState('')
 
+ 
   const fetch = () => {
     setLoading(true)
-    axios.get('/admin/staff')
+    api.get('/admin/staff')
       .then(r => setStaff(r.data.data))
+      .catch(err => toast.error(err.response?.data?.message || 'Failed to fetch staff'))
       .finally(() => setLoading(false))
   }
 
-  useEffect(() => { fetch() }, [])
+  useEffect(() => { 
+    fetch() 
+    const socket = getSocket(token);
+    const handleDataChanged = (type) => { if (type === 'staff') fetch() }
+    socket.on('data_changed', handleDataChanged);
+    return () => socket.off('data_changed', handleDataChanged);
+  }, [token])
 
   const openAdd  = () => { setEditing(null); setForm(empty); setShowModal(true) }
   const openEdit = s  => { setEditing(s._id); setForm({ name: s.name, email: s.email, phone: s.phone || '', department: s.department || '', password: '' }); setShowModal(true) }
 
   const handleSave = async () => {
     try {
-      if (editing) await axios.put(`/admin/staff/${editing}`, form)
-      else         await axios.post('/admin/staff', form)
+      if (editing) await api.put(`/admin/staff/${editing}`, form)
+      else         await api.post('/admin/staff', form)
       toast.success(editing ? 'Staff updated' : 'Staff created')
       setShowModal(false)
       fetch()
-    } catch {
-      toast.error('Something went wrong')
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Something went wrong')
     }
   }
 
   const handleDelete = async id => {
     if (!window.confirm('Delete this staff member?')) return
     try {
-      await axios.delete(`/admin/staff/${id}`)
+      await api.delete(`/admin/staff/${id}`)
       toast.success('Staff deleted')
       fetch()
-    } catch {
-      toast.error('Something went wrong')
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Something went wrong')
     }
   }
 

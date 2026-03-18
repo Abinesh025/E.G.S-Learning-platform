@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
-import axios from 'axios'
+import api from '../../services/api'
 import { Trash2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 
 export default function AdminResults() {
@@ -9,8 +9,9 @@ export default function AdminResults() {
 
   const fetch = () => {
     setLoading(true)
-    axios.get('/admin/results')
+    api.get('/admin/results')
       .then(r => setResults(r.data.data))
+      .catch(err => toast.error(err.response?.data?.message || 'Failed to fetch results'))
       .finally(() => setLoading(false))
   }
 
@@ -19,11 +20,11 @@ export default function AdminResults() {
   const handleDelete = async id => {
     if (!window.confirm('Delete this result?')) return
     try {
-      await axios.delete(`/admin/results/${id}`)
+      await api.delete(`/admin/results/${id}`)
       toast.success('Result deleted')
       fetch()
-    } catch {
-      toast.error('Something went wrong')
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Something went wrong')
     }
   }
 

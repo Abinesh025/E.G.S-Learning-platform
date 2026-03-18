@@ -1,18 +1,29 @@
 import { useState, useEffect } from 'react'
 import { studentService } from '../../services/api'
+import { getSocket } from '../../services/socket'
+import { useAuth } from '../../context/AuthContext'
 import { BarChart3, TrendingUp, Award } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 export default function StudentResults() {
+  const { token } = useAuth()
   const [results, setResults] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    studentService.getResults()
-      .then(res => setResults(res.data || []))
-      .catch(() => toast.error('Failed to load results'))
-      .finally(() => setLoading(false))
-  }, [])
+    const fetchItems = () => {
+      setLoading(true)
+      studentService.getResults()
+        .then(res => setResults(res.data || []))
+        .catch(() => toast.error('Failed to load results'))
+        .finally(() => setLoading(false))
+    }
+    fetchItems()
+    const socket = getSocket(token)
+    const handleDataChanged = (type) => { if (type === 'result') fetchItems() }
+    socket.on('data_changed', handleDataChanged)
+    return () => socket.off('data_changed', handleDataChanged)
+  }, [token])
 
   const avg = results.length
     ? Math.round(results.reduce((a, r) => a + (r.score || 0), 0) / results.length)

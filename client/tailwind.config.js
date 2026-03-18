@@ -1,4 +1,5 @@
 /** @type {import('tailwindcss').Config} */
+// Force Vite HMR reload
 export default {
   content: ['./index.html', './src/**/*.{js,jsx}'],
   theme: {
@@ -10,27 +11,27 @@ export default {
       },
       colors: {
         ink: {
-          50: '#f5f4f0',
-          100: '#e8e6e0',
-          200: '#d0cdc4',
-          300: '#b0aca0',
-          400: '#8c887a',
-          500: '#6e6a5c',
-          600: '#56524a',
-          700: '#403e38',
-          800: '#2a2824',
-          900: '#1a1916',
-          950: '#0e0d0b',
+          50: 'rgb(var(--ink-50) / <alpha-value>)',
+          100: 'rgb(var(--ink-100) / <alpha-value>)',
+          200: 'rgb(var(--ink-200) / <alpha-value>)',
+          300: 'rgb(var(--ink-300) / <alpha-value>)',
+          400: 'rgb(var(--ink-400) / <alpha-value>)',
+          500: 'rgb(var(--ink-500) / <alpha-value>)',
+          600: 'rgb(var(--ink-600) / <alpha-value>)',
+          700: 'rgb(var(--ink-700) / <alpha-value>)',
+          800: 'rgb(var(--ink-800) / <alpha-value>)',
+          900: 'rgb(var(--ink-900) / <alpha-value>)',
+          950: 'rgb(var(--ink-950) / <alpha-value>)',
         },
         lime: {
-          300: '#c8f04a',
-          400: '#b5e035',
-          500: '#9acc1f',
+          300: 'rgb(var(--lime-300) / <alpha-value>)',
+          400: 'rgb(var(--lime-400) / <alpha-value>)',
+          500: 'rgb(var(--lime-500) / <alpha-value>)',
         },
         sky: {
-          300: '#7dd3fc',
-          400: '#38bdf8',
-          500: '#0ea5e9',
+          300: 'rgb(var(--sky-300) / <alpha-value>)',
+          400: 'rgb(var(--sky-400) / <alpha-value>)',
+          500: 'rgb(var(--sky-500) / <alpha-value>)',
         }
       },
       animation: {

@@ -2,16 +2,21 @@ import axios from 'axios'
 
 // ✅ Create Axios instance
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: import.meta.env.VITE_API_URL || '/api',
   timeout: 15000,
 })
 
-// ✅ Request interceptor to attach JWT token automatically
 api.interceptors.request.use(config => {
   const token = localStorage.getItem('token')
+  const adminSecret = localStorage.getItem('adminSecret')
+
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
+  if (adminSecret) {
+    config.headers['x-admin-secret'] = adminSecret
+  }
+
   return config
 }, error => Promise.reject(error))
 
@@ -19,7 +24,7 @@ api.interceptors.request.use(config => {
 api.interceptors.response.use(
   res => res,
   err => {
-    if (err.response?.status === 401) {
+    if (err.response?.status === 401 && !err.config?.url?.includes('/verify-password')) {
       localStorage.removeItem('token')
       window.location.href = '/login'
     }
@@ -36,6 +41,9 @@ export const authService = {
   login: (data) => api.post('/auth/login', data),
   register: (data) => api.post('/auth/register', data),
   me: () => api.get('/auth/me'),
+  updateProfile: (formData) => api.put('/auth/profile', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
 }
 
 // Staff
@@ -53,6 +61,7 @@ export const studentService = {
   updateProfile: (data) => api.put('/student/profile', data),
   getMaterials: () => api.get('/student/materials'),
   getTests: () => api.get('/student/tests'),
+  getTest: (id) => api.get(`/student/tests/${id}`),
   getResults: () => api.get('/student/results'),
 }
 

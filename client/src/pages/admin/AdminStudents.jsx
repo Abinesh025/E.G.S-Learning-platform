@@ -1,50 +1,60 @@
-import { useEffect, useState } from 'react'
-import axios from '../../api/axios'
+import api from '../../services/api'
+import { getSocket } from '../../services/socket'
+import { useAuth } from '../../context/AuthContext'
 import { Pencil, Trash2, Plus } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { useEffect, useState } from 'react'
 
 const empty = { name: '', email: '', phone: '', course: '', batch: '', password: '' }
 
 export default function AdminStudents() {
+  const { token } = useAuth()
   const [students, setStudents] = useState([])
   const [loading, setLoading]   = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [editing, setEditing]   = useState(null)
   const [form, setForm]         = useState(empty)
   const [search, setSearch]     = useState('')
-
+    
   const fetch = () => {
     setLoading(true)
-    axios.get('/admin/students')
+    api.get('/admin/students')
       .then(r => setStudents(r.data.data))
+      .catch(err => toast.error(err.response?.data?.message || 'Failed to fetch students'))
       .finally(() => setLoading(false))
   }
 
-  useEffect(() => { fetch() }, [])
+  useEffect(() => { 
+    fetch(); 
+    const socket = getSocket(token);
+    const handleDataChanged = (type) => { if (type === 'student') fetch() }
+    socket.on('data_changed', handleDataChanged);
+    return () => socket.off('data_changed', handleDataChanged);
+  }, [token])
 
   const openAdd  = () => { setEditing(null); setForm(empty); setShowModal(true) }
   const openEdit = s  => { setEditing(s._id); setForm({ name: s.name, email: s.email, phone: s.phone || '', course: s.course || '', batch: s.batch || '', password: '' }); setShowModal(true) }
 
   const handleSave = async () => {
     try {
-      if (editing) await axios.put(`/admin/students/${editing}`, form)
-      else         await axios.post('/admin/students', form)
+      if (editing) await api.put(`/admin/students/${editing}`, form)
+      else         await api.post('/admin/students', form)
       toast.success(editing ? 'Student updated' : 'Student created')
       setShowModal(false)
       fetch()
-    } catch {
-      toast.error('Something went wrong')
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Something went wrong')
     }
   }
 
   const handleDelete = async id => {
     if (!window.confirm('Delete this student?')) return
     try {
-      await axios.delete(`/admin/students/${id}`)
+      await api.delete(`/admin/students/${id}`)
       toast.success('Student deleted')
       fetch()
-    } catch {
-      toast.error('Something went wrong')
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Something went wrong')
     }
   }
 
@@ -70,8 +80,9 @@ export default function AdminStudents() {
         {loading ? (
           <p className="text-ink-500 text-sm p-4">Loading...</p>
         ) : (
-          <table className="w-full text-sm">
-            <thead className="text-ink-500 text-xs uppercase border-b border-ink-800">
+          <div className="overflow-x-auto w-full">
+            <table className="w-full text-sm whitespace-nowrap">
+              <thead className="text-ink-500 text-xs uppercase border-b border-ink-800">
               <tr>
                 <th className="px-5 py-3 text-left">Name</th>
                 <th className="px-5 py-3 text-left">Course</th>
@@ -107,6 +118,7 @@ export default function AdminStudents() {
               )}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 

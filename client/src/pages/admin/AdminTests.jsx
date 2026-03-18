@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
-
+import api from '../../services/api'
+import { getSocket } from '../../services/socket'
+import { useAuth } from '../../context/AuthContext'
 import {
   FileText, Plus, Trash2, Pencil, X, Check,
   ChevronDown, ChevronUp, Users, Clock, Hash, Search
@@ -16,6 +18,7 @@ const EMPTY_FORM = {
 }
 
 export default function AdminTest() {
+  const { token } = useAuth()
   const [activeTab, setActiveTab] = useState(0)
   const [tests, setTests] = useState([])
   const [results, setResults] = useState([])
@@ -31,19 +34,36 @@ export default function AdminTest() {
 
   // ── fetch tests ──────────────────────────────────────────────
   useEffect(() => {
-    axios.get('/admin/tests')
-      .then(res => setTests(res.data.data ?? []))
-      .finally(() => setLoading(false))
-  }, [])
+    const fetchTests = () => {
+      setLoading(true)
+      api.get('/admin/tests')
+        .then(res => setTests(res.data.data ?? []))
+        .catch(err => showToast(err.response?.data?.message || 'Failed to fetch tests', 'error'))
+        .finally(() => setLoading(false))
+    }
+    fetchTests()
+    const socket = getSocket(token)
+    const handleDataChanged = (type) => { if (type === 'test') fetchTests() }
+    socket.on('data_changed', handleDataChanged)
+    return () => socket.off('data_changed', handleDataChanged)
+  }, [token])
 
   // ── fetch results ─────────────────────────────────────────────
   useEffect(() => {
     if (activeTab !== 2) return
-    setResultsLoading(true)
-    axios.get('/admin/test-results')
-      .then(res => setResults(res.data.data ?? []))
-      .finally(() => setResultsLoading(false))
-  }, [activeTab])
+    const fetchResults = () => {
+      setResultsLoading(true)
+      api.get('/admin/results')
+        .then(res => setResults(res.data.data ?? []))
+        .catch(err => showToast(err.response?.data?.message || 'Failed to fetch results', 'error'))
+        .finally(() => setResultsLoading(false))
+    }
+    fetchResults()
+    const socket = getSocket(token)
+    const handleDataChanged = (type) => { if (type === 'result') fetchResults() }
+    socket.on('data_changed', handleDataChanged)
+    return () => socket.off('data_changed', handleDataChanged)
+  }, [activeTab, token])
 
   // ── toast helper ──────────────────────────────────────────────
   const showToast = (msg, type = 'success') => {
@@ -86,19 +106,19 @@ export default function AdminTest() {
     setSubmitting(true)
     try {
       if (editId) {
-        const res = await axios.put(`/admin/tests/${editId}`, form)
+        const res = await api.put(`/admin/tests/${editId}`, form)
         setTests(t => t.map(x => x._id === editId ? res.data.data : x))
         showToast('Test updated')
         setEditId(null)
       } else {
-        const res = await axios.post('/admin/tests', form)
+        const res = await api.post('/admin/tests', form)
         setTests(t => [res.data.data, ...t])
         showToast('Test created')
       }
       setForm(EMPTY_FORM)
       setActiveTab(0)
-    } catch {
-      showToast('Something went wrong', 'error')
+    } catch (err) {
+      showToast(err.response?.data?.message || 'Something went wrong', 'error')
     } finally {
       setSubmitting(false)
     }
@@ -118,11 +138,11 @@ export default function AdminTest() {
 
   const handleDelete = async () => {
     try {
-      await axios.delete(`/admin/tests/${deleteId}`)
+      await api.delete(`/admin/tests/${deleteId}`)
       setTests(t => t.filter(x => x._id !== deleteId))
       showToast('Test deleted')
-    } catch {
-      showToast('Delete failed', 'error')
+    } catch (err) {
+      showToast(err.response?.data?.message || 'Delete failed', 'error')
     } finally {
       setDeleteId(null)
     }

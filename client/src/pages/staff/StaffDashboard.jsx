@@ -1,37 +1,43 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { staffService, materialService, testService } from '../../services/api'
-import { Users, BookOpen, FileText, BarChart3, ArrowRight, TrendingUp } from 'lucide-react'
+import api from '../../services/api'
+import { getSocket } from '../../services/socket'
+import { Users, BookOpen, FileText, BarChart3, ArrowRight, TrendingUp, ShieldAlert, Key } from 'lucide-react'
+import toast from 'react-hot-toast'
 
 export default function StaffDashboard() {
-  const { user } = useAuth()
+  const { user, token } = useAuth()
+  const navigate = useNavigate()
   const [stats, setStats] = useState({ students: 0, materials: 0, tests: 0, results: 0 })
   const [students, setStudents] = useState([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    Promise.all([
-      staffService.getStudents().catch(() => ({ data: [] })),
-      materialService.getAll().catch(() => ({ data: [] })),
-      testService.getAll().catch(() => ({ data: [] })),
-    ]).then(([s, m, t]) => {
-      // Each service returns { data: [...] } from axios
-      // but your backend returns the array directly (not wrapped in { data: [] })
-      // so we check both shapes:
-      const studs     = Array.isArray(s.data) ? s.data : []
-      const mats      = Array.isArray(m.data) ? m.data : []
-      const tests     = Array.isArray(t.data) ? t.data : []
+  const [showAdminModal, setShowAdminModal] = useState(false)
+  const [adminPassword, setAdminPassword] = useState('')
 
-      setStudents(studs.slice(0, 5))
-      setStats({
-        students:  studs.length,
-        materials: mats.length,
-        tests:     tests.length,
-        results:   0,           // no results endpoint on staff yet
-      })
+  const load = () => {
+    setLoading(true)
+    Promise.all([
+      api.get('/staff/stats').catch(() => ({ data: { stats: {} } })),
+      api.get('/staff/students').catch(() => ({ data: { data: [] } }))
+    ]).then(([st, s]) => {
+      setStats(st.data?.stats || { students: 0, materials: 0, tests: 0, results: 0 })
+      setStudents((s.data?.data || []).slice(0, 5))
     }).finally(() => setLoading(false))
-  }, [])
+  }
+
+  useEffect(() => {
+    load()
+    const socket = getSocket(token)
+    const handleDataChanged = (type) => {
+      if (['student', 'material', 'test', 'result'].includes(type)) {
+        load()
+      }
+    }
+    socket.on('data_changed', handleDataChanged)
+    return () => socket.off('data_changed', handleDataChanged)
+  }, [token])
 
   const hour = new Date().getHours()
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
@@ -54,29 +60,34 @@ export default function StaffDashboard() {
     <div className="p-6 max-w-6xl mx-auto space-y-8">
 
       {/* Header */}
-      <div className="animate-fade-up">
-        <p className="text-ink-500 text-sm mb-1">{greeting} 👋</p>
-        <h1 className="page-title">{user?.name ?? 'Staff'}</h1>
+      <div className="animate-fade-up flex items-center justify-between">
+        <div>
+          <p className="text-ink-500 text-sm mb-1">{greeting} 👋</p>
+          <h1 className="page-title">{user?.name ?? 'Staff'}</h1>
+        </div>
+        <button
+          onClick={() => setShowAdminModal(true)}
+          className="btn-outline border-amber-500/30 text-amber-500 hover:border-amber-500 hover:bg-amber-500/10 flex items-center gap-2 text-sm"
+        >
+          <ShieldAlert size={16} /> Unlock Admin Mode
+        </button>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 animate-fade-up animate-delay-100">
-        {statCards.map(({ icon: Icon, color, label, value }) => (
-          <div key={label} className="stat-card">
-            <div className={`w-9 h-9 ${colorMap[color]} rounded-xl flex items-center justify-center mb-2`}>
-              <Icon size={16} />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-fade-up animate-delay-100">
+        {statCards.map(({ icon: Icon, color, label, value }) => {
+          const c = colorMap[color] || colorMap.lime
+          return (
+            <div key={label} className="bg-ink-900 border border-ink-800 rounded-xl p-4 hover:-translate-y-1 hover:shadow-lg hover:shadow-ink-900/50 hover:border-ink-700 transition-all duration-300 group cursor-default">
+              <div className={`w-9 h-9 ${c} rounded-xl flex items-center justify-center mb-2 group-hover:scale-110 transition-transform duration-300`}>
+                <Icon size={16} />
+              </div>
+              <p className="text-ink-500 text-xs mb-1">{label}</p>
+              <p className="font-display font-700 text-2xl text-ink-50">{value}</p>
             </div>
-            <p className="text-ink-500 text-xs">{label}</p>
-            <p className="font-display font-700 text-2xl text-ink-50 mt-0.5">
-              {loading ? (
-                <span className="inline-block w-8 h-6 bg-ink-800 rounded animate-pulse" />
-              ) : value}
-            </p>
-          </div>
-        ))}
+          )
+        })}
       </div>
-
-      {/* Quick links */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 animate-fade-up animate-delay-200">
         {[
           { to: '/staff/materials', label: 'Upload Material',  desc: 'Add notes, videos, files', icon: BookOpen },
@@ -153,6 +164,65 @@ export default function StaffDashboard() {
           )}
         </div>
       </div>
+
+      {showAdminModal && (
+        <div className="fixed inset-0 bg-ink-950/80 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-ink-900 border border-ink-800 rounded-2xl p-6 w-80 animate-fade-up space-y-4">
+            <div className="flex justify-center mb-2">
+              <div className="w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center">
+                <ShieldAlert size={24} className="text-amber-500" />
+              </div>
+            </div>
+            <h2 className="text-ink-100 font-600 text-center">Admin Access</h2>
+            <p className="text-ink-500 text-xs text-center">
+              Requires an admin override password to temporarily elevate your privileges.
+            </p>
+            
+            <div className="relative">
+              <Key size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-500" />
+              <input
+                type="password"
+                className="input pl-9 w-full"
+                placeholder="Enter admin password"
+                value={adminPassword}
+                onChange={e => setAdminPassword(e.target.value)}
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleAdminUnlock()
+                }}
+              />
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <button
+                onClick={() => {
+                  setShowAdminModal(false)
+                  setAdminPassword('')
+                }}
+                className="btn-ghost flex-1"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  if (!adminPassword) return toast.error('Enter password')
+                  try {
+                    const res = await api.post('/auth/verify-password', { password: adminPassword })
+                    localStorage.setItem('adminSecret', res.data.adminToken)
+                    toast.success('Admin Mode Unlocked!')
+                    navigate('/admin')
+                  } catch (err) {
+                    toast.error(err.response?.data?.message || 'Verification failed')
+                  }
+                }}
+                className="btn-primary flex-1 bg-amber-500 hover:bg-amber-400 text-ink-950"
+              >
+                Unlock
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   )

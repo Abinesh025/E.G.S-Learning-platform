@@ -3,10 +3,54 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --ink-50: 245 244 240;
+    --ink-100: 232 230 224;
+    --ink-200: 208 205 196;
+    --ink-300: 176 172 160;
+    --ink-400: 140 136 122;
+    --ink-500: 110 106 92;
+    --ink-600: 86 82 74;
+    --ink-700: 64 62 56;
+    --ink-800: 42 40 36;
+    --ink-900: 26 25 22;
+    --ink-950: 14 13 11;
+
+    --lime-300: 200 240 74;
+    --lime-400: 181 224 53;
+    --lime-500: 154 204 31;
+
+    --sky-300: 125 211 252;
+    --sky-400: 56 189 248;
+    --sky-500: 14 165 233;
+  }
+
+  .light {
+    --ink-950: 245 245 245; /* Background becomes light gray */
+    --ink-900: 255 255 255; /* Cards become pure white */
+    --ink-800: 235 235 235; /* Borders become light */
+    --ink-700: 215 215 215;
+    --ink-600: 156 163 175;
+    --ink-500: 107 114 128;
+    --ink-400: 75 85 99;
+    --ink-300: 55 65 81;
+    --ink-200: 31 41 55;
+    --ink-100: 17 24 39;   /* Text becomes near black */
+    --ink-50: 0 0 0;       /* pure black */
+
+    --lime-300: 132 204 22; /* lime-500 for better visibility in light mode */
+    --lime-400: 101 163 13;
+    --lime-500: 77 124 15;
+
+    --sky-300: 14 165 233;  /* sky-500 */
+    --sky-400: 2 132 199;
+    --sky-500: 3 105 161;
+  }
+
   * { box-sizing: border-box; }
 
   body {
-    @apply bg-ink-950 text-ink-100 font-body antialiased;
+    @apply bg-ink-950 text-ink-100 font-body antialiased transition-colors duration-300;
     font-size: 15px;
     line-height: 1.6;
   }

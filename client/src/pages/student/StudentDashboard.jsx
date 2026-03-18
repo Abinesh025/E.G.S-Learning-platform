@@ -129,8 +129,8 @@ function StatCard({ icon: Icon, color, label, value }) {
   const c = colors[color] || colors.lime
 
   return (
-    <div className="stat-card">
-      <div className={`w-9 h-9 ${c.bg} rounded-xl flex items-center justify-center mb-2`}>
+    <div className="stat-card hover:-translate-y-1 hover:shadow-lg hover:shadow-ink-900/50 transition-all duration-300 group cursor-default">
+      <div className={`w-9 h-9 ${c.bg} rounded-xl flex items-center justify-center mb-2 group-hover:scale-110 transition-transform duration-300`}>
         <Icon size={16} className={c.text} />
       </div>
       <p className="text-ink-500 text-xs">{label}</p>

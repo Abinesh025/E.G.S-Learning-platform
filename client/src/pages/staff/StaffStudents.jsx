@@ -1,41 +1,77 @@
 import { useState, useEffect } from 'react'
-import { staffService } from '../../services/api'
-import { Users, Search, Trash2 } from 'lucide-react'
+import api from '../../services/api'
+import { getSocket } from '../../services/socket'
+import { useAuth } from '../../context/AuthContext'
+import { Users, Search, Trash2, Plus, Pencil } from 'lucide-react'
 import toast from 'react-hot-toast'
 
+const empty = { name: '', email: '', phone: '', course: '', batch: '', password: '' }
+
 export default function StaffStudents() {
+  const { token } = useAuth()
   const [students, setStudents] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [showModal, setShowModal] = useState(false)
+  const [editing, setEditing] = useState(null)
+  const [form, setForm] = useState(empty)
+  const [submitting, setSubmitting] = useState(false)
 
-  // Load students from API
   const load = () => {
     setLoading(true)
-    staffService.getStudents()
-      .then(res => {
-        // Access the actual array of students
-        setStudents(res.data?.data || [])
-      })
-      .catch(() => toast.error('Failed to load students'))
+    api.get('/staff/students')
+      .then(res => setStudents(res.data?.data || []))
+      .catch((err) => toast.error(err.response?.data?.message || 'Failed to load students'))
       .finally(() => setLoading(false))
   }
 
-  useEffect(load, [])
+  useEffect(() => {
+    load()
+    const socket = getSocket(token)
+    const handleDataChanged = (type) => {
+      if (type === 'student') load()
+    }
+    socket.on('data_changed', handleDataChanged)
+    return () => socket.off('data_changed', handleDataChanged)
+  }, [token])
 
-  // Handle delete student
-  const handleDelete = async (id) => {
-    if (!confirm('Remove this student?')) return
+  const openAdd  = () => { setEditing(null); setForm(empty); setShowModal(true) }
+  const openEdit = (s) => { 
+    setEditing(s._id); 
+    setForm({ name: s.name, email: s.email, phone: s.phone || '', course: s.course || '', batch: s.batch || '', password: '' }); 
+    setShowModal(true) 
+  }
+
+  const handleSave = async () => {
+    setSubmitting(true)
     try {
-      await staffService.delete(id)
-      toast.success('Student removed')
-      // Remove student from state
-      setStudents(prev => prev.filter(u => u._id !== id))
-    } catch {
-      toast.error('Failed to remove student')
+      if (editing) {
+        await api.put(`/staff/students/${editing}`, form)
+        toast.success('Student updated')
+      } else {
+        await api.post('/staff/students', form)
+        toast.success('Student created')
+      }
+      setShowModal(false)
+      load()
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Something went wrong')
+    } finally {
+      setSubmitting(false)
     }
   }
 
-  // Filter students based on search term
+  const handleDelete = async (id) => {
+    if (!window.confirm('Remove this student?')) return
+    try {
+      await api.delete(`/staff/delete/${id}`)
+      toast.success('Student removed')
+      load()
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to remove student')
+    }
+  }
+
   const filtered = (students || []).filter(s =>
     s.name?.toLowerCase().includes(search.toLowerCase()) ||
     s.email?.toLowerCase().includes(search.toLowerCase())
@@ -45,7 +81,12 @@ export default function StaffStudents() {
     <div className="p-6 max-w-5xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="page-title">Students</h1>
-        <span className="tag-sky badge">{students.length} total</span>
+        <div className="flex gap-4">
+          <span className="tag-sky badge flex items-center">{students.length} total</span>
+          <button onClick={openAdd} className="btn-primary flex items-center gap-2 text-sm">
+            <Plus size={15} /> Add Student
+          </button>
+        </div>
       </div>
 
       <div className="relative">
@@ -69,9 +110,10 @@ export default function StaffStudents() {
             </p>
           </div>
         ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-ink-800">
+          <div className="overflow-x-auto w-full">
+            <table className="w-full text-sm whitespace-nowrap">
+              <thead>
+                <tr className="border-b border-ink-800">
                 <th className="text-left px-5 py-3 text-ink-500 font-500 text-xs uppercase tracking-wider">Name</th>
                 <th className="text-left px-5 py-3 text-ink-500 font-500 text-xs uppercase tracking-wider">Email</th>
                 <th className="text-left px-5 py-3 text-ink-500 font-500 text-xs uppercase tracking-wider">Joined</th>
@@ -93,12 +135,13 @@ export default function StaffStudents() {
                     </td>
                     <td className="px-5 py-3 text-ink-500">{s.email}</td>
                     <td className="px-5 py-3 text-ink-500 text-xs">
-                      {s.createdAt ? new Date(s.createdAt).toLocaleDateString('en-IN') : '—'}
+                      {s.createdAt ? new Date(s.createdAt).toLocaleDateString() : '—'}
                     </td>
-                    <td className="px-5 py-3 text-right">
+                    <td className="px-5 py-3 text-right flex gap-2 justify-end">
+                      <button onClick={() => openEdit(s)} className="btn-ghost p-1.5"><Pencil size={14} /></button>
                       <button
                         onClick={() => handleDelete(s._id)}
-                        className="btn-ghost py-1 px-2 text-red-400 hover:text-red-300 hover:bg-red-400/10"
+                        className="btn-ghost p-1.5 text-red-400 hover:text-red-300"
                       >
                         <Trash2 size={14} />
                       </button>
@@ -108,8 +151,35 @@ export default function StaffStudents() {
               })}
             </tbody>
           </table>
+          </div>
         )}
       </div>
+
+      {showModal && (
+        <div className="fixed inset-0 bg-ink-950/80 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-ink-900 border border-ink-800 rounded-2xl p-6 w-96">
+            <h2 className="text-ink-100 font-semibold mb-4">{editing ? 'Edit Student' : 'Add Student'}</h2>
+            <div className="space-y-3">
+              {[['name','Name'],['email','Email'],['phone','Phone'],['course','Course'],['batch','Batch']].map(([field, label]) => (
+                <div key={field}>
+                  <label className="text-ink-500 text-xs mb-1 block">{label}</label>
+                  <input className="input w-full text-sm" value={form[field]} onChange={e => setForm({ ...form, [field]: e.target.value })} />
+                </div>
+              ))}
+              {!editing && (
+                <div>
+                  <label className="text-ink-500 text-xs mb-1 block">Password</label>
+                  <input type="password" className="input w-full text-sm" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} />
+                </div>
+              )}
+            </div>
+            <div className="flex gap-2 justify-end mt-5">
+              <button onClick={() => setShowModal(false)} className="btn-ghost text-sm">Cancel</button>
+              <button onClick={handleSave} disabled={submitting} className="btn-primary text-sm">{submitting ? 'Saving...' : 'Save'}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

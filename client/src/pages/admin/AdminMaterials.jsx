@@ -1,70 +1,104 @@
-import { useEffect, useState } from 'react'
-import axios from '../../api/axios'
-import { Pencil, Trash2, Plus } from 'lucide-react'
+import api from '../../services/api'
+import { getSocket } from '../../services/socket'
+import { useAuth } from '../../context/AuthContext'
+import { Pencil, Trash2, Plus, Download } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { useState, useEffect } from 'react' // Added missing import for useState and useEffect
 
-const empty = { name: '', email: '', phone: '', course: '', batch: '', password: '' }
+const empty = { title: '', description: '', subject: '', unit: '', topic: '', fileType: 'pdf' }
 
-export default function AdminStudents() {
-  const [students, setStudents] = useState([])
+export default function AdminMaterials() {
+  const { token } = useAuth()
+  const [materials, setMaterials] = useState([])
   const [loading, setLoading]   = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [editing, setEditing]   = useState(null)
   const [form, setForm]         = useState(empty)
   const [search, setSearch]     = useState('')
+  const [file, setFile]         = useState(null)
+  const [submitting, setSubmitting] = useState(false)
     
   const fetch = () => {
     setLoading(true)
-    axios.get('/admin/students')
-      .then(r => setStudents(r.data.data))
+    api.get('/admin/materials')
+      .then(r => setMaterials(r.data.data))
+      .catch(err => toast.error(err.response?.data?.message || 'Failed to fetch materials'))
       .finally(() => setLoading(false))
   }
 
-  useEffect(() => { fetch() }, [])
+  useEffect(() => { 
+    fetch() 
+    const socket = getSocket(token);
+    const handleDataChanged = (type) => { if (type === 'material') fetch() }
+    socket.on('data_changed', handleDataChanged);
+    return () => socket.off('data_changed', handleDataChanged);
+  }, [token])
 
-  const openAdd  = () => { setEditing(null); setForm(empty); setShowModal(true) }
-  const openEdit = s  => { setEditing(s._id); setForm({ name: s.name, email: s.email, phone: s.phone || '', course: s.course || '', batch: s.batch || '', password: '' }); setShowModal(true) }
+  const openAdd  = () => { setEditing(null); setForm(empty); setFile(null); setShowModal(true) }
+  const openEdit = m  => { 
+    setEditing(m._id); 
+    setForm({ title: m.title, description: m.description, subject: m.subject, unit: m.unit, topic: m.topic, fileType: m.fileType }); 
+    setFile(null);
+    setShowModal(true) 
+  }
 
   const handleSave = async () => {
+    if (!form.title || !form.subject || !form.unit || !form.topic) {
+      return toast.error('Please fill required fields (title, subject, unit, topic)');
+    }
+    setSubmitting(true)
+
     try {
-      if (editing) await axios.put(`/admin/students/${editing}`, form)
-      else         await axios.post('/admin/students', form)
-      toast.success(editing ? 'Student updated' : 'Student created')
+      if (editing) {
+        await api.put(`/admin/materials/${editing}`, form)
+        toast.success('Material updated')
+      } else {
+        if (!file) return toast.error('File is required for new material')
+        
+        const fd = new FormData()
+        Object.keys(form).forEach(k => fd.append(k, form[k]))
+        fd.append('file', file)
+        
+        await api.post('/materials/upload', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+        toast.success('Material uploaded successfully')
+      }
       setShowModal(false)
       fetch()
-    } catch {
-      toast.error('Something went wrong')
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Something went wrong')
+    } finally {
+      setSubmitting(false)
     }
   }
 
   const handleDelete = async id => {
-    if (!window.confirm('Delete this student?')) return
+    if (!window.confirm('Delete this material?')) return
     try {
-      await axios.delete(`/admin/students/${id}`)
-      toast.success('Student deleted')
+      await api.delete(`/admin/materials/${id}`)
+      toast.success('Material deleted')
       fetch()
-    } catch {
-      toast.error('Something went wrong')
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Something went wrong')
     }
   }
 
-  const filtered = students.filter(s =>
-    s.name.toLowerCase().includes(search.toLowerCase()) ||
-    s.email.toLowerCase().includes(search.toLowerCase())
+  const filtered = materials.filter(m =>
+    m.title?.toLowerCase().includes(search.toLowerCase()) ||
+    m.subject?.toLowerCase().includes(search.toLowerCase())
   )
 
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-semibold text-ink-100">Students</h1>
+        <h1 className="text-xl font-semibold text-ink-100">Materials</h1>
         <button onClick={openAdd} className="btn-primary flex items-center gap-2 text-sm">
-          <Plus size={15} /> Add Student
+          <Plus size={15} /> Add Material
         </button>
       </div>
 
       <div className="bg-ink-900 border border-ink-800 rounded-xl overflow-hidden">
         <div className="p-4 border-b border-ink-800">
-          <input className="input w-64 text-sm" placeholder="Search students..." value={search} onChange={e => setSearch(e.target.value)} />
+          <input className="input w-64 text-sm" placeholder="Search materials..." value={search} onChange={e => setSearch(e.target.value)} />
         </div>
 
         {loading ? (
@@ -73,37 +107,39 @@ export default function AdminStudents() {
           <table className="w-full text-sm">
             <thead className="text-ink-500 text-xs uppercase border-b border-ink-800">
               <tr>
-                <th className="px-5 py-3 text-left">Name</th>
-                <th className="px-5 py-3 text-left">Course</th>
-                <th className="px-5 py-3 text-left">Batch</th>
-                <th className="px-5 py-3 text-left">Status</th>
+                <th className="px-5 py-3 text-left">Title</th>
+                <th className="px-5 py-3 text-left">Subject & Topic</th>
+                <th className="px-5 py-3 text-left">Type</th>
                 <th className="px-5 py-3 text-left">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map(s => (
-                <tr key={s._id} className="border-t border-ink-800 hover:bg-ink-800/40">
+              {filtered.map(m => (
+                <tr key={m._id} className="border-t border-ink-800 hover:bg-ink-800/40">
                   <td className="px-5 py-3">
-                    <p className="text-ink-100 font-medium">{s.name}</p>
-                    <p className="text-ink-500 text-xs">{s.email}</p>
+                    <p className="text-ink-100 font-medium">{m.title}</p>
+                    <p className="text-ink-500 text-xs truncate max-w-xs">{m.description || 'No description'}</p>
                   </td>
-                  <td className="px-5 py-3 text-ink-300">{s.course || '—'}</td>
-                  <td className="px-5 py-3 text-ink-300">{s.batch || '—'}</td>
-                  <td className="px-5 py-3">
-                    <span className={`badge text-xs ${s.isActive !== false ? 'tag-lime' : 'tag-red'}`}>
-                      {s.isActive !== false ? 'Active' : 'Inactive'}
-                    </span>
+                  <td className="px-5 py-3 text-ink-300">
+                    <span className="block">{m.subject} - {m.unit}</span>
+                    <span className="text-xs text-ink-500">{m.topic}</span>
+                  </td>
+                  <td className="px-5 py-3 text-ink-300">
+                    <span className="badge tag-lime text-xs">{m.fileType?.toUpperCase()}</span>
                   </td>
                   <td className="px-5 py-3">
                     <div className="flex gap-2">
-                      <button onClick={() => openEdit(s)} className="btn-ghost p-1.5"><Pencil size={14} /></button>
-                      <button onClick={() => handleDelete(s._id)} className="btn-ghost p-1.5 text-red-400 hover:text-red-300"><Trash2 size={14} /></button>
+                      <a href={`${import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace('/api', '') : ''}${m.fileUrl}`} target="_blank" rel="noreferrer" className="btn-ghost p-1.5 hover:text-sky-400">
+                        <Download size={14} />
+                      </a>
+                      <button onClick={() => openEdit(m)} className="btn-ghost p-1.5"><Pencil size={14} /></button>
+                      <button onClick={() => handleDelete(m._id)} className="btn-ghost p-1.5 text-red-400 hover:text-red-300"><Trash2 size={14} /></button>
                     </div>
                   </td>
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={5} className="px-5 py-8 text-center text-ink-500">No students found</td></tr>
+                <tr><td colSpan={4} className="px-5 py-8 text-center text-ink-500">No materials found</td></tr>
               )}
             </tbody>
           </table>
@@ -112,25 +148,47 @@ export default function AdminStudents() {
 
       {showModal && (
         <div className="fixed inset-0 bg-ink-950/80 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-ink-900 border border-ink-800 rounded-2xl p-6 w-96">
-            <h2 className="text-ink-100 font-semibold mb-4">{editing ? 'Edit Student' : 'Add Student'}</h2>
-            <div className="space-y-3">
-              {[['name','Name'],['email','Email'],['phone','Phone'],['course','Course'],['batch','Batch']].map(([field, label]) => (
-                <div key={field}>
-                  <label className="text-ink-500 text-xs mb-1 block">{label}</label>
-                  <input className="input w-full text-sm" value={form[field]} onChange={e => setForm({ ...form, [field]: e.target.value })} />
-                </div>
-              ))}
+          <div className="bg-ink-900 border border-ink-800 rounded-2xl p-6 w-[32rem]">
+            <h2 className="text-ink-100 font-semibold mb-4">{editing ? 'Edit Material' : 'Add Material'}</h2>
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              <div className="col-span-2">
+                <label className="text-ink-500 text-xs mb-1 block">Title *</label>
+                <input className="input w-full text-sm" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} />
+              </div>
+              <div className="col-span-2">
+                <label className="text-ink-500 text-xs mb-1 block">Description</label>
+                <input className="input w-full text-sm" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
+              </div>
+              <div>
+                <label className="text-ink-500 text-xs mb-1 block">Subject *</label>
+                <input className="input w-full text-sm" value={form.subject} onChange={e => setForm({ ...form, subject: e.target.value })} />
+              </div>
+              <div>
+                <label className="text-ink-500 text-xs mb-1 block">Unit *</label>
+                <input className="input w-full text-sm" value={form.unit} onChange={e => setForm({ ...form, unit: e.target.value })} />
+              </div>
+              <div>
+                <label className="text-ink-500 text-xs mb-1 block">Topic *</label>
+                <input className="input w-full text-sm" value={form.topic} onChange={e => setForm({ ...form, topic: e.target.value })} />
+              </div>
+              <div>
+                <label className="text-ink-500 text-xs mb-1 block">File Type *</label>
+                <select className="input w-full text-sm" value={form.fileType} onChange={e => setForm({ ...form, fileType: e.target.value })}>
+                  <option value="pdf">PDF</option>
+                  <option value="video">Video</option>
+                  <option value="link">Link</option>
+                </select>
+              </div>
               {!editing && (
-                <div>
-                  <label className="text-ink-500 text-xs mb-1 block">Password</label>
-                  <input type="password" className="input w-full text-sm" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} />
+                <div className="col-span-2">
+                  <label className="text-ink-500 text-xs mb-1 block">File Upload *</label>
+                  <input type="file" className="text-sm text-ink-100 placeholder:text-ink-600 block w-full border border-ink-800 rounded-lg p-2" onChange={e => setFile(e.target.files[0])} />
                 </div>
               )}
             </div>
             <div className="flex gap-2 justify-end mt-5">
               <button onClick={() => setShowModal(false)} className="btn-ghost text-sm">Cancel</button>
-              <button onClick={handleSave} className="btn-primary text-sm">Save</button>
+              <button onClick={handleSave} disabled={submitting} className="btn-primary text-sm">{submitting ? 'Saving...' : 'Save'}</button>
             </div>
           </div>
         </div>

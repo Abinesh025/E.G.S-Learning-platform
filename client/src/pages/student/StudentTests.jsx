@@ -1,19 +1,31 @@
 import { useState, useEffect, useCallback } from 'react'
-import { testService } from '../../services/api'
+import { testService, studentService } from '../../services/api'
+import { getSocket } from '../../services/socket'
+import { useAuth } from '../../context/AuthContext'
 import { FileText, Clock, CheckCircle, Play, X, ChevronRight, ChevronLeft } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 export default function StudentTests() {
+  const { token } = useAuth()
   const [tests, setTests] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeTest, setActiveTest] = useState(null)
+  const [fetchingTestId, setFetchingTestId] = useState(null)
 
   useEffect(() => {
-    testService.getAll()
-      .then(res => setTests(res.data || []))
-      .catch(() => toast.error('Failed to load tests'))
-      .finally(() => setLoading(false))
-  }, [])
+    const fetchItems = () => {
+      setLoading(true)
+      studentService.getTests()
+        .then(res => setTests(res.data || []))
+        .catch(() => toast.error('Failed to load tests'))
+        .finally(() => setLoading(false))
+    }
+    fetchItems()
+    const socket = getSocket(token)
+    const handleDataChanged = (type) => { if (type === 'test') fetchItems() }
+    socket.on('data_changed', handleDataChanged)
+    return () => socket.off('data_changed', handleDataChanged)
+  }, [token])
 
   if (activeTest) {
     return <TestRunner test={activeTest} onFinish={(result) => {
@@ -52,10 +64,20 @@ export default function StudentTests() {
                 </div>
               </div>
               <button
-                onClick={() => setActiveTest(test)}
+                onClick={async () => {
+                  setFetchingTestId(test._id)
+                  try {
+                    const res = await studentService.getTest(test._id)
+                    setActiveTest(res.data)
+                  } catch (err) {
+                    toast.error('Failed to load test details')
+                  }
+                  setFetchingTestId(null)
+                }}
+                disabled={fetchingTestId === test._id}
                 className="btn-primary py-2 px-4 text-xs"
               >
-                <Play size={13} /> Start
+                <Play size={13} /> {fetchingTestId === test._id ? '...' : 'Start'}
               </button>
             </div>
           ))}
@@ -76,11 +98,16 @@ function TestRunner({ test, onFinish, onExit }) {
 
   const handleSubmit = async () => {
     setSubmitting(true)
+
+    // Map the dictionary of answers into an ordered array for the backend.
+    // If a question was skipped, we insert -1.
+    const orderedAnswers = questions.map((_, i) => (answers[i] !== undefined ? answers[i] : -1))
+
     try {
-      const res = await testService.submit(test._id, answers)
+      const res = await testService.submit(test._id, orderedAnswers)
       onFinish(res.data)
     } catch (err) {
-      toast.error('Submission failed')
+      toast.error(err.response?.data?.message || 'Submission failed')
       setSubmitting(false)
     }
   }
