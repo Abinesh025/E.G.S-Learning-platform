@@ -22,6 +22,8 @@ app.use(express.urlencoded({ limit:"10mb",extended: true }))
 app.use(cookieParser())
 app.use(morgan('dev'))
 
+
+
 // 📁 Static Upload Folder
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
 

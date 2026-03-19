@@ -24,7 +24,6 @@ const studentNav = [
 
 const staffNav = [
   { to: '/staff', label: 'Dashboard', icon: LayoutDashboard, end: true },
-  { to: '/staff/students', label: 'Students', icon: Users },
   { to: '/staff/materials', label: 'Materials', icon: BookOpen },
   { to: '/staff/tests', label: 'Tests', icon: FileText },
   { to: '/staff/results', label: 'Results', icon: BarChart3 },
@@ -57,14 +56,33 @@ export default function Layout({ children }) {
   const [profileData, setProfileData] = useState({ name: '', password: '', file: null })
   const [isUpdating, setIsUpdating] = useState(false)
 
+  const isAdminRoute = window.location.pathname.startsWith('/admin') && !!sessionStorage.getItem('adminToken')
+
   const navItems =
+    isAdminRoute ? adminNav :
     user?.role === 'staff' ? staffNav :
-    user?.role === 'admin' ? adminNav :
     studentNav
+
+  // Resolve avatar URL — works in dev (Vite proxy for /uploads) and production
+  const getAvatarUrl = (avatarPath) => {
+    if (!avatarPath) return null
+    if (avatarPath.startsWith('http')) return avatarPath
+    const base = import.meta.env.VITE_API_URL
+      ? import.meta.env.VITE_API_URL.replace(/\/api$/, '')
+      : ''
+    return `${base}${avatarPath}`
+  }
 
   const handleLogout = () => {
     logout()
     navigate('/login')
+  }
+
+  const handleAdminLogout = () => {
+    sessionStorage.removeItem('adminToken')
+    // Navigate to user's dashboard, or landing page if no session
+    const dest = user?.role === 'staff' ? '/staff' : user?.role === 'student' ? '/student' : '/'
+    navigate(dest)
   }
 
   const handleProfileUpdate = async (e) => {
@@ -85,26 +103,26 @@ export default function Layout({ children }) {
     }
   }
 
-  const initials = user?.name
+  const initials = isAdminRoute ? 'AD' : user?.name
     ? user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
     : 'U'
 
   const roleBadgeClass =
+    isAdminRoute ? 'tag-sky' :
     user?.role === 'staff' ? 'tag-lime' :
-    user?.role === 'admin' ? 'tag-red' :
     'tag-sky'
 
   const roleLabel =
+    isAdminRoute ? '⬡ Admin' :
     user?.role === 'staff' ? '★ Staff' :
-    user?.role === 'admin' ? '⬡ Admin' :
     '◆ Student'
 
   const Sidebar = () => (
     <aside className="flex flex-col h-full w-64 bg-ink-900 border-r border-ink-800">
       {/* Logo */}
       <div className="flex items-center gap-3 px-5 py-5 border-b border-ink-800">
-        <div className="w-8 h-8 bg-lime-300 rounded-lg flex items-center justify-center">
-          <GraduationCap size={16} className="text-ink-950" />
+        <div className="w-8 h-8 bg-lime-400 rounded-lg flex items-center justify-center">
+          <GraduationCap size={16} className="text-white" />
         </div>
         <span className="font-display font-700 text-ink-50 text-lg tracking-tight">
           EduPortal
@@ -113,7 +131,7 @@ export default function Layout({ children }) {
 
       {/* Role badge */}
       <div className="px-5 py-3">
-        <span className={clsx('badge text-xs', roleBadgeClass)}>
+        <span className={clsx('badge text-xs', roleBadgeClass,roleLabel==="⬡ Admin" ? "bg-yellow-100  text-yellow":"")}>
           {roleLabel}
         </span>
       </div>
@@ -131,7 +149,7 @@ export default function Layout({ children }) {
                 setOpen(false)
                 if (isActive) return // Do nothing if already there
                 
-                const isStaffInAdmin = user?.role === 'staff' && localStorage.getItem('adminSecret') && window.location.pathname.startsWith('/admin')
+                const isStaffInAdmin = false // Handled natively by separate admin now
                 
                 if (isStaffInAdmin && to.startsWith('/staff')) {
                   setPendingNav(item)
@@ -151,59 +169,68 @@ export default function Layout({ children }) {
 
       {/* User area */}
       <div className="border-t border-ink-800 p-4 space-y-2">
-        <button
-          onClick={() => {
-            setProfileData({ name: user?.name || '', password: '', file: null })
-            setShowProfileModal(true)
-          }}
-          className="w-full flex items-center gap-3 mb-3 p-2 rounded-xl hover:bg-ink-800 transition-colors text-left"
-        >
-          {user?.avatar ? (
-            <img 
-              src={`${import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace('/api', '') : ''}${user.avatar}`} 
-              alt="Avatar" 
-              className="w-9 h-9 rounded-xl object-cover border border-ink-700" 
-            />
-          ) : (
-            <div className="w-9 h-9 rounded-xl bg-lime-300/10 border border-lime-300/20 flex items-center justify-center">
-              <span className="text-lime-300 font-display font-600 text-xs">{initials}</span>
+        {!isAdminRoute ? (
+          <button
+            onClick={() => {
+              setProfileData({ name: user?.name || '', password: '', file: null })
+              setShowProfileModal(true)
+            }}
+            className="w-full flex items-center gap-3 mb-3 p-2 rounded-xl hover:bg-ink-800 transition-colors text-left"
+          >
+            {user?.avatar ? (
+              <img 
+                src={getAvatarUrl(user.avatar)} 
+                alt="Avatar" 
+                className="w-9 h-9 rounded-xl object-cover border border-ink-700"
+                onError={e => { e.target.style.display = 'none' }}
+              />
+            ) : (
+              <div className="w-9 h-9 rounded-xl bg-lime-400/10 border border-lime-400/20 flex items-center justify-center">
+                <span className="text-lime-300 font-display font-600 text-xs">{initials}</span>
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="text-ink-100 text-sm font-500 truncate">{user?.name}</p>
+              <p className="text-ink-500 text-xs truncate">Edit Profile</p>
             </div>
-          )}
-          <div className="flex-1 min-w-0">
-            <p className="text-ink-100 text-sm font-500 truncate">{user?.name}</p>
-            <p className="text-ink-500 text-xs truncate">Edit Profile</p>
+          </button>
+        ) : (
+          <div className="w-full flex items-center gap-3 mb-3 p-2 rounded-xl text-left">
+            <div className="w-9 h-9 rounded-xl bg-sky-400/10 border border-sky-400/20 flex items-center justify-center">
+              <span className="text-sky-400 font-display font-600 text-xs">AD</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-ink-100 text-sm font-500 truncate">Administrator</p>
+              <p className="text-ink-500 text-xs truncate">Master Account</p>
+            </div>
           </div>
-        </button>
+        )}
 
-        {user?.role === 'staff' && localStorage.getItem('adminSecret') && (
+        {isAdminRoute && (
           <button
             onClick={() => setShowExitModal(true)}
-            className="btn-ghost w-full justify-start text-amber-500 hover:text-amber-400 hover:bg-amber-500/10"
+            className="btn-ghost w-full justify-start text-yellow-600 hover:text-yellow-600 hover:bg-yellow-400/10"
           >
             <ShieldCheck size={14} />
-            Exit Admin Mode
+            Lock & Exit Admin
           </button>
         )}
 
-        <button 
-          onClick={() => {
-            if (user?.role === 'staff' && localStorage.getItem('adminSecret')) {
-              toast.error('Please exit Admin Mode before signing out')
-              return
-            }
-            setShowLogoutModal(true)
-          }} 
-          className="btn-ghost w-full justify-start text-red-400 hover:text-red-300 hover:bg-red-400/10"
-        >
-          <LogOut size={14} />
-          Sign out
-        </button>
+        {!isAdminRoute && (
+          <button 
+            onClick={() => setShowLogoutModal(true)} 
+            className="btn-ghost w-full justify-start text-red-400 hover:text-red-300 hover:bg-red-400/10"
+          >
+            <LogOut size={14} />
+            Sign out
+          </button>
+        )}
       </div>
     </aside>
   )
 
   return (
-    <div className="flex h-screen overflow-hidden bg-ink-950">
+    <div className="flex flex-col h-screen overflow-hidden bg-ink-950">
       
       {/* Profile Edit Modal */}
       {showProfileModal && (
@@ -221,7 +248,7 @@ export default function Layout({ children }) {
                     type="file"
                     accept="image/*"
                     onChange={(e) => setProfileData({ ...profileData, file: e.target.files[0] })}
-                    className="w-full text-sm text-ink-300 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-sky-400/10 file:text-sky-400 hover:file:bg-sky-400/20 transition-colors cursor-pointer"
+                    className="w-full text-sm text-ink-300 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-lime-400/10 file:text-lime-300 hover:file:bg-lime-400/20 transition-colors cursor-pointer"
                   />
                 </div>
 
@@ -231,7 +258,7 @@ export default function Layout({ children }) {
                     type="text"
                     value={profileData.name}
                     onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
-                    className="w-full bg-ink-950 border border-ink-800 rounded-xl px-4 py-2 text-ink-100 text-sm focus:outline-none focus:border-sky-500"
+                    className="w-full bg-ink-950 border border-ink-800 rounded-xl px-4 py-2 text-ink-100 text-sm focus:outline-none focus:border-lime-400"
                     placeholder="Enter your name"
                   />
                 </div>
@@ -242,7 +269,7 @@ export default function Layout({ children }) {
                     type="password"
                     value={profileData.password}
                     onChange={(e) => setProfileData({ ...profileData, password: e.target.value })}
-                    className="w-full bg-ink-950 border border-ink-800 rounded-xl px-4 py-2 text-ink-100 text-sm focus:outline-none focus:border-sky-500"
+                    className="w-full bg-ink-950 border border-ink-800 rounded-xl px-4 py-2 text-ink-100 text-sm focus:outline-none focus:border-lime-400"
                     placeholder="Leave blank to keep unchanged"
                   />
                 </div>
@@ -260,8 +287,8 @@ export default function Layout({ children }) {
                 <button
                   type="submit"
                   disabled={isUpdating}
-                  className="flex-1 px-4 py-2 bg-sky-500 hover:bg-sky-400 disabled:opacity-50
-                           text-ink-950 rounded-xl text-sm font-600 transition shadow-lg shadow-sky-500/20"
+                  className="flex-1 px-4 py-2 bg-lime-400 hover:bg-lime-300 disabled:opacity-50
+                           text-white rounded-xl text-sm font-600 transition shadow-lg shadow-lime-400/20"
                 >
                   {isUpdating ? 'Saving...' : 'Save Changes'}
                 </button>
@@ -276,8 +303,8 @@ export default function Layout({ children }) {
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
           <div className="bg-ink-900 border border-ink-800 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl animate-fade-in-up">
             <div className="p-6">
-              <div className="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center mb-4">
-                <ShieldCheck size={24} className="text-amber-500" />
+              <div className="w-12 h-12 rounded-xl bg-sky-400/10 flex items-center justify-center mb-4">
+                <ShieldCheck size={24} className="text-sky-400" />
               </div>
               <h3 className="text-lg font-600 text-ink-100 mb-2 font-display">
                 Exit Admin Mode?
@@ -299,13 +326,13 @@ export default function Layout({ children }) {
                 </button>
                 <button
                   onClick={() => {
-                    localStorage.removeItem('adminSecret')
+                    sessionStorage.removeItem('adminToken')
                     navigate(pendingNav.to)
                     setShowNavModal(false)
                     setPendingNav(null)
                   }}
-                  className="flex-1 px-4 py-2 bg-amber-500 hover:bg-amber-400 
-                           text-ink-950 rounded-xl text-sm font-600 transition shadow-lg shadow-amber-500/20"
+                  className="flex-1 px-4 py-2 bg-sky-400 hover:bg-sky-300 
+                           text-white rounded-xl text-sm font-600 transition shadow-lg shadow-sky-400/20"
                 >
                   Yes, Exit
                 </button>
@@ -344,7 +371,7 @@ export default function Layout({ children }) {
                     handleLogout()
                   }}
                   className="flex-1 px-4 py-2 bg-red-500 hover:bg-red-400 
-                           text-ink-950 rounded-xl text-sm font-600 transition shadow-lg shadow-red-500/20"
+                           text-white rounded-xl text-sm font-600 transition shadow-lg shadow-red-500/20"
                 >
                   Yes, Sign Out
                 </button>
@@ -359,14 +386,14 @@ export default function Layout({ children }) {
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
           <div className="bg-ink-900 border border-ink-800 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl animate-fade-in-up">
             <div className="p-6">
-              <div className="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center mb-4">
-                <ShieldCheck size={24} className="text-amber-500" />
+              <div className="w-12 h-12 rounded-xl bg-sky-400/10 flex items-center justify-center mb-4">
+                <ShieldCheck size={24} className="text-sky-400" />
               </div>
               <h3 className="text-lg font-600 text-ink-100 mb-2 font-display">
                 Exit Admin Mode?
               </h3>
               <p className="text-sm text-ink-400 leading-relaxed mb-6">
-                Are you sure you want to lock the admin controls and return to your standard Staff Dashboard?
+                Are you sure you want to lock the admin controls and return to your standard dashboard?
               </p>
               
               <div className="flex gap-3">
@@ -379,12 +406,11 @@ export default function Layout({ children }) {
                 </button>
                 <button
                   onClick={() => {
-                    localStorage.removeItem('adminSecret')
                     setShowExitModal(false)
-                    navigate('/staff')
+                    handleAdminLogout()
                   }}
-                  className="flex-1 px-4 py-2 bg-amber-500 hover:bg-amber-400 
-                           text-ink-950 rounded-xl text-sm font-600 transition shadow-lg shadow-amber-500/20"
+                  className="flex-1 px-4 py-2 bg-sky-400 hover:bg-sky-300 
+                           text-white rounded-xl text-sm font-600 transition shadow-lg shadow-sky-400/20"
                 >
                   Yes, Exit
                 </button>
@@ -394,31 +420,35 @@ export default function Layout({ children }) {
         </div>
       )}
 
-      {/* Desktop sidebar */}
-      <div className="hidden md:flex md:flex-shrink-0">
-        <Sidebar />
-      </div>
+      {/* ── Navbar spans full width ── */}
+      <Navbar onMenuClick={() => setOpen(true)} />
 
-      {/* Mobile overlay */}
-      {open && (
-        <div className="fixed inset-0 z-50 md:hidden flex">
-          <div className="flex-shrink-0">
-            <Sidebar />
-          </div>
-          <div className="flex-1 bg-ink-950/80 backdrop-blur-sm" onClick={() => setOpen(false)} />
+      {/* ── Middle row: sidebar + scrollable content ── */}
+      <div className="flex flex-1 min-h-0 overflow-hidden">
+
+        {/* Desktop sidebar — sits between navbar and footer */}
+        <div className="hidden md:flex md:flex-shrink-0">
+          <Sidebar />
         </div>
-      )}
 
-      {/* Main area */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <Navbar onMenuClick={() => setOpen(true)} />
+        {/* Mobile sidebar overlay */}
+        {open && (
+          <div className="fixed inset-0 z-50 md:hidden flex">
+            <div className="flex-shrink-0">
+              <Sidebar />
+            </div>
+            <div className="flex-1 bg-ink-950/80 backdrop-blur-sm" onClick={() => setOpen(false)} />
+          </div>
+        )}
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto min-w-0">
           {children}
-          <Footer />
         </main>
       </div>
+
+      {/* ── Footer spans full width ── */}
+      <Footer />
     </div>
   )
 }

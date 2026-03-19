@@ -12,8 +12,8 @@ const { protectMe } = require('../middleware/authMiddleware')
 const { authorizeRoles } = require('../middleware/roleMiddleware')
 
 // Staff creates test
-router.post('/', protectMe, authorizeRoles('staff'), createTest)
-router.get('/all', protectMe, authorizeRoles('staff'), getTests)
+router.post('/', protectMe, authorizeRoles('staff', 'admin'), createTest)
+router.get('/all', protectMe, authorizeRoles('staff', 'admin'), getTests)
 
 // Students view tests
 router.get('/', protectMe, authorizeRoles('student'), getTests)

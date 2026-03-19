@@ -38,8 +38,11 @@ export default function AdminStaff() {
 
   const handleSave = async () => {
     try {
-      if (editing) await api.put(`/admin/staff/${editing}`, form)
-      else         await api.post('/admin/staff', form)
+      const payload = { ...form }
+      if (!payload.password) delete payload.password
+
+      if (editing) await api.put(`/admin/staff/${editing}`, payload)
+      else         await api.post('/admin/staff', payload)
       toast.success(editing ? 'Staff updated' : 'Staff created')
       setShowModal(false)
       fetch()
@@ -86,14 +89,15 @@ export default function AdminStaff() {
         {loading ? (
           <p className="text-ink-500 text-sm p-4">Loading...</p>
         ) : (
-          <table className="w-full text-sm">
-            <thead className="text-ink-500 text-xs uppercase border-b border-ink-800">
+          <div className="overflow-x-auto w-full">
+            <table className="w-full text-sm whitespace-nowrap">
+              <thead className="text-ink-500 text-xs uppercase border-b border-ink-800">
               <tr>
                 <th className="px-5 py-3 text-left">Name</th>
                 <th className="px-5 py-3 text-left">Department</th>
                 <th className="px-5 py-3 text-left">Phone</th>
                 <th className="px-5 py-3 text-left">Status</th>
-                <th className="px-5 py-3 text-left">Actions</th>
+                <th className="px-5 py-3 text-left sticky right-0 bg-ink-900 border-l border-ink-800 z-10 shadow-[-4px_0_10px_-4px_rgba(0,0,0,0.5)]">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -110,7 +114,7 @@ export default function AdminStaff() {
                       {s.isActive !== false ? 'Active' : 'Inactive'}
                     </span>
                   </td>
-                  <td className="px-5 py-3">
+                  <td className="px-5 py-3 sticky right-0 bg-ink-900 border-l border-ink-800 z-10 shadow-[-4px_0_10px_-4px_rgba(0,0,0,0.5)]">
                     <div className="flex gap-2">
                       <button onClick={() => openEdit(s)} className="btn-ghost p-1.5"><Pencil size={14} /></button>
                       <button onClick={() => handleDelete(s._id)} className="btn-ghost p-1.5 text-red-400 hover:text-red-300"><Trash2 size={14} /></button>
@@ -123,12 +127,13 @@ export default function AdminStaff() {
               )}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 
       {showModal && (
         <div className="fixed inset-0 bg-ink-950/80 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-ink-900 border border-ink-800 rounded-2xl p-6 w-96">
+          <div className="bg-ink-900 border border-ink-800 rounded-2xl p-6 w-full max-w-sm mx-4">
             <h2 className="text-ink-100 font-semibold mb-4">{editing ? 'Edit Staff' : 'Add Staff'}</h2>
             <div className="space-y-3">
               {[['name','Name'],['email','Email'],['phone','Phone'],['department','Department']].map(([field, label]) => (

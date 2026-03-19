@@ -38,7 +38,6 @@ const login = async (email, password) => {
       err.message ||
       "Login failed"
 
-    console.error("LOGIN ERROR:", message)
     throw new Error(message)
   }
 }

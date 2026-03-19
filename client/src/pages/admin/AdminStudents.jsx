@@ -5,7 +5,7 @@ import { Pencil, Trash2, Plus } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useEffect, useState } from 'react'
 
-const empty = { name: '', email: '', phone: '', course: '', batch: '', password: '' }
+const empty = { name: '', email: '', phone: '', course: '', batch: '', department: '', password: '' }
 
 export default function AdminStudents() {
   const { token } = useAuth()
@@ -33,12 +33,15 @@ export default function AdminStudents() {
   }, [token])
 
   const openAdd  = () => { setEditing(null); setForm(empty); setShowModal(true) }
-  const openEdit = s  => { setEditing(s._id); setForm({ name: s.name, email: s.email, phone: s.phone || '', course: s.course || '', batch: s.batch || '', password: '' }); setShowModal(true) }
+  const openEdit = s  => { setEditing(s._id); setForm({ name: s.name, email: s.email, phone: s.phone || '', course: s.course || '', batch: s.batch || '', department: s.department || '', password: '' }); setShowModal(true) }
 
   const handleSave = async () => {
     try {
-      if (editing) await api.put(`/admin/students/${editing}`, form)
-      else         await api.post('/admin/students', form)
+      const payload = { ...form }
+      if (!payload.password) delete payload.password
+
+      if (editing) await api.put(`/admin/students/${editing}`, payload)
+      else         await api.post('/admin/students', payload)
       toast.success(editing ? 'Student updated' : 'Student created')
       setShowModal(false)
       fetch()
@@ -86,9 +89,10 @@ export default function AdminStudents() {
               <tr>
                 <th className="px-5 py-3 text-left">Name</th>
                 <th className="px-5 py-3 text-left">Course</th>
+                <th className="px-5 py-3 text-left">Department</th>
                 <th className="px-5 py-3 text-left">Batch</th>
                 <th className="px-5 py-3 text-left">Status</th>
-                <th className="px-5 py-3 text-left">Actions</th>
+                <th className="px-5 py-3 text-left sticky right-0 bg-ink-900 border-l border-ink-800 z-10 shadow-[-4px_0_10px_-4px_rgba(0,0,0,0.5)]">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -99,13 +103,14 @@ export default function AdminStudents() {
                     <p className="text-ink-500 text-xs">{s.email}</p>
                   </td>
                   <td className="px-5 py-3 text-ink-300">{s.course || '—'}</td>
+                  <td className="px-5 py-3 text-ink-300">{s.department || '—'}</td>
                   <td className="px-5 py-3 text-ink-300">{s.batch || '—'}</td>
                   <td className="px-5 py-3">
                     <span className={`badge text-xs ${s.isActive !== false ? 'tag-lime' : 'tag-red'}`}>
                       {s.isActive !== false ? 'Active' : 'Inactive'}
                     </span>
                   </td>
-                  <td className="px-5 py-3">
+                  <td className="px-5 py-3 sticky right-0 bg-ink-900 border-l border-ink-800 z-10 shadow-[-4px_0_10px_-4px_rgba(0,0,0,0.5)]">
                     <div className="flex gap-2">
                       <button onClick={() => openEdit(s)} className="btn-ghost p-1.5"><Pencil size={14} /></button>
                       <button onClick={() => handleDelete(s._id)} className="btn-ghost p-1.5 text-red-400 hover:text-red-300"><Trash2 size={14} /></button>
@@ -124,10 +129,10 @@ export default function AdminStudents() {
 
       {showModal && (
         <div className="fixed inset-0 bg-ink-950/80 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-ink-900 border border-ink-800 rounded-2xl p-6 w-96">
+          <div className="bg-ink-900 border border-ink-800 rounded-2xl p-6 w-full max-w-sm mx-4">
             <h2 className="text-ink-100 font-semibold mb-4">{editing ? 'Edit Student' : 'Add Student'}</h2>
             <div className="space-y-3">
-              {[['name','Name'],['email','Email'],['phone','Phone'],['course','Course'],['batch','Batch']].map(([field, label]) => (
+              {[['name','Name'],['email','Email'],['phone','Phone'],['course','Course'],['department','Department'],['batch','Batch']].map(([field, label]) => (
                 <div key={field}>
                   <label className="text-ink-500 text-xs mb-1 block">{label}</label>
                   <input className="input w-full text-sm" value={form[field]} onChange={e => setForm({ ...form, [field]: e.target.value })} />

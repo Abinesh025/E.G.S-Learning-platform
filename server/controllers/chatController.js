@@ -68,8 +68,8 @@ exports.getChatHistory = async (req, res) => {
         { sender: userId, receiver: req.user._id }
       ]
     })
-      .populate("sender", "name email role")
-      .populate("receiver", "name email role")
+      .populate("sender", "name email role avatar")
+      .populate("receiver", "name email role avatar")
       .sort({ createdAt: 1 }) // better than timestamp if schema uses timestamps
 
     res.status(200).json({
@@ -102,6 +102,46 @@ exports.uploadVoice = async (req, res) => {
       success: true,
       message: "Voice uploaded successfully",
       audioUrl: req.file.path
+    })
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    })
+  }
+}
+
+// ─────────────────────────────────────────────
+// GET ROOM CHAT HISTORY
+// ─────────────────────────────────────────────
+exports.getRoomHistory = async (req, res) => {
+  try {
+    const { roomId } = req.params
+
+    if (!roomId) {
+      return res.status(400).json({
+        success: false,
+        message: "Room ID required"
+      })
+    }
+
+    const messages = await Message.find({ room: roomId })
+      .populate("sender", "name email role department avatar")
+      .sort({ createdAt: 1 })
+
+    res.status(200).json({
+      success: true,
+      count: messages.length,
+      data: messages.map(m => ({
+        _id: m._id,
+        content: m.message,
+        messageType: m.messageType,
+        audioUrl: m.audioUrl,
+        fileUrl: m.fileUrl,
+        sender: m.sender,
+        createdAt: m.createdAt
+      }))
     })
 
   } catch (error) {

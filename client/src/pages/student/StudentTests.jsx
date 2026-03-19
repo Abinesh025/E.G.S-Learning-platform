@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { testService, studentService } from '../../services/api'
 import { getSocket } from '../../services/socket'
 import { useAuth } from '../../context/AuthContext'
-import { FileText, Clock, CheckCircle, Play, X, ChevronRight, ChevronLeft } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { FileText, Clock, CheckCircle, Play, X, ChevronRight, ChevronLeft, ArrowLeft } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 export default function StudentTests() {
@@ -11,11 +12,15 @@ export default function StudentTests() {
   const [loading, setLoading] = useState(true)
   const [activeTest, setActiveTest] = useState(null)
   const [fetchingTestId, setFetchingTestId] = useState(null)
+  const [departmentFilter, setDepartmentFilter] = useState('')
 
   useEffect(() => {
     const fetchItems = () => {
       setLoading(true)
-      studentService.getTests()
+      const params = {}
+      if (departmentFilter) params.department = departmentFilter
+
+      studentService.getTests(params)
         .then(res => setTests(res.data || []))
         .catch(() => toast.error('Failed to load tests'))
         .finally(() => setLoading(false))
@@ -25,7 +30,7 @@ export default function StudentTests() {
     const handleDataChanged = (type) => { if (type === 'test') fetchItems() }
     socket.on('data_changed', handleDataChanged)
     return () => socket.off('data_changed', handleDataChanged)
-  }, [token])
+  }, [token, departmentFilter])
 
   if (activeTest) {
     return <TestRunner test={activeTest} onFinish={(result) => {
@@ -36,7 +41,29 @@ export default function StudentTests() {
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
-      <h1 className="page-title">Tests</h1>
+      <Link to="/student" className="inline-flex items-center gap-2 text-ink-400 hover:text-lime-300 transition-colors mb-2 text-sm font-500">
+        <ArrowLeft size={16} /> Back to Dashboard
+      </Link>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <h1 className="page-title mb-0">Tests</h1>
+        <div className="w-full sm:w-48">
+          <select 
+            className="input w-full"
+            value={departmentFilter}
+            onChange={e => setDepartmentFilter(e.target.value)}
+          >
+            <option value="">My Department's Tests</option>
+            <option value="CSE">CSE</option>
+            <option value="IT">IT</option>
+            <option value="ECE">ECE</option>
+            <option value="MECH">MECH</option>
+            <option value="CIVIL">CIVIL</option>
+            <option value="EEE">EEE</option>
+            <option value="AI&DS">AI&DS</option>
+            <option value="CSBS">CSBS</option>
+          </select>
+        </div>
+      </div>
 
       {loading ? (
         <div className="space-y-3">
@@ -57,7 +84,14 @@ export default function StudentTests() {
                 <FileText size={18} className="text-ink-400" />
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="text-ink-100 font-500 text-sm mb-0.5">{test.title}</h3>
+                <div className="flex items-center gap-2 mb-0.5">
+                  <h3 className="text-ink-100 font-500 text-sm">{test.title}</h3>
+                  {test.department && (
+                    <span className="text-[10px] uppercase font-600 bg-ink-800 text-ink-400 px-1.5 py-0.5 rounded">
+                      {test.department}
+                    </span>
+                  )}
+                </div>
                 <div className="flex items-center gap-3 text-xs text-ink-500">
                   <span className="flex items-center gap-1"><Clock size={11} /> {test.duration || 30} min</span>
                   <span>{test.questions?.length || 0} questions</span>

@@ -1,19 +1,16 @@
 const express = require('express')
-const multer = require('multer')
 const router = express.Router()
 const { uploadMaterial, getMaterials } = require('../controllers/materialController')
 const { protectMe } = require('../middleware/authMiddleware')
 const { authorizeRoles } = require('../middleware/roleMiddleware')
-
-// Multer setup – 20MB max
-const upload = multer({ limits: { fileSize: 20 * 1024 * 1024 } })
+const { uploadMaterial: cloudinaryUpload } = require('../config/cloudinary')
 
 // Only staff can upload materials
 router.post(
   '/upload',
   protectMe,
-  authorizeRoles('staff'),
-  upload.single('file'),
+  authorizeRoles('staff', 'admin'),
+  cloudinaryUpload.single('file'),
   uploadMaterial
 )
 

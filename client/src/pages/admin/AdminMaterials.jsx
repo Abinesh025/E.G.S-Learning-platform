@@ -1,11 +1,13 @@
 import api from '../../services/api'
 import { getSocket } from '../../services/socket'
 import { useAuth } from '../../context/AuthContext'
-import { Pencil, Trash2, Plus, Download } from 'lucide-react'
+import { Pencil, Trash2, Plus, Download, Eye, ArrowLeft } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { useState, useEffect } from 'react' // Added missing import for useState and useEffect
+import { useState, useEffect } from 'react'
+import MaterialViewer from '../../components/MaterialViewer' // Added missing import for useState and useEffect
 
-const empty = { title: '', description: '', subject: '', unit: '', topic: '', fileType: 'pdf' }
+const empty = { title: '', description: '', subject: '', department: '', unit: '', topic: '', fileType: 'pdf' }
 
 export default function AdminMaterials() {
   const { token } = useAuth()
@@ -17,6 +19,7 @@ export default function AdminMaterials() {
   const [search, setSearch]     = useState('')
   const [file, setFile]         = useState(null)
   const [submitting, setSubmitting] = useState(false)
+  const [selectedMaterial, setSelectedMaterial] = useState(null)
     
   const fetch = () => {
     setLoading(true)
@@ -37,14 +40,14 @@ export default function AdminMaterials() {
   const openAdd  = () => { setEditing(null); setForm(empty); setFile(null); setShowModal(true) }
   const openEdit = m  => { 
     setEditing(m._id); 
-    setForm({ title: m.title, description: m.description, subject: m.subject, unit: m.unit, topic: m.topic, fileType: m.fileType }); 
+    setForm({ title: m.title, description: m.description, subject: m.subject, department: m.department || '', unit: m.unit, topic: m.topic, fileType: m.fileType }); 
     setFile(null);
     setShowModal(true) 
   }
 
   const handleSave = async () => {
-    if (!form.title || !form.subject || !form.unit || !form.topic) {
-      return toast.error('Please fill required fields (title, subject, unit, topic)');
+    if (!form.title || !form.subject || !form.department || !form.unit || !form.topic) {
+      return toast.error('Please fill required fields (title, subject, department, unit, topic)');
     }
     setSubmitting(true)
 
@@ -59,7 +62,7 @@ export default function AdminMaterials() {
         Object.keys(form).forEach(k => fd.append(k, form[k]))
         fd.append('file', file)
         
-        await api.post('/materials/upload', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+        await api.post('/admin/materials/upload', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
         toast.success('Material uploaded successfully')
       }
       setShowModal(false)
@@ -88,10 +91,13 @@ export default function AdminMaterials() {
   )
 
   return (
-    <div className="p-6">
+    <div className="p-6 max-w-7xl mx-auto space-y-6">
+      <Link to="/admin" className="inline-flex items-center gap-2 text-ink-400 hover:text-sky-400 transition-colors mb-2 text-sm font-500">
+        <ArrowLeft size={16} /> Back to Dashboard
+      </Link>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-semibold text-ink-100">Materials</h1>
-        <button onClick={openAdd} className="btn-primary flex items-center gap-2 text-sm">
+        <button onClick={openAdd} className="btn-primary flex items-center gap-2 text-sm bg-sky-500 hover:bg-sky-400">
           <Plus size={15} /> Add Material
         </button>
       </div>
@@ -104,13 +110,14 @@ export default function AdminMaterials() {
         {loading ? (
           <p className="text-ink-500 text-sm p-4">Loading...</p>
         ) : (
-          <table className="w-full text-sm">
-            <thead className="text-ink-500 text-xs uppercase border-b border-ink-800">
+          <div className="overflow-x-auto w-full">
+            <table className="w-full text-sm whitespace-nowrap">
+              <thead className="text-ink-500 text-xs uppercase border-b border-ink-800">
               <tr>
                 <th className="px-5 py-3 text-left">Title</th>
                 <th className="px-5 py-3 text-left">Subject & Topic</th>
                 <th className="px-5 py-3 text-left">Type</th>
-                <th className="px-5 py-3 text-left">Actions</th>
+                <th className="px-5 py-3 text-left sticky right-0 bg-ink-900 border-l border-ink-800 z-10 shadow-[-4px_0_10px_-4px_rgba(0,0,0,0.5)]">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -127,8 +134,11 @@ export default function AdminMaterials() {
                   <td className="px-5 py-3 text-ink-300">
                     <span className="badge tag-lime text-xs">{m.fileType?.toUpperCase()}</span>
                   </td>
-                  <td className="px-5 py-3">
+                  <td className="px-5 py-3 sticky right-0 bg-ink-900 border-l border-ink-800 z-10 shadow-[-4px_0_10px_-4px_rgba(0,0,0,0.5)]">
                     <div className="flex gap-2">
+                      <button onClick={() => setSelectedMaterial(m)} className="btn-ghost p-1.5 hover:text-lime-300">
+                        <Eye size={14} />
+                      </button>
                       <a href={`${import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace('/api', '') : ''}${m.fileUrl}`} target="_blank" rel="noreferrer" className="btn-ghost p-1.5 hover:text-sky-400">
                         <Download size={14} />
                       </a>
@@ -143,8 +153,16 @@ export default function AdminMaterials() {
               )}
             </tbody>
           </table>
+          </div>
         )}
       </div>
+
+      {selectedMaterial && (
+        <MaterialViewer 
+          material={selectedMaterial} 
+          onClose={() => setSelectedMaterial(null)} 
+        />
+      )}
 
       {showModal && (
         <div className="fixed inset-0 bg-ink-950/80 backdrop-blur-sm flex items-center justify-center z-50">
@@ -162,6 +180,10 @@ export default function AdminMaterials() {
               <div>
                 <label className="text-ink-500 text-xs mb-1 block">Subject *</label>
                 <input className="input w-full text-sm" value={form.subject} onChange={e => setForm({ ...form, subject: e.target.value })} />
+              </div>
+              <div>
+                <label className="text-ink-500 text-xs mb-1 block">Department *</label>
+                <input className="input w-full text-sm" value={form.department} onChange={e => setForm({ ...form, department: e.target.value })} />
               </div>
               <div>
                 <label className="text-ink-500 text-xs mb-1 block">Unit *</label>

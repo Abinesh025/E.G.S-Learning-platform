@@ -26,6 +26,22 @@ const userSchema = new mongoose.Schema({
   department: {
     type: String,
     default: ''
+  },
+  phone: {
+    type: String,
+    default: ''
+  },
+  course: {
+    type: String,
+    default: ''
+  },
+  batch: {
+    type: String,
+    default: ''
+  },
+  isActive: {
+    type: Boolean,
+    default: true
   }
 }, { timestamps: true })
 

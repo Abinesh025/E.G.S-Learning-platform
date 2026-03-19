@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { studentService } from '../../services/api'
 import { getSocket } from '../../services/socket'
 import { useAuth } from '../../context/AuthContext'
-import { BookOpen, Video, Mic, File, Download, Search, Filter } from 'lucide-react'
+import { BookOpen, Video, Mic, File, Download, Search, Filter, Play, Pause, X, Eye, ArrowLeft } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 const typeConfig = {
@@ -11,6 +11,9 @@ const typeConfig = {
   voice: { icon: Mic, color: 'tag-amber', label: 'Voice' },
   file: { icon: File, color: 'tag-red', label: 'File' },
 }
+import MaterialViewer from '../../components/MaterialViewer'
+
+import { Link } from 'react-router-dom'
 
 export default function StudentMaterials() {
   const { token } = useAuth()
@@ -18,11 +21,17 @@ export default function StudentMaterials() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('all')
+  const [departmentFilter, setDepartmentFilter] = useState('')
+  const [selectedMaterial, setSelectedMaterial] = useState(null)
 
+  // Initialize and cleanup Audio element
   useEffect(() => {
     const fetchItems = () => {
       setLoading(true)
-      studentService.getMaterials()
+      const params = {}
+      if (departmentFilter) params.department = departmentFilter
+      
+      studentService.getMaterials(params)
         .then(res => setMaterials(res.data || []))
         .catch(() => toast.error('Failed to load materials'))
         .finally(() => setLoading(false))
@@ -32,17 +41,21 @@ export default function StudentMaterials() {
     const handleDataChanged = (type) => { if (type === 'material') fetchItems() }
     socket.on('data_changed', handleDataChanged)
     return () => socket.off('data_changed', handleDataChanged)
-  }, [token])
+  }, [token, departmentFilter])
 
   const filtered = materials?.filter(m => {
     const matchSearch = m.title?.toLowerCase().includes(search.toLowerCase())
-    const matchFilter = filter === 'all' || m.type === filter
+    const mType = m.fileType || m.type
+    const matchFilter = filter === 'all' || mType === filter
     return matchSearch && matchFilter
   })
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-6 max-w-7xl mx-auto space-y-6">
+      <Link to="/student" className="inline-flex items-center gap-2 text-ink-400 hover:text-lime-300 transition-colors mb-2 text-sm font-500">
+        <ArrowLeft size={16} /> Back to Dashboard
+      </Link>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <h1 className="page-title">Materials</h1>
         <span className="tag-sky badge">{materials.length} items</span>
       </div>
@@ -57,6 +70,23 @@ export default function StudentMaterials() {
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
+        </div>
+        <div className="w-full sm:w-48">
+          <select 
+            className="input w-full"
+            value={departmentFilter}
+            onChange={e => setDepartmentFilter(e.target.value)}
+          >
+            <option value="">All Departments</option>
+            <option value="CSE">CSE</option>
+            <option value="IT">IT</option>
+            <option value="ECE">ECE</option>
+            <option value="MECH">MECH</option>
+            <option value="CIVIL">CIVIL</option>
+            <option value="EEE">EEE</option>
+            <option value="AI&DS">AI&DS</option>
+            <option value="CSBS">CSBS</option>
+          </select>
         </div>
         <div className="flex gap-2 flex-wrap">
           {['all', 'notes', 'video', 'voice', 'file'].map(f => (
@@ -91,17 +121,22 @@ export default function StudentMaterials() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map(m => {
-            const cfg = typeConfig[m.type] || typeConfig.file
+            const mType = m.fileType || m.type
+            const cfg = typeConfig[mType] || typeConfig.file
             const Icon = cfg.icon
             return (
-              <div key={m._id} className="card p-5 hover:border-ink-700 transition-all group">
+              <div 
+                key={m._id} 
+                className="card p-5 hover:border-ink-700 transition-all group flex flex-col h-full cursor-pointer"
+                onClick={() => setSelectedMaterial(m)}
+              >
                 <div className="flex items-start justify-between mb-3">
                   <div className="w-10 h-10 bg-ink-800 rounded-xl flex items-center justify-center">
                     <Icon size={18} className="text-ink-400 group-hover:text-lime-300 transition-colors" />
                   </div>
                   <span className={cfg.color}>{cfg.label}</span>
                 </div>
-                <h3 className="text-ink-100 font-500 text-sm mb-1 line-clamp-2">{m.title}</h3>
+                <h3 className="text-ink-100 font-500 text-sm mb-1 line-clamp-2 group-hover:text-lime-300 transition-colors">{m.title}</h3>
                 {m.description && (
                   <p className="text-ink-500 text-xs line-clamp-2 mb-3">{m.description}</p>
                 )}
@@ -109,20 +144,34 @@ export default function StudentMaterials() {
                   <span className="text-ink-600 text-xs">
                     {m.uploadedBy?.name || 'Instructor'}
                   </span>
-                  {m.fileUrl && (
-                    <a
-                      href={m.fileUrl}
-                      download
-                      className="btn-ghost py-1 px-2 text-xs"
-                    >
-                      <Download size={12} /> Download
-                    </a>
-                  )}
+                  <div className="flex gap-2" onClick={e => e.stopPropagation()}>
+                    {m.fileUrl && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedMaterial(m);
+                          }}
+                          className="btn-ghost py-1 px-2 text-xs flex items-center gap-1"
+                          title="View"
+                        >
+                          {mType === 'video' || mType === 'voice' ? <Play size={12} /> : <Eye size={12} />} 
+                          {mType === 'voice' ? 'Listen' : mType === 'video' ? 'Watch' : 'View'}
+                        </button>
+                    )}
+                  </div>
                 </div>
               </div>
             )
           })}
         </div>
+      )}
+      
+      {/* Material Viewer Modal */}
+      {selectedMaterial && (
+        <MaterialViewer 
+          material={selectedMaterial} 
+          onClose={() => setSelectedMaterial(null)} 
+        />
       )}
     </div>
   )

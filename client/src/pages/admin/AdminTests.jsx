@@ -4,8 +4,9 @@ import { getSocket } from '../../services/socket'
 import { useAuth } from '../../context/AuthContext'
 import {
   FileText, Plus, Trash2, Pencil, X, Check,
-  ChevronDown, ChevronUp, Users, Clock, Hash, Search
+  ChevronDown, ChevronUp, Users, Clock, Hash, Search, ArrowLeft
 } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 const TABS = ['All Tests', 'Create Test', 'Student Results']
 
@@ -37,7 +38,7 @@ export default function AdminTest() {
     const fetchTests = () => {
       setLoading(true)
       api.get('/admin/tests')
-        .then(res => setTests(res.data.data ?? []))
+        .then(res => setTests(res.data?.data ?? []))
         .catch(err => showToast(err.response?.data?.message || 'Failed to fetch tests', 'error'))
         .finally(() => setLoading(false))
     }
@@ -156,12 +157,15 @@ export default function AdminTest() {
 
   // ─────────────────────────────────────────────────────────────
   return (
-    <div className="p-6 relative">
+    <div className="p-6 relative max-w-7xl mx-auto">
+      <Link to="/admin" className="inline-flex items-center gap-2 text-ink-400 hover:text-sky-400 transition-colors mb-4 mt-2 text-sm font-500">
+        <ArrowLeft size={16} /> Back to Dashboard
+      </Link>
 
       {/* Toast */}
       {toast && (
         <div className={`fixed top-5 right-5 z-50 px-4 py-2 rounded-lg text-sm font-medium shadow-lg
-          ${toast.type === 'error' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+          ${toast.type === 'error' ? 'bg-sky-500/20 text-sky-400 border border-sky-500/30'
             : 'bg-lime-500/20 text-lime-400 border border-lime-500/30'}`}>
           {toast.msg}
         </div>
@@ -179,7 +183,7 @@ export default function AdminTest() {
                 Cancel
               </button>
               <button onClick={handleDelete}
-                className="flex-1 py-2 rounded-lg text-sm bg-rose-500/20 text-rose-400 border border-rose-500/30 hover:bg-rose-500/30 transition">
+                className="flex-1 py-2 rounded-lg text-sm bg-sky-500/20 text-sky-400 border border-sky-500/30 hover:bg-sky-500/30 transition">
                 Delete
               </button>
             </div>
@@ -236,7 +240,7 @@ export default function AdminTest() {
                   {/* row */}
                   <div className="flex items-center justify-between p-4">
                     <div className="flex items-center gap-3">
-                      <FileText size={16} className="text-amber-400 shrink-0" />
+                      <FileText size={16} className="text-sky-300 shrink-0" />
                       <div>
                         <p className="text-ink-100 text-sm font-medium">{test.title}</p>
                         <p className="text-ink-500 text-xs">{test.subject}</p>
@@ -255,7 +259,7 @@ export default function AdminTest() {
                         </span>
                         {test.assignedTo && (
                           <span className="flex items-center gap-1">
-                            <Users size={11} className="text-rose-400" />
+                            <Users size={11} className="text-sky-400" />
                             {test.assignedTo}
                           </span>
                         )}
@@ -267,7 +271,7 @@ export default function AdminTest() {
                           <Pencil size={14} />
                         </button>
                         <button onClick={() => setDeleteId(test._id)}
-                          className="p-1.5 rounded-lg text-ink-500 hover:text-rose-400 hover:bg-ink-800 transition">
+                          className="p-1.5 rounded-lg text-ink-500 hover:text-sky-400 hover:bg-ink-800 transition">
                           <Trash2 size={14} />
                         </button>
                         <button onClick={() => setExpandedTest(expandedTest === test._id ? null : test._id)}
@@ -351,7 +355,7 @@ export default function AdminTest() {
                   <span className="text-xs text-ink-500 font-medium">Question {qi + 1}</span>
                   {form.questions.length > 1 && (
                     <button onClick={() => removeQuestion(qi)}
-                      className="text-ink-600 hover:text-rose-400 transition">
+                      className="text-ink-600 hover:text-sky-400 transition">
                       <X size={13} />
                     </button>
                   )}
@@ -440,9 +444,9 @@ export default function AdminTest() {
                     const pct = r.total ? Math.round((r.score / r.total) * 100) : 0
                     return (
                       <tr key={r._id ?? i} className="border-b border-ink-800/50 hover:bg-ink-900/60 transition">
-                        <td className="py-3 pr-6 text-ink-200">{r.studentName ?? r.student}</td>
-                        <td className="py-3 pr-6 text-ink-400">{r.testTitle ?? r.test}</td>
-                        <td className="py-3 pr-6 text-amber-400 font-medium">{r.score}</td>
+                        <td className="py-3 pr-6 text-ink-200">{r.studentName ?? r.student?.name ?? r.student ?? '—'}</td>
+                        <td className="py-3 pr-6 text-ink-400">{r.testTitle ?? r.test?.title ?? r.test ?? '—'}</td>
+                        <td className="py-3 pr-6 text-sky-300 font-medium">{r.score}</td>
                         <td className="py-3 pr-6 text-ink-500">{r.total}</td>
                         <td className="py-3 pr-6">
                           <div className="flex items-center gap-2">
@@ -451,7 +455,7 @@ export default function AdminTest() {
                                 style={{ width: `${pct}%` }} />
                             </div>
                             <span className={`text-xs font-medium
-                              ${pct >= 75 ? 'text-lime-400' : pct >= 50 ? 'text-amber-400' : 'text-rose-400'}`}>
+                              ${pct >= 75 ? 'text-lime-400' : pct >= 50 ? 'text-sky-300' : 'text-sky-400'}`}>
                               {pct}%
                             </span>
                           </div>

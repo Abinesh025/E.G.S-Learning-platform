@@ -42,6 +42,11 @@ const materialSchema = new mongoose.Schema(
       required: true
     },
 
+    department: {
+      type: String,
+      default: '' // Optional for older records
+    },
+
     uploadedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',

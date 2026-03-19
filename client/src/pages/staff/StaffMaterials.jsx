@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import api from '../../services/api'
-import { BookOpen, Upload, Trash2, Video, Mic, File, Plus, X } from 'lucide-react'
+import { BookOpen, Upload, Trash2, Video, Mic, File, Plus, X, Play, Eye, Download, Pause, ArrowLeft, Pencil } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 
 const typeConfig = {
@@ -9,11 +10,13 @@ const typeConfig = {
   voice: { icon: Mic, color: 'tag-amber' },
   file: { icon: File, color: 'tag-red' },
 }
+import MaterialViewer from '../../components/MaterialViewer'
 
 export default function StaffMaterials() {
   const [materials, setMaterials] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
+  const [editId, setEditId] = useState(null)
   const [uploading, setUploading] = useState(false)
   const [progress, setProgress] = useState(0)
   const [form, setForm] = useState({
@@ -21,12 +24,13 @@ export default function StaffMaterials() {
     description: '',
     type: 'notes',
     subject: '',
+    department: '',
     unit: '',
     topic: ''
   })
   const [file, setFile] = useState(null)
+  const [selectedMaterial, setSelectedMaterial] = useState(null)
   const fileRef = useRef()
-
   // Load materials
   const loadMaterials = () => {
     setLoading(true)
@@ -38,40 +42,66 @@ export default function StaffMaterials() {
 
   useEffect(loadMaterials, [])
 
-  // Upload material
+  // Upload or Edit material
   const handleUpload = async (e) => {
     e.preventDefault()
-    if (!file) return toast.error('Please select a file')
-
+    
     // Validate required fields
-    if (!form.title || !form.subject || !form.unit || !form.topic || !form.type) {
+    if (!form.title || !form.subject || !form.department || !form.unit || !form.topic || !form.type) {
       return toast.error('Please fill all required fields')
     }
+
+    if (!editId && !file) return toast.error('Please select a file')
 
     setUploading(true)
     setProgress(0)
 
     try {
-      const fd = new FormData()
-      Object.entries(form).forEach(([k, v]) => fd.append(k, v))
-      fd.append('file', file)
+      if (editId) {
+        // Edit Mode uses PUT and expects JSON metadata
+        const updateData = { ...form }
+        const res = await api.put(`/staff/materials/${editId}`, updateData)
+        setMaterials(prev => prev.map(m => m._id === editId ? res.data.data : m))
+        toast.success('Material updated!')
+      } else {
+        const fd = new FormData()
+        Object.entries(form).forEach(([k, v]) => fd.append(k, v))
+        fd.append('file', file)
 
-      const res = await api.post('/materials/upload', fd, {
-        onUploadProgress: (p) => setProgress(Math.round((p.loaded * 100) / p.total)),
-      })
+        const res = await api.post('/materials/upload', fd, {
+          onUploadProgress: (p) => setProgress(Math.round((p.loaded * 100) / p.total)),
+        })
 
-      setMaterials(prev => [res.data.data || res.data, ...prev])
-      setForm({ title: '', description: '', type: 'notes', subject: '', unit: '', topic: '' })
+        setMaterials(prev => [res.data.data || res.data, ...prev])
+        toast.success('Material uploaded!')
+      }
+
+      setForm({ title: '', description: '', type: 'notes', subject: '', department: '', unit: '', topic: '' })
       setFile(null)
       setShowForm(false)
+      setEditId(null)
       setProgress(0)
-      toast.success('Material uploaded!')
     } catch (err) {
       console.error(err)
-      toast.error(err.response?.data?.message || 'Upload failed')
+      toast.error(err.response?.data?.message || (editId ? 'Update failed' : 'Upload failed'))
     } finally {
       setUploading(false)
     }
+  }
+
+  const handleEditClick = (material) => {
+    setEditId(material._id)
+    setForm({
+      title: material.title || '',
+      description: material.description || '',
+      type: material.type || 'notes',
+      subject: material.subject || '',
+      department: material.department || '',
+      unit: material.unit || '',
+      topic: material.topic || ''
+    })
+    setShowForm(true)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   // Delete material
@@ -85,20 +115,26 @@ export default function StaffMaterials() {
       toast.error(err.response?.data?.message || 'Delete failed')
     }
   }
-
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
+      <Link to="/staff" className="inline-flex items-center gap-2 text-ink-400 hover:text-lime-300 transition-colors mb-2 text-sm font-500">
+        <ArrowLeft size={16} /> Back to Dashboard
+      </Link>
       <div className="flex items-center justify-between">
         <h1 className="page-title">Materials</h1>
-        <button onClick={() => setShowForm(s => !s)} className="btn-primary">
+        <button onClick={() => {
+          setEditId(null)
+          setForm({ title: '', description: '', type: 'notes', subject: '', department: '', unit: '', topic: '' })
+          setShowForm(s => !s)
+        }} className="btn-primary">
           {showForm ? <><X size={15} /> Cancel</> : <><Plus size={15} /> Upload</>}
         </button>
       </div>
 
-      {/* Upload form */}
+      {/* Upload/Edit form */}
       {showForm && (
         <div className="card p-6 animate-fade-up">
-          <h2 className="section-title mb-4">Upload New Material</h2>
+          <h2 className="section-title mb-4">{editId ? 'Edit Material Metadata' : 'Upload New Material'}</h2>
           <form onSubmit={handleUpload} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
@@ -138,6 +174,16 @@ export default function StaffMaterials() {
                 />
               </div>
               <div>
+                <label className="label">Department</label>
+                <input
+                  className="input"
+                  placeholder="Department (e.g., CSE)"
+                  value={form.department}
+                  onChange={e => setForm(p => ({ ...p, department: e.target.value }))}
+                  required
+                />
+              </div>
+              <div>
                 <label className="label">Unit</label>
                 <input
                   className="input"
@@ -170,39 +216,41 @@ export default function StaffMaterials() {
               />
             </div>
 
-            <div>
-              <label className="label">File</label>
-              <div
-                onClick={() => fileRef.current?.click()}
-                className="border border-dashed border-ink-700 rounded-xl p-6 text-center cursor-pointer hover:border-lime-300/50 transition-colors"
-              >
-                <Upload size={20} className="text-ink-500 mx-auto mb-2" />
-                {file ? (
-                  <p className="text-ink-200 text-sm">{file.name}</p>
-                ) : (
-                  <p className="text-ink-500 text-sm">Click to select file</p>
-                )}
-                <input
-                  ref={fileRef}
-                  type="file"
-                  className="hidden"
-                  onChange={e => setFile(e.target.files[0])}
-                />
-              </div>
-
-              {uploading && (
-                <div className="mt-2 w-full bg-ink-700 rounded-full h-2">
-                  <div
-                    className="bg-lime-400 h-2 rounded-full"
-                    style={{ width: `${progress}%` }}
+            {!editId && (
+              <div>
+                <label className="label">File</label>
+                <div
+                  onClick={() => fileRef.current?.click()}
+                  className="border border-dashed border-ink-700 rounded-xl p-6 text-center cursor-pointer hover:border-lime-300/50 transition-colors"
+                >
+                  <Upload size={20} className="text-ink-500 mx-auto mb-2" />
+                  {file ? (
+                    <p className="text-ink-200 text-sm">{file.name}</p>
+                  ) : (
+                    <p className="text-ink-500 text-sm">Click to select file</p>
+                  )}
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    className="hidden"
+                    onChange={e => setFile(e.target.files[0])}
                   />
                 </div>
-              )}
-            </div>
+
+                {uploading && (
+                  <div className="mt-2 w-full bg-ink-700 rounded-full h-2">
+                    <div
+                      className="bg-lime-400 h-2 rounded-full"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="flex justify-end">
               <button type="submit" disabled={uploading} className="btn-primary">
-                <Upload size={15} /> {uploading ? 'Uploading…' : 'Upload Material'}
+                {editId ? <><Pencil size={15} /> {uploading ? 'Updating…' : 'Save Changes'}</> : <><Upload size={15} /> {uploading ? 'Uploading…' : 'Upload Material'}</>}
               </button>
             </div>
           </form>
@@ -252,12 +300,29 @@ export default function StaffMaterials() {
                       {m.createdAt ? new Date(m.createdAt).toLocaleDateString('en-IN') : '—'}
                     </td>
                     <td className="px-5 py-3 text-right">
-                      <button
-                        onClick={() => handleDelete(m._id)}
-                        className="btn-ghost py-1 px-2 text-red-400 hover:text-red-300 hover:bg-red-400/10"
-                      >
-                        <Trash2 size={14} />
-                      </button>
+                        <div className="flex justify-end gap-2">
+                          <button
+                            onClick={() => setSelectedMaterial(m)}
+                            className="btn-ghost py-1 px-2 text-sky-400 hover:text-sky-300 hover:bg-sky-400/10"
+                            title="View"
+                          >
+                            {m.type === 'video' || m.type === 'voice' ? <Play size={14} /> : <Eye size={14} />} 
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleEditClick(m); }}
+                            className="btn-ghost py-1 px-2 text-lime-400 hover:text-lime-300 hover:bg-lime-400/10"
+                            title="Edit"
+                          >
+                            <Pencil size={14} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(m._id)}
+                            className="btn-ghost py-1 px-2 text-red-400 hover:text-red-300 hover:bg-red-400/10"
+                            title="Delete"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                      </div>
                     </td>
                   </tr>
                 )
@@ -266,6 +331,14 @@ export default function StaffMaterials() {
           </table>
         )}
       </div>
+
+      {/* Material Viewer Modal */}
+      {selectedMaterial && (
+        <MaterialViewer 
+          material={selectedMaterial} 
+          onClose={() => setSelectedMaterial(null)} 
+        />
+      )}
     </div>
   )
 }

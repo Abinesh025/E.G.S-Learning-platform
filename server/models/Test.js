@@ -32,6 +32,10 @@ const testSchema = new mongoose.Schema(
       required: true,
       trim: true
     },
+    department: {
+      type: String,
+      default: ''
+    },
     duration: {
       type: Number,
       required: true,

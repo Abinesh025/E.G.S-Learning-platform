@@ -42,7 +42,7 @@ export default function StudentResults() {
         {[
           { label: 'Tests Taken', value: results.length, icon: BarChart3, color: 'text-sky-400' },
           { label: 'Average Score', value: avg !== null ? `${avg}%` : '—', icon: TrendingUp, color: 'text-lime-300' },
-          { label: 'Best Score', value: best !== null ? `${best}%` : '—', icon: Award, color: 'text-amber-400' },
+          { label: 'Best Score', value: best !== null ? `${best}%` : '—', icon: Award, color: 'text-sky-300' },
         ].map(({ label, value, icon: Icon, color }) => (
           <div key={label} className="stat-card">
             <Icon size={18} className={`${color} mb-2`} />
@@ -87,7 +87,7 @@ export default function StudentResults() {
                     <div className="flex items-center gap-2">
                       <div className="flex-1 h-1.5 bg-ink-800 rounded-full">
                         <div
-                          className={`h-full rounded-full ${r.score >= 70 ? 'bg-lime-300' : r.score >= 50 ? 'bg-amber-400' : 'bg-red-400'}`}
+                          className={`h-full rounded-full ${r.score >= 70 ? 'bg-lime-300' : r.score >= 50 ? 'bg-sky-300' : 'bg-red-400'}`}
                           style={{ width: `${r.score || 0}%` }}
                         />
                       </div>

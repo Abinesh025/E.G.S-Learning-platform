@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { studentService } from '../../services/api'
 import { BookOpen, FileText, BarChart3, MessageSquare, TrendingUp, Clock, CheckCircle, ArrowRight } from 'lucide-react'
-
+import MetaData from "../../components/layout/MetaData"
 export default function StudentDashboard() {
   const { user } = useAuth()
   const [stats, setStats] = useState({ materials: 0, tests: 0, results: [] })
@@ -38,13 +38,7 @@ export default function StudentDashboard() {
         <h1 className="page-title">{user?.name}</h1>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 animate-fade-up animate-delay-100">
-        <StatCard icon={BookOpen} color="lime" label="Materials" value={stats.materials} />
-        <StatCard icon={FileText} color="sky" label="Tests" value={stats.tests} />
-        <StatCard icon={BarChart3} color="amber" label="Completed" value={stats.results.length} />
-        <StatCard icon={TrendingUp} color="green" label="Avg Score" value={avgScore !== null ? `${avgScore}%` : '—'} />
-      </div>
+<MetaData title="Student" />
 
       {/* Quick links */}
       <div className="animate-fade-up animate-delay-200">
@@ -60,12 +54,12 @@ export default function StudentDashboard() {
               <div className={`w-9 h-9 rounded-xl mb-3 flex items-center justify-center ${
                 color === 'lime' ? 'bg-lime-300/10' :
                 color === 'sky' ? 'bg-sky-400/10' :
-                color === 'amber' ? 'bg-amber-400/10' : 'bg-purple-400/10'
+                color === 'amber' ? 'bg-sky-300/10' : 'bg-sky-400/10'
               }`}>
                 <Icon size={16} className={
                   color === 'lime' ? 'text-lime-300' :
                   color === 'sky' ? 'text-sky-400' :
-                  color === 'amber' ? 'text-amber-400' : 'text-purple-400'
+                  color === 'amber' ? 'text-sky-300' : 'text-sky-400'
                 } />
               </div>
               <p className="text-ink-100 text-sm font-500 mb-0.5">{label}</p>
@@ -123,8 +117,8 @@ function StatCard({ icon: Icon, color, label, value }) {
   const colors = {
     lime: { bg: 'bg-lime-300/10', text: 'text-lime-300' },
     sky: { bg: 'bg-sky-400/10', text: 'text-sky-400' },
-    amber: { bg: 'bg-amber-400/10', text: 'text-amber-400' },
-    green: { bg: 'bg-green-400/10', text: 'text-green-400' },
+    amber: { bg: 'bg-sky-300/10', text: 'text-sky-300' },
+    green: { bg: 'bg-lime-300/10', text: 'text-lime-300' },
   }
   const c = colors[color] || colors.lime
 

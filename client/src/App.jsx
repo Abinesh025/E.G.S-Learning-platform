@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { ThemeProvider } from './context/ThemeContext'
-import Layout from './components/layout/Layout'
+import Layout  from './components/layout/Layout'
 import LandingPage from './pages/LandingPage'
 import { LoginPage, RegisterPage } from './pages/auth/AuthPages'
 import StudentDashboard from './pages/student/StudentDashboard'
@@ -11,7 +11,6 @@ import StudentTests from './pages/student/StudentTests'
 import StudentResults from './pages/student/StudentResults'
 import ChatPage from './pages/student/ChatPage'
 import StaffDashboard from './pages/staff/StaffDashboard'
-import StaffStudents from './pages/staff/StaffStudents'
 import StaffMaterials from './pages/staff/StaffMaterials'
 import StaffTests from './pages/staff/StaffTests'
 import StaffResults from './pages/staff/StaffResults'
@@ -21,18 +20,30 @@ import AdminStudents from './pages/admin/AdminStudents'
 import AdminMaterials from './pages/admin/AdminMaterials'
 import AdminTests from './pages/admin/AdminTests'
 import AdminResults from './pages/admin/AdminResults'
+import AdminLogin from './pages/admin/AdminLogin'
+import toast from 'react-hot-toast'
+import { useNavigate } from 'react-router-dom'
+import { useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 
 function ProtectedRoute({ children, role }) {
   const { user, loading } = useAuth()
-  if (loading) return <LoadingScreen />
-  if (!user) return <Navigate to="/login" replace />
+  const location = useLocation()
 
-  // Admin Override
-  const hasAdminSecret = !!localStorage.getItem('adminSecret')
-  if (role === 'admin' && user.role === 'staff' && hasAdminSecret) {
-    return children
+  if (loading) return <LoadingScreen />
+
+  // Admin Security - Requires JWT token from session storage
+  if (role === 'admin') {
+    const hasAdminToken = !!sessionStorage.getItem('adminToken')
+    if (hasAdminToken) {
+      return children
+    }
+    return <Navigate to="/admin-login" replace />
   }
 
+  if (!user) return <Navigate to="/login" replace />
+
+  // Normal role checks
   if (role && user.role !== role) {
     const redirect = user.role === 'staff' ? '/staff' : user.role === 'admin' ? '/admin' : '/student'
     return <Navigate to={redirect} replace />
@@ -51,19 +62,53 @@ function LoadingScreen() {
   )
 }
 
+
+
 function AppRoutes() {
   const { user, loading } = useAuth()
+  const hasAdminToken = !!sessionStorage.getItem('adminToken')
+  const navigate = useNavigate()
+  
+  useEffect(() => {
+    let timeoutId
+
+    const resetTimer = () => {
+      clearTimeout(timeoutId)
+      // Only set timer if admin is logged in
+      if (sessionStorage.getItem('adminToken')) {
+        timeoutId = setTimeout(() => {
+          sessionStorage.removeItem('adminToken')
+          toast.error('Admin session expired due to inactivity')
+          window.location.href = '/admin-login'
+        }, 15 * 60 * 1000) // 15 mins
+      }
+    }
+
+    // List of events to listen to
+    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart']
+    events.forEach(event => document.addEventListener(event, resetTimer))
+    resetTimer()
+
+    return () => {
+      clearTimeout(timeoutId)
+      events.forEach(event => document.removeEventListener(event, resetTimer))
+    }
+  }, [])
 
   if (loading) return <LoadingScreen />
 
   const homeRedirect = user?.role === 'staff' ? '/staff' : user?.role === 'admin' ? '/admin' : '/student'
 
+  // If admin mode is active, lock all public/unrelated routes back to /admin
+  const adminGuard = (element) => hasAdminToken ? <Navigate to="/admin" replace /> : element
+
   return (
     <Routes>
-      {/* Public */}
-      <Route path="/" element={user ? <Navigate to={homeRedirect} replace /> : <LandingPage />} />
-      <Route path="/login" element={user ? <Navigate to={homeRedirect} replace /> : <LoginPage />} />
-      <Route path="/register" element={user ? <Navigate to={homeRedirect} replace /> : <RegisterPage />} />
+      {/* Public — blocked when admin mode is active */}
+      <Route path="/" element={adminGuard(user ? <Navigate to={homeRedirect} replace /> : <LandingPage />)} />
+      <Route path="/login" element={adminGuard(user ? <Navigate to={homeRedirect} replace /> : <LoginPage />)} />
+      <Route path="/register" element={adminGuard(user ? <Navigate to={homeRedirect} replace /> : <RegisterPage />)} />
+      <Route path="/admin-login" element={<AdminLogin />} />
 
       {/* Student routes */}
       <Route path="/student" element={<ProtectedRoute role="student"><Layout><StudentDashboard /></Layout></ProtectedRoute>} />
@@ -74,7 +119,6 @@ function AppRoutes() {
 
       {/* Staff routes */}
       <Route path="/staff" element={<ProtectedRoute role="staff"><Layout><StaffDashboard /></Layout></ProtectedRoute>} />
-      <Route path="/staff/students" element={<ProtectedRoute role="staff"><Layout><StaffStudents /></Layout></ProtectedRoute>} />
       <Route path="/staff/materials" element={<ProtectedRoute role="staff"><Layout><StaffMaterials /></Layout></ProtectedRoute>} />
       <Route path="/staff/tests" element={<ProtectedRoute role="staff"><Layout><StaffTests /></Layout></ProtectedRoute>} />
       <Route path="/staff/results" element={<ProtectedRoute role="staff"><Layout><StaffResults /></Layout></ProtectedRoute>} />
@@ -88,8 +132,8 @@ function AppRoutes() {
       <Route path="/admin/tests" element={<ProtectedRoute role="admin"><Layout><AdminTests /></Layout></ProtectedRoute>} />
       <Route path="/admin/results" element={<ProtectedRoute role="admin"><Layout><AdminResults /></Layout></ProtectedRoute>} />
 
-      {/* Catch-all */}
-      <Route path="*" element={<Navigate to="/" replace />} />
+      {/* Catch-all — also redirects to /admin if admin mode is on */}
+      <Route path="*" element={hasAdminToken ? <Navigate to="/admin" replace /> : <Navigate to="/" replace />} />
     </Routes>
   )
 }

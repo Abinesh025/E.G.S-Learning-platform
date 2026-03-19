@@ -4,6 +4,7 @@ const Test = require('../models/Test')
 const Result = require('../models/Result')
 const fs = require('fs')
 const path = require('path')
+const { getIo } = require('../socket/chatSocket')
 
 // ─────────────────────────────────────────────
 // GET STAFF PROFILE
@@ -68,43 +69,38 @@ exports.updateStaffProfile = async (req, res) => {
 }
 
 // ─────────────────────────────────────────────
-// GET ALL STUDENTS
+// UPDATE MATERIAL
 // ─────────────────────────────────────────────
-exports.getStudents = async (req, res) => {
+exports.updateMaterial = async (req, res) => {
   try {
-    const students = await User.find({ role: 'student' })
-      .select('-password')
-      .sort({ createdAt: -1 })
+    const { title, description, subject, department, unit, topic, type } = req.body
 
-    res.status(200).json({
-      success: true,
-      count: students.length,
-      data: students
-    })
+    const material = await Material.findById(req.params.id)
+    if (!material) {
+      return res.status(404).json({ success: false, message: "Material not found" })
+    }
+
+    if (material.uploadedBy.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, message: "Not authorized" })
+    }
+
+    if (title) material.title = title
+    if (description !== undefined) material.description = description
+    if (subject) material.subject = subject
+    if (department) material.department = department
+    if (unit) material.unit = unit
+    if (topic) material.topic = topic
+    if (type) material.type = type
+
+    await material.save()
+
+    const io = getIo()
+    if (io) io.emit('data_changed', 'material')
+
+    res.status(200).json({ success: true, message: "Material updated successfully", data: material })
 
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    })
-  }
-}
-
-// DELETE Students
-
-exports.deleteStudent = async(req,res) =>{
-  try{
-    const student = await User.findOneAndDelete({_id:req.params.id});
-
-    if(!student){
-      return res.status(404).json({success:false,message:"Stusent Not able to found"})
-    };
-
-    return res.status(200).json({success:true,message:"Student Deleted Successfully"});
-
-  }
-  catch(error){
-    return res.status(500).json({success:false,message:"Internal Server Error"})
+    res.status(500).json({ success: false, message: error.message })
   }
 }
 
@@ -162,6 +158,9 @@ exports.deleteMaterial = async (req, res) => {
 
     await material.deleteOne()
 
+    const io = getIo();
+    if (io) io.emit('data_changed', 'material');
+
     res.status(200).json({
       success: true,
       message: "Material deleted successfully"
@@ -211,7 +210,7 @@ exports.deleteTest = async (req, res) => {
       })
     }
 
-    if (test.createdBy.toString() !== req.user._id.toString()) {
+    if (test.createdBy && test.createdBy.toString() !== req.user._id.toString()) {
       return res.status(403).json({
         success: false,
         message: "Not authorized"
@@ -219,6 +218,9 @@ exports.deleteTest = async (req, res) => {
     }
 
     await test.deleteOne()
+
+    const io = getIo();
+    if (io) io.emit('data_changed', 'test');
 
     res.status(200).json({
       success: true,

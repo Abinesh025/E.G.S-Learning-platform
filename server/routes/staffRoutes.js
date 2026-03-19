@@ -6,12 +6,11 @@ const {
   updateStaffProfile,
   getMyMaterials,
   deleteMaterial,
+  updateMaterial,
   getMyTests,
   deleteTest,
   getTestResults,
-  getStudents,
-  getDashboardStats,
-  deleteStudent
+  getDashboardStats
 } = require('../controllers/staffController')
 
 
@@ -26,10 +25,10 @@ router.use(authorizeRoles('staff'))
 router.get('/profile', getStaffProfile)
 router.put('/profile', updateStaffProfile)
 
-router.get("/students",getStudents);
-router.delete("/delete/:id",deleteStudent);
+
 
 router.get('/materials', getMyMaterials)
+router.put('/materials/:id', updateMaterial)
 router.delete('/materials/:id', deleteMaterial)
 
 router.get('/tests', getMyTests)

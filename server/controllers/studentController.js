@@ -38,11 +38,12 @@ exports.updateStudentProfile = async (req, res) => {
 // 📌 Get All Study Materials (Filter supported)
 exports.getAllMaterials = async (req, res) => {
   try {
-    const { subject, topic } = req.query
+    const { subject, topic, department } = req.query
 
     let filter = {}
     if (subject) filter.subject = subject
     if (topic) filter.topic = topic
+    if (department) filter.department = department
 
     const materials = await Material.find(filter)
       .populate('uploadedBy', 'name department')
@@ -69,8 +70,20 @@ exports.getMaterialById = async (req, res) => {
 // 📌 Get Available Tests
 exports.getAvailableTests = async (req, res) => {
   try {
-    const tests = await Test.find()
-      .select('title subject duration createdAt')
+    const { department } = req.query
+    const studentDept = department || req.user.department
+
+    const filter = {}
+    if (studentDept) {
+      // Find tests with matching department or empty department (global)
+      filter.$or = [
+        { department: studentDept },
+        { department: { $in: [null, ''] } }
+      ]
+    }
+
+    const tests = await Test.find(filter)
+      .select('title subject department duration createdAt')
       .sort({ createdAt: -1 })
 
     res.json(tests)

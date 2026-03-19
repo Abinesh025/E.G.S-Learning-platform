@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import api from '../../services/api'
-import { FileText, Plus, Trash2, X, PlusCircle, MinusCircle } from 'lucide-react'
+import { FileText, Plus, Trash2, X, PlusCircle, MinusCircle, ArrowLeft } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 
 const emptyQuestion = () => ({ question: '', options: ['', '', '', ''], correctAnswer: 0 })
@@ -10,7 +11,7 @@ export default function StaffTests() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [form, setForm] = useState({ title: '',subject:' ', duration: 30, questions: [emptyQuestion()] })
+  const [form, setForm] = useState({ title: '',subject:' ',department:'',duration: 30, questions: [emptyQuestion()] })
 
   const load = () => {
     setLoading(true)
@@ -60,7 +61,7 @@ const handleSave = async (e) => {
   try {
     const res = await api.post('/tests', form)
     setTests(t => [res.data?.data || res.data, ...t])
-    setForm({ title: '', subject:'', duration: 30, questions: [emptyQuestion()] })
+    setForm({ title: '', subject:'',department:'', duration: 30, questions: [emptyQuestion()] })
     setShowForm(false)
     
     toast.success('Test created!')
@@ -85,6 +86,9 @@ const handleSave = async (e) => {
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
+      <Link to="/staff" className="inline-flex items-center gap-2 text-ink-400 hover:text-lime-300 transition-colors mb-2 text-sm font-500">
+        <ArrowLeft size={16} /> Back to Dashboard
+      </Link>
       <div className="flex items-center justify-between">
         <h1 className="page-title">Tests</h1>
         <button onClick={() => setShowForm(s => !s)} className="btn-primary">
@@ -102,6 +106,11 @@ const handleSave = async (e) => {
                 <label className="label">Test Title</label>
                 <input className="input" placeholder="e.g. Chapter 3 Quiz" value={form.title}
                   onChange={e => setForm(f => ({ ...f, title: e.target.value }))} required />
+              </div>
+              <div>
+                <label className="label">Departmment</label>
+                <input className="input" placeholder="e.g. CSE" value={form.department}
+                  onChange={e => setForm(f => ({ ...f, department: e.target.value }))} required />
               </div>
               <div>
                 <label className="label">Subject</label>
@@ -136,7 +145,7 @@ const handleSave = async (e) => {
                           type="radio"
                           name={`correct-${qi}`}
                           checked={q.correctAnswer === oi}
-                          onChange={() => updateQ(qi, 'answer', oi)}
+                          onChange={() => updateQ(qi, 'correctAnswer', oi)}
                           className="accent-lime-300"
                         />
                         <input className="input text-sm py-2" placeholder={`Option ${oi + 1}`}

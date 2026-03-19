@@ -8,13 +8,13 @@ const api = axios.create({
 
 api.interceptors.request.use(config => {
   const token = localStorage.getItem('token')
-  const adminSecret = localStorage.getItem('adminSecret')
+  const adminToken = sessionStorage.getItem('adminToken')
 
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
-  if (adminSecret) {
-    config.headers['x-admin-secret'] = adminSecret
+  if (adminToken) {
+    config.headers['x-admin-token'] = adminToken
   }
 
   return config
@@ -25,8 +25,13 @@ api.interceptors.response.use(
   res => res,
   err => {
     if (err.response?.status === 401 && !err.config?.url?.includes('/verify-password')) {
-      localStorage.removeItem('token')
-      window.location.href = '/login'
+      if (window.location.pathname.startsWith('/admin')) {
+        sessionStorage.removeItem('adminToken')
+        window.location.href = '/admin-login'
+      } else {
+        localStorage.removeItem('token')
+        window.location.href = '/login'
+      }
     }
     return Promise.reject(err)
   }
@@ -59,8 +64,8 @@ export const staffService = {
 export const studentService = {
   getProfile: () => api.get('/student/profile'),
   updateProfile: (data) => api.put('/student/profile', data),
-  getMaterials: () => api.get('/student/materials'),
-  getTests: () => api.get('/student/tests'),
+  getMaterials: (params) => api.get('/student/materials', { params }),
+  getTests: (params) => api.get('/student/tests', { params }),
   getTest: (id) => api.get(`/student/tests/${id}`),
   getResults: () => api.get('/student/results'),
 }
@@ -87,6 +92,9 @@ export const testService = {
 
 // Chat
 export const chatService = {
-  getMessages: (roomId) => api.get(`/chat/${roomId}`),
+  getMessages: (roomId) => api.get(`/chat/room/${roomId}`),
   getRooms: () => api.get('/chat/rooms'),
+  uploadVoice: (formData) => api.post('/chat/upload-voice', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
 }

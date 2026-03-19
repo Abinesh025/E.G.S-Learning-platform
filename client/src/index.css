@@ -16,35 +16,39 @@
     --ink-900: 26 25 22;
     --ink-950: 14 13 11;
 
-    --lime-300: 200 240 74;
-    --lime-400: 181 224 53;
-    --lime-500: 154 204 31;
+    /* Primary — EGS Blue (was lime-green, now royal blue) */
+    --lime-300: 96 165 250;
+    --lime-400: 37 99 235;
+    --lime-500: 27 63 139;
 
-    --sky-300: 125 211 252;
-    --sky-400: 56 189 248;
-    --sky-500: 14 165 233;
+    /* Secondary — Pillay Rose (was sky-blue, now rose/crimson) */
+    --sky-300: 251 113 133;
+    --sky-400: 225 29 72;
+    --sky-500: 196 30 58;
   }
 
   .light {
-    --ink-950: 245 245 245; /* Background becomes light gray */
-    --ink-900: 255 255 255; /* Cards become pure white */
-    --ink-800: 235 235 235; /* Borders become light */
+    --ink-950: 245 245 245;
+    --ink-900: 255 255 255;
+    --ink-800: 235 235 235;
     --ink-700: 215 215 215;
     --ink-600: 156 163 175;
     --ink-500: 107 114 128;
     --ink-400: 75 85 99;
     --ink-300: 55 65 81;
     --ink-200: 31 41 55;
-    --ink-100: 17 24 39;   /* Text becomes near black */
-    --ink-50: 0 0 0;       /* pure black */
+    --ink-100: 17 24 39;
+    --ink-50: 0 0 0;
 
-    --lime-300: 132 204 22; /* lime-500 for better visibility in light mode */
-    --lime-400: 101 163 13;
-    --lime-500: 77 124 15;
+    /* Primary Blue — darker for light backgrounds */
+    --lime-300: 37 99 235;
+    --lime-400: 29 78 216;
+    --lime-500: 27 63 139;
 
-    --sky-300: 14 165 233;  /* sky-500 */
-    --sky-400: 2 132 199;
-    --sky-500: 3 105 161;
+    /* Secondary Rose — darker for light backgrounds */
+    --sky-300: 225 29 72;
+    --sky-400: 190 24 60;
+    --sky-500: 159 18 57;
   }
 
   * { box-sizing: border-box; }
@@ -66,8 +70,8 @@
   }
 
   .btn-primary {
-    @apply bg-lime-300 text-ink-950 font-display font-600 text-sm px-5 py-2.5 rounded-xl
-    hover:bg-lime-400 active:scale-95 transition-all duration-150 inline-flex items-center gap-2;
+    @apply bg-lime-400 text-white font-display font-600 text-sm px-5 py-2.5 rounded-xl
+    hover:bg-lime-300 active:scale-95 transition-all duration-150 inline-flex items-center gap-2;
   }
 
   .btn-ghost {
@@ -76,14 +80,14 @@
   }
 
   .btn-outline {
-    @apply border border-ink-700 text-ink-200 hover:border-lime-300 hover:text-lime-300
+    @apply border border-ink-700 text-ink-200 hover:border-lime-400 hover:text-lime-300
     px-4 py-2 rounded-xl transition-all duration-150 inline-flex items-center gap-2 text-sm;
   }
 
   .input {
     @apply bg-ink-800 border border-ink-700 text-ink-100 placeholder-ink-500
     rounded-xl px-4 py-2.5 text-sm w-full
-    focus:outline-none focus:border-lime-300 focus:ring-1 focus:ring-lime-300/30
+    focus:outline-none focus:border-lime-400 focus:ring-1 focus:ring-lime-400/30
     transition-all duration-150;
   }
 
@@ -123,7 +127,7 @@
   .tag-lime { @apply badge bg-lime-300/10 text-lime-300 border border-lime-300/20; }
   .tag-sky  { @apply badge bg-sky-400/10  text-sky-400  border border-sky-400/20; }
   .tag-red  { @apply badge bg-red-400/10  text-red-400  border border-red-400/20; }
-  .tag-amber{ @apply badge bg-amber-400/10 text-amber-400 border border-amber-400/20; }
+  .tag-amber{ @apply badge bg-sky-400/10  text-sky-400  border border-sky-400/20; }
 }
 
 @layer utilities {

@@ -2,8 +2,11 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useTheme } from '../../context/ThemeContext'
+import api from '../../services/api'
 import egs from '../../assets/egs.png'
-import { Moon, Sun, Menu, Bell, Settings } from 'lucide-react'
+import { Moon, Sun, Menu, Bell, Settings, Key, MoreVertical, X } from 'lucide-react'
+import toast from 'react-hot-toast'
+import { useNavigate } from 'react-router-dom'
 
 const accreditationLogos = [] // Add any valid accreditation logos here if needed
 
@@ -11,6 +14,7 @@ export default function Navbar({ onMenuClick }) {
     const [menuOpen, setMenuOpen] = useState(false)
     const { isLight, toggleTheme } = useTheme()
     const { user } = useAuth()
+    const navigate = useNavigate()
 
     return (
         <nav className="sticky top-0 z-50 w-full bg-ink-950 border-b border-ink-800 shadow-sm transition-colors duration-300">
@@ -18,9 +22,11 @@ export default function Navbar({ onMenuClick }) {
 
                 <div className="flex items-center gap-3">
                     {/* Mobile sidebar hamburger button */}
-                    <button className="md:hidden btn-ghost p-2" onClick={onMenuClick} aria-label="Open sidebar">
-                        <Menu size={18} />
-                    </button>
+                    {onMenuClick && (
+                        <button className="md:hidden btn-ghost p-2" onClick={onMenuClick} aria-label="Open sidebar">
+                            <Menu size={24} />
+                        </button>
+                    )}
 
                     {/* College logo */}
                     <a href="/" className="shrink-0 flex items-center">
@@ -46,22 +52,19 @@ export default function Navbar({ onMenuClick }) {
                     ))}
 
                     <div className="flex items-center gap-2 border-l border-ink-800 pl-4 ml-2">
-                        {/* Theme Toggle Button */}
-                        <button onClick={toggleTheme} className="btn-ghost p-2" title="Toggle Theme">
-                            {isLight ? <Moon size={16} /> : <Sun size={16} />}
-                        </button>
                         {user ? (
                             <>
-                                <button className="btn-ghost p-2 relative">
+                                <button className="btn-ghost p-2 relative" title="Notifications">
                                     <Bell size={16} />
                                     <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-lime-300 rounded-full" />
                                 </button>
-                                <button className="btn-ghost p-2">
+                                <button className="btn-ghost p-2" title="Settings">
                                     <Settings size={16} />
                                 </button>
-                            </>
+                                </>
                         ) : (
                             <div className="flex items-center gap-2 ml-2">
+                                <Link to="/admin-login" className="btn-ghost text-sm py-1.5 text-yellow-600 hover:text-sky-300">Admin</Link>
                                 <Link to="/login" className="btn-ghost text-sm py-1.5">Sign In</Link>
                                 <Link to="/register" className="btn-primary py-1.5 text-sm px-4">Register</Link>
                             </div>
@@ -71,24 +74,13 @@ export default function Navbar({ onMenuClick }) {
 
                 {/* Mobile hamburger button for dropdown */}
                 <div className="md:hidden flex items-center gap-2">
-                    <button onClick={toggleTheme} className="btn-ghost p-2" title="Toggle Theme">
-                        {isLight ? <Moon size={16} /> : <Sun size={16} />}
-                    </button>
                     
                     <button
                         onClick={() => setMenuOpen(!menuOpen)}
                         className="flex items-center justify-center w-10 h-10 rounded-lg text-ink-400 hover:bg-ink-800 hover:text-ink-100 transition-colors"
                         aria-label="Toggle menu"
                     >
-                        {menuOpen ? (
-                            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        ) : (
-                            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-                            </svg>
-                        )}
+                        {menuOpen ? <X size={24} /> : <MoreVertical size={24} />}
                     </button>
                 </div>
             </div>
@@ -123,7 +115,8 @@ export default function Navbar({ onMenuClick }) {
                                 </button>
                             </>
                         ) : (
-                            <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-4 flex-wrap justify-center">
+                                <Link to="/admin-login" className="btn-ghost px-6 py-2 text-sky-400 hover:text-sky-300">Admin</Link>
                                 <Link to="/login" className="btn-ghost px-6 py-2">Sign In</Link>
                                 <Link to="/register" className="btn-primary px-6 py-2">Register</Link>
                             </div>
@@ -131,6 +124,7 @@ export default function Navbar({ onMenuClick }) {
                     </div>
                 </div>
             </div>
+
         </nav>
     )
 }

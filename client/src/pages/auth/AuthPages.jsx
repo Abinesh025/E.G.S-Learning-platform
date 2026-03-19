@@ -1,8 +1,26 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { GraduationCap, Eye, EyeOff, ArrowRight } from 'lucide-react'
+import { GraduationCap, Eye, EyeOff, ArrowRight, ArrowLeft } from 'lucide-react'
 import toast from 'react-hot-toast'
+
+const validateEmail = (email) => {
+  if (/[A-Z]/.test(email)) {
+    toast.error('Capital letters are not allowed in email');
+    return false;
+  }
+  const localPart = email.split('@')[0];
+  if (localPart && /^\d+$/.test(localPart)) {
+    toast.error('Email prefix cannot consist of only numbers');
+    return false;
+  }
+  const emailRegex = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/;
+  if (!emailRegex.test(email)) {
+    toast.error('Invalid email format');
+    return false;
+  }
+  return true;
+}
 
 export function LoginPage() {
   const { login } = useAuth()
@@ -13,6 +31,7 @@ export function LoginPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (!validateEmail(form.email)) return;
     setLoading(true)
     try {
       const user = await login(form.email, form.password)
@@ -75,6 +94,7 @@ export function RegisterPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (!validateEmail(form.email)) return;
     setLoading(true)
     try {
       const user = await register(form)
@@ -115,7 +135,7 @@ export function RegisterPage() {
                 onClick={() => setForm(p => ({ ...p, role: r }))}
                 className={`py-2.5 rounded-xl border text-sm font-display font-500 capitalize transition-all ${
                   form.role === r
-                    ? 'bg-lime-300/10 border-lime-300 text-lime-300'
+                    ? 'bg-lime-400/10 border-lime-400 text-lime-300'
                     : 'border-ink-700 text-ink-400 hover:border-ink-500'
                 }`}
               >
@@ -141,14 +161,18 @@ function AuthShell({ title, subtitle, children }) {
     <div className="min-h-screen bg-ink-950 flex items-center justify-center p-4">
       {/* Background decoration */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-lime-300/5 rounded-full blur-3xl" />
+        <div className="absolute -top-40 -right-40 w-96 h-96 bg-lime-400/5 rounded-full blur-3xl" />
         <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-sky-400/5 rounded-full blur-3xl" />
       </div>
+
+      <Link to="/" className="absolute top-6 left-6 md:top-8 md:left-8 inline-flex items-center gap-2 text-ink-400 hover:text-lime-300 transition-colors text-sm font-500 z-10 animate-fade-in">
+        <ArrowLeft size={16} /> Back to Portal
+      </Link>
 
       <div className="w-full max-w-md animate-fade-up">
         {/* Logo */}
         <div className="flex items-center gap-3 justify-center mb-8">
-          <div className="w-10 h-10 bg-lime-300 rounded-xl flex items-center justify-center">
+          <div className="w-10 h-10 bg-lime-400 rounded-xl flex items-center justify-center">
             <GraduationCap size={20} className="text-ink-950" />
           </div>
           <span className="font-display font-700 text-ink-50 text-2xl tracking-tight">EduPortal</span>

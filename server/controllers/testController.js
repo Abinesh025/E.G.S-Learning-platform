@@ -4,10 +4,10 @@ const Result = require('../models/Result')
 // 📌 Create Test (Staff Only)
 exports.createTest = async (req, res) => {
   try {
-    const { title, subject, duration, questions } = req.body
+    const { title, subject, department, duration, questions } = req.body
 
     // ❌ Validation
-    if (!title || !subject || !duration || !questions || questions.length === 0) {
+    if (!title || !subject || !department || !duration || !questions || questions.length === 0) {
       return res.status(400).json({ message: 'All fields are required' })
     }
 
@@ -21,6 +21,7 @@ exports.createTest = async (req, res) => {
     const test = await Test.create({
       title,
       subject,
+      department,
       duration,
       questions,
       createdBy: req.user._id

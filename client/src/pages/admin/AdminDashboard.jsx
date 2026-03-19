@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import api from '../../services/api'
 import { Users, GraduationCap, BookOpen, FileText, BarChart3 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import MetaData from '../../components/layout/MetaData'
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState({
@@ -25,12 +26,13 @@ export default function AdminDashboard() {
     { label: 'Total Staff',    value: stats.totalStaff,     icon: Users,        color: 'text-lime-400',   link: '/admin/staff' },
     { label: 'Total Students', value: stats.totalStudents,  icon: GraduationCap,color: 'text-sky-400',    link: '/admin/students' },
     { label: 'Materials',      value: stats.totalMaterials, icon: BookOpen,     color: 'text-violet-400', link: '/admin/materials' },
-    { label: 'Tests',          value: stats.totalTests,     icon: FileText,     color: 'text-amber-400',  link: '/admin/tests' },
-    { label: 'Results',        value: stats.totalResults,   icon: BarChart3,    color: 'text-rose-400',   link: '/admin/results' },
+    { label: 'Tests',          value: stats.totalTests,     icon: FileText,     color: 'text-sky-300',  link: '/admin/tests' },
+    { label: 'Results',        value: stats.totalResults,   icon: BarChart3,    color: 'text-sky-400',   link: '/admin/results' },
   ]
 
   return (
     <div className="p-6">
+      <MetaData title={"Admin"} />
       <h1 className="text-xl font-semibold text-ink-100 mb-6">Dashboard</h1>
 
       {loading ? (

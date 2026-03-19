@@ -3,26 +3,14 @@ import { createContext, useContext, useState, useEffect } from 'react'
 const ThemeContext = createContext()
 
 export function ThemeProvider({ children }) {
-  const [isLight, setIsLight] = useState(() => {
-    const saved = localStorage.getItem('theme')
-    if (saved) {
-      return saved === 'light'
-    }
-    // Fallback to system theme if nothing is saved
-    return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches
-  })
+  const isLight = true
 
   useEffect(() => {
-    if (isLight) {
-      document.documentElement.classList.add('light')
-      localStorage.setItem('theme', 'light')
-    } else {
-      document.documentElement.classList.remove('light')
-      localStorage.setItem('theme', 'dark')
-    }
-  }, [isLight])
+    document.documentElement.classList.add('light')
+    localStorage.setItem('theme', 'light')
+  }, [])
 
-  const toggleTheme = () => setIsLight(!isLight)
+  const toggleTheme = () => {}
 
   return (
     <ThemeContext.Provider value={{ isLight, toggleTheme }}>
