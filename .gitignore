@@ -15,11 +15,11 @@ node_modules/
 # ========================
 # Environment variables — NEVER commit secrets!
 # ========================
-/.env
-.env.local
-.env.development
-.env.production
-.env.test
+/server/.env
+/server/.env.local
+/server/.env.development
+/server/.env.production
+/server/.env.test
 
 # ========================
 # Logs
