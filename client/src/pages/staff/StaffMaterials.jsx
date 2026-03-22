@@ -34,7 +34,7 @@ export default function StaffMaterials() {
   // Load materials
   const loadMaterials = () => {
     setLoading(true)
-    api.get('/staff/materials')
+    api.get('/api/staff/materials')
       .then(res => setMaterials(res.data?.data || []))
       .catch((err) => toast.error(err.response?.data?.message || 'Failed to load materials'))
       .finally(() => setLoading(false))
@@ -68,7 +68,7 @@ export default function StaffMaterials() {
       if (editId) {
         // Edit Mode uses PUT and expects JSON metadata
         const updateData = { ...form }
-        const res = await api.put(`/staff/materials/${editId}`, updateData)
+        const res = await api.put(`/api/staff/materials/${editId}`, updateData)
         setMaterials(prev => prev.map(m => m._id === editId ? res.data.data : m))
         toast.success('Material updated!')
       } else {
@@ -76,7 +76,7 @@ export default function StaffMaterials() {
         Object.entries(form).forEach(([k, v]) => fd.append(k, v))
         fd.append('file', file)
 
-        const res = await api.post('/materials/upload', fd, {
+        const res = await api.post('/api/materials/upload', fd, {
           onUploadProgress: (p) => setProgress(Math.round((p.loaded * 100) / p.total)),
         })
 
@@ -116,7 +116,7 @@ export default function StaffMaterials() {
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this material?')) return
     try {
-      await api.delete(`/staff/materials/${id}`)
+      await api.delete(`/api/staff/materials/${id}`)
       setMaterials(m => m.filter(x => x._id !== id))
       toast.success('Deleted')
     } catch (err) {

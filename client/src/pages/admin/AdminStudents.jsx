@@ -19,7 +19,7 @@ export default function AdminStudents() {
     
   const fetch = () => {
     setLoading(true)
-    api.get('/admin/students')
+    api.get('/api/admin/students')
       .then(r => setStudents(r.data.data))
       .catch(err => toast.error(err.response?.data?.message || 'Failed to fetch students'))
       .finally(() => setLoading(false))
@@ -41,8 +41,8 @@ export default function AdminStudents() {
       const payload = { ...form }
       if (!payload.password) delete payload.password
 
-      if (editing) await api.put(`/admin/students/${editing}`, payload)
-      else         await api.post('/admin/students', payload)
+      if (editing) await api.put(`/api/admin/students/${editing}`, payload)
+      else         await api.post('/api/admin/students', payload)
       toast.success(editing ? 'Student updated' : 'Student created')
       setShowModal(false)
       fetch()
@@ -54,7 +54,7 @@ export default function AdminStudents() {
   const handleDelete = async id => {
     if (!window.confirm('Delete this student?')) return
     try {
-      await api.delete(`/admin/students/${id}`)
+      await api.delete(`/api/admin/students/${id}`)
       toast.success('Student deleted')
       fetch()
     } catch (err) {

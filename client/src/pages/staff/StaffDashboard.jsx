@@ -18,8 +18,8 @@ export default function StaffDashboard() {
   const load = () => {
     setLoading(true)
     Promise.all([
-      api.get('/staff/stats').catch(() => ({ data: { stats: {} } })),
-      api.get('/staff/materials').catch(() => ({ data: { data: [] } }))
+      api.get('/api/staff/stats').catch(() => ({ data: { stats: {} } })),
+      api.get('/api/staff/materials').catch(() => ({ data: { data: [] } }))
     ]).then(([st, m]) => {
       setStats(st.data?.stats || { students: 0, materials: 0, tests: 0, results: 0 })
       setMaterials((m.data?.data || []).slice(0, 5))

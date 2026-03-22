@@ -39,7 +39,7 @@ export default function AdminTest() {
   useEffect(() => {
     const fetchTests = () => {
       setLoading(true)
-      api.get('/admin/tests')
+      api.get('/api/admin/tests')
         .then(res => setTests(res.data?.data ?? []))
         .catch(err => showToast(err.response?.data?.message || 'Failed to fetch tests', 'error'))
         .finally(() => setLoading(false))
@@ -56,7 +56,7 @@ export default function AdminTest() {
     if (activeTab !== 2) return
     const fetchResults = () => {
       setResultsLoading(true)
-      api.get('/admin/results')
+      api.get('/api/admin/results')
         .then(res => setResults(res.data.data ?? []))
         .catch(err => showToast(err.response?.data?.message || 'Failed to fetch results', 'error'))
         .finally(() => setResultsLoading(false))
@@ -109,12 +109,12 @@ export default function AdminTest() {
     setSubmitting(true)
     try {
       if (editId) {
-        const res = await api.put(`/admin/tests/${editId}`, form)
+        const res = await api.put(`/api/admin/tests/${editId}`, form)
         setTests(t => t.map(x => x._id === editId ? res.data.data : x))
         showToast('Test updated')
         setEditId(null)
       } else {
-        const res = await api.post('/admin/tests', form)
+        const res = await api.post('/api/admin/tests', form)
         setTests(t => [res.data.data, ...t])
         showToast('Test created')
       }
@@ -141,7 +141,7 @@ export default function AdminTest() {
 
   const handleDelete = async () => {
     try {
-      await api.delete(`/admin/tests/${deleteId}`)
+      await api.delete(`/api/admin/tests/${deleteId}`)
       setTests(t => t.filter(x => x._id !== deleteId))
       showToast('Test deleted')
     } catch (err) {

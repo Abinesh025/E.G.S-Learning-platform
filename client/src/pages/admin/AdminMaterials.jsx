@@ -49,7 +49,7 @@ export default function AdminMaterials() {
     
   const fetch = () => {
     setLoading(true)
-    api.get('/admin/materials')
+    api.get('/api/admin/materials')
       .then(r => setMaterials(r.data.data))
       .catch(err => toast.error(err.response?.data?.message || 'Failed to fetch materials'))
       .finally(() => setLoading(false))
@@ -87,7 +87,7 @@ export default function AdminMaterials() {
 
     try {
       if (editing) {
-        await api.put(`/admin/materials/${editing}`, form)
+        await api.put(`/api/admin/materials/${editing}`, form)
         toast.success('Material updated')
       } else {
         if (!file) return toast.error('File is required for new material')
@@ -96,7 +96,7 @@ export default function AdminMaterials() {
         Object.keys(form).forEach(k => fd.append(k, form[k]))
         fd.append('file', file)
         
-        await api.post('/admin/materials/upload', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+        await api.post('/api/admin/materials/upload', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
         toast.success('Material uploaded successfully')
       }
       setShowModal(false)
@@ -111,7 +111,7 @@ export default function AdminMaterials() {
   const handleDelete = async id => {
     if (!window.confirm('Delete this material?')) return
     try {
-      await api.delete(`/admin/materials/${id}`)
+      await api.delete(`/api/admin/materials/${id}`)
       toast.success('Material deleted')
       fetch()
     } catch (err) {

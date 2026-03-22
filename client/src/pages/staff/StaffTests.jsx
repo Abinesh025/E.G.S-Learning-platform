@@ -15,7 +15,7 @@ export default function StaffTests() {
 
   const load = () => {
     setLoading(true)
-    api.get('/staff/tests')
+    api.get('/api/staff/tests')
       .then(res => setTests(res.data?.data || []))
       .catch((err) => toast.error(err.response?.data?.message || 'Failed to load tests'))
       .finally(() => setLoading(false))
@@ -59,7 +59,7 @@ const handleSave = async (e) => {
 
   setSaving(true)
   try {
-    const res = await api.post('/tests', form)
+    const res = await api.post('/api/tests', form)
     setTests(t => [res.data?.data || res.data, ...t])
     setForm({ title: '', subject:'',department:'', duration: 30, questions: [emptyQuestion()] })
     setShowForm(false)
@@ -76,7 +76,7 @@ const handleSave = async (e) => {
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this test?')) return
     try {
-      await api.delete(`/staff/tests/${id}`)
+      await api.delete(`/api/staff/tests/${id}`)
       setTests(t => t.filter(x => x._id !== id))
       toast.success('Test deleted')
     } catch (err) {

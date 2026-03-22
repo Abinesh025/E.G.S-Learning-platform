@@ -9,7 +9,7 @@ export default function AdminResults() {
 
   const fetch = () => {
     setLoading(true)
-    api.get('/admin/results')
+    api.get('/api/admin/results')
       .then(r => setResults(r.data.data))
       .catch(err => toast.error(err.response?.data?.message || 'Failed to fetch results'))
       .finally(() => setLoading(false))
@@ -20,7 +20,7 @@ export default function AdminResults() {
   const handleDelete = async id => {
     if (!window.confirm('Delete this result?')) return
     try {
-      await api.delete(`/admin/results/${id}`)
+      await api.delete(`/api/admin/results/${id}`)
       toast.success('Result deleted')
       fetch()
     } catch (err) {

@@ -21,7 +21,7 @@ export default function AdminStaff() {
  
   const fetch = () => {
     setLoading(true)
-    api.get('/admin/staff')
+    api.get('/api/admin/staff')
       .then(r => setStaff(r.data.data))
       .catch(err => toast.error(err.response?.data?.message || 'Failed to fetch staff'))
       .finally(() => setLoading(false))
@@ -53,8 +53,8 @@ export default function AdminStaff() {
         payload.regnum = payload.regnum.trim().toUpperCase()
       }
 
-      if (editing) await api.put(`/admin/staff/${editing}`, payload)
-      else         await api.post('/admin/staff', payload)
+      if (editing) await api.put(`/api/admin/staff/${editing}`, payload)
+      else         await api.post('/api/admin/staff', payload)
       toast.success(editing ? 'Staff updated' : 'Staff created')
       setShowModal(false)
       fetch()
@@ -66,7 +66,7 @@ export default function AdminStaff() {
   const handleDelete = async id => {
     if (!window.confirm('Delete this staff member?')) return
     try {
-      await api.delete(`/admin/staff/${id}`)
+      await api.delete(`/api/admin/staff/${id}`)
       toast.success('Staff deleted')
       fetch()
     } catch (err) {

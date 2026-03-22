@@ -11,7 +11,7 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     if (token) {
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`
-      api.get('/auth/profile')
+      api.get('/api/auth/profile')
         .then(res => setUser(res.data.user))
         .catch(() => { logout() })
         .finally(() => setLoading(false))
@@ -22,7 +22,7 @@ export function AuthProvider({ children }) {
 
 const login = async (email, password) => {
   try {
-    const res = await api.post('/auth/login', { email, password })
+    const res = await api.post('/api/auth/login', { email, password })
 
     const { token: t, user: u } = res.data
 
@@ -43,7 +43,7 @@ const login = async (email, password) => {
 }
 
   const register = async (data) => {
-    const res = await api.post('/auth/register', data)
+    const res = await api.post('/api/auth/register', data)
     const { token: t, user: u } = res.data
     localStorage.setItem('token', t)
     api.defaults.headers.common['Authorization'] = `Bearer ${t}`

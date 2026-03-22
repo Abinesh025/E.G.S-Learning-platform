@@ -32,7 +32,7 @@ export default function AdminLogin() {
 
     setLoading(true)
     try {
-      const res = await api.post('/auth/verify-password', { password })
+      const res = await api.post('/api/auth/verify-password', { password })
       sessionStorage.setItem('adminToken', res.data.adminToken)
       toast.success('Admin Access Granted')
       navigate('/admin')

@@ -2,7 +2,7 @@ import axios from "axios";
 
 // Create axios instance
 const axiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_URL , // change if your backend URL is different
+  baseURL: import.meta.env.VITE_API_URL, // baseURL must NOT end with /api — use /api/ prefix in each request path
   timeout: 10000,
   headers: {
     "Content-Type": "application/json",
