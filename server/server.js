@@ -1,10 +1,10 @@
+// 🌍 Load Environment Variables FIRST — before any other requires
+require('dotenv').config()
+
 const http = require('http')
 const app = require('./app')
 const connectDB = require('./config/db')
 const { initSocket } = require('./socket/chatSocket')
-
-// 🌍 Load Environment Variables
-require('dotenv').config()
 
 // 🔌 Connect to MongoDB
 connectDB()

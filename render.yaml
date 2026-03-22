@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: egs-learning-platform
+    env: node
+    region: singapore   # closest region to India
+    rootDir: .          # monorepo root
+
+    # Render runs this to build everything (server deps + client dist)
+    buildCommand: npm run build
+
+    # Render runs this to start the server
+    startCommand: npm run start
+
+    # Environment variables — set SECRET values in Render Dashboard, not here
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      # The following MUST be set in Render Dashboard (secrets):
+      # MONGO_URI, JWT_SECRET, ADMIN_SECRET, CLOUDINARY_CLOUD_NAME,
+      # CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET, CLIENT_URL

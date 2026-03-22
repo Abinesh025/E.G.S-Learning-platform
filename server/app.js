@@ -15,11 +15,24 @@ const adminRoutes = require('./routes/adminRoutes')
 
 const app = express()
 
-// 🌐 CORS — allow configured client origin in production, all origins in dev
-const allowedOrigin = process.env.CLIENT_URL || 'http://localhost:3500'
+// 🌐 CORS — allow configured client origins
+const allowedOrigins = [
+  process.env.CLIENT_URL || 'http://localhost:5173',
+  'http://localhost:3000',
+  'http://localhost:3500',
+  'https://e-g-s-learning-platform.onrender.com',
+]
+
 app.use(
   cors({
-    origin: process.env.NODE_ENV === 'production' ? allowedOrigin : true,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (mobile apps, curl, Render health checks)
+      if (!origin) return callback(null, true)
+      if (allowedOrigins.includes(origin)) return callback(null, true)
+      // In production, also allow the same Render domain
+      if (process.env.NODE_ENV === 'production') return callback(null, true)
+      callback(new Error(`CORS blocked: ${origin}`))
+    },
     credentials: true,
   })
 )
@@ -32,6 +45,11 @@ app.use(cookieParser())
 if (process.env.NODE_ENV !== 'production') {
   app.use(morgan('dev'))
 }
+
+// ❤️ Health Check — Render uses this to verify the service is up
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', env: process.env.NODE_ENV })
+})
 
 // 📁 Static Upload Folder (local uploads — Cloudinary handles remote)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
@@ -55,9 +73,8 @@ if (process.env.NODE_ENV === 'production') {
     res.sendFile(path.join(clientBuild, 'index.html'))
   })
 } else {
-  // ❤️ Health Check (dev only)
   app.get('/', (req, res) => {
-    res.send('College Self-Learning Platform API is running...')
+    res.send('E.G.S Learning Platform API is running...')
   })
 }
 

@@ -1,9 +1,10 @@
 import axios from 'axios'
 
 // ✅ Create Axios instance
-// baseURL must NOT include /api — all route paths include /api/ prefix
+// In production: VITE_API_URL is '' (empty) → all /api/... paths are relative to same domain
+// In dev: VITE_API_URL is not set → baseURL is '' → Vite dev proxy handles /api → localhost:5000
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL: import.meta.env.VITE_API_URL ?? '',
   timeout: 15000,
 })
 
