@@ -1,4 +1,3 @@
-// 🌍 Load Environment Variables FIRST — before any other requires
 require('dotenv').config()
 
 const http = require('http')
@@ -21,4 +20,4 @@ const PORT = process.env.PORT || 5000
 // ▶️ Start Server
 server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`)
-})
+})

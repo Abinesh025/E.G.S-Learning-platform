@@ -15,24 +15,10 @@ const adminRoutes = require('./routes/adminRoutes')
 
 const app = express()
 
-// 🌐 CORS — allow configured client origins
-const allowedOrigins = [
-  process.env.CLIENT_URL || 'http://localhost:5173',
-  'http://localhost:3000',
-  'http://localhost:3500',
-  'https://e-g-s-learning-platform.onrender.com',
-]
-
+// 🌐 CORS
 app.use(
   cors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (mobile apps, curl, Render health checks)
-      if (!origin) return callback(null, true)
-      if (allowedOrigins.includes(origin)) return callback(null, true)
-      // In production, also allow the same Render domain
-      if (process.env.NODE_ENV === 'production') return callback(null, true)
-      callback(new Error(`CORS blocked: ${origin}`))
-    },
+    origin: true,
     credentials: true,
   })
 )
@@ -40,18 +26,14 @@ app.use(
 app.use(express.json({ limit: '10mb' }))
 app.use(express.urlencoded({ limit: '10mb', extended: true }))
 app.use(cookieParser())
+app.use(morgan('dev'))
 
-// Only log in dev — cleaner production logs
-if (process.env.NODE_ENV !== 'production') {
-  app.use(morgan('dev'))
-}
-
-// ❤️ Health Check — Render uses this to verify the service is up
+// ❤️ Health Check
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok', env: process.env.NODE_ENV })
+  res.status(200).json({ status: 'ok', env: process.env.NODE_ENV || 'development' })
 })
 
-// 📁 Static Upload Folder (local uploads — Cloudinary handles remote)
+// 📁 Static Upload Folder
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
 
 // 🛣️ API Routes
@@ -63,20 +45,10 @@ app.use('/api/tests', testRoutes)
 app.use('/api/chat', chatRoutes)
 app.use('/api/admin', adminRoutes)
 
-// 🏗️ Serve React client build in production
-if (process.env.NODE_ENV === 'production') {
-  const clientBuild = path.join(__dirname, '..', 'client', 'dist')
-  app.use(express.static(clientBuild))
-
-  // All non-API routes → React app (support client-side routing)
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(clientBuild, 'index.html'))
-  })
-} else {
-  app.get('/', (req, res) => {
-    res.send('E.G.S Learning Platform API is running...')
-  })
-}
+// ❤️ Root
+app.get('/', (req, res) => {
+  res.send('E.G.S Learning Platform API is running...')
+})
 
 // ❌ 404 Handler
 app.use((req, res, next) => {
