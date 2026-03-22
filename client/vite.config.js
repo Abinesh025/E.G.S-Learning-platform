@@ -1,11 +1,22 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import basicSsl from '@vitejs/plugin-basic-ssl'
 
-export default defineConfig({
-  plugins: [react(), basicSsl()],
+export default defineConfig(({ mode }) => ({
+  plugins: [react()],
+  build: {
+    outDir: 'dist',
+    sourcemap: false,
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+        },
+      },
+    },
+  },
   server: {
-    host: "::",
+    host: '::',
     port: 3500,
     strictPort: true,
     proxy: {
@@ -20,7 +31,7 @@ export default defineConfig({
       '/socket.io': {
         target: 'http://localhost:5000',
         ws: true,
-      }
-    }
-  }
-})
+      },
+    },
+  },
+}))

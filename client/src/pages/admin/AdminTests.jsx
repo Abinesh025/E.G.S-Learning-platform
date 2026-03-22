@@ -29,6 +29,8 @@ export default function AdminTest() {
   const [submitting, setSubmitting] = useState(false)
   const [expandedTest, setExpandedTest] = useState(null)
   const [search, setSearch] = useState('')
+  const [departmentFilter, setDepartmentFilter] = useState('')
+  const [resultSearch, setResultSearch] = useState('')
   const [editId, setEditId] = useState(null)
   const [deleteId, setDeleteId] = useState(null)
   const [toast, setToast] = useState(null)
@@ -151,8 +153,16 @@ export default function AdminTest() {
 
   // ── filtered tests ────────────────────────────────────────────
   const filtered = tests.filter(t =>
-    t.title?.toLowerCase().includes(search.toLowerCase()) ||
-    t.subject?.toLowerCase().includes(search.toLowerCase())
+    ((t.title?.toLowerCase().includes(search.toLowerCase()) ||
+    t.subject?.toLowerCase().includes(search.toLowerCase()))) &&
+    (departmentFilter === '' || t.assignedTo === departmentFilter || String(t.assignedTo ?? '').includes(departmentFilter))
+  )
+
+  const filteredResults = results.filter(r => 
+    (r.studentName ?? r.student?.name ?? r.student ?? '').toLowerCase().includes(resultSearch.toLowerCase()) ||
+    (r.testTitle ?? r.test?.title ?? r.test ?? '').toLowerCase().includes(resultSearch.toLowerCase()) ||
+    (r.student?.department ?? '').toLowerCase().includes(resultSearch.toLowerCase()) ||
+    (r.student?.batch ?? '').toLowerCase().includes(resultSearch.toLowerCase())
   )
 
   // ─────────────────────────────────────────────────────────────
@@ -195,10 +205,10 @@ export default function AdminTest() {
       <h1 className="text-xl font-semibold text-ink-100 mb-6">Tests</h1>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-ink-900 border border-ink-800 rounded-xl p-1 mb-6 w-fit">
+      <div className="flex gap-1 bg-ink-900 border border-ink-800 rounded-xl p-1 mb-6 overflow-x-auto max-w-full">
         {TABS.map((tab, i) => (
           <button key={tab} onClick={() => setActiveTab(i)}
-            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition
+            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition whitespace-nowrap
               ${activeTab === i ? 'bg-ink-800 text-ink-100' : 'text-ink-500 hover:text-ink-300'}`}>
             {tab}
           </button>
@@ -209,8 +219,8 @@ export default function AdminTest() {
       {activeTab === 0 && (
         <div>
           {/* search + add */}
-          <div className="flex gap-3 mb-4">
-            <div className="relative flex-1 max-w-xs">
+          <div className="flex flex-wrap gap-3 mb-4">
+            <div className="relative flex-1 min-w-[160px]">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-500" />
               <input
                 value={search} onChange={e => setSearch(e.target.value)}
@@ -219,9 +229,24 @@ export default function AdminTest() {
                   text-ink-100 placeholder-ink-600 focus:outline-none focus:border-ink-600"
               />
             </div>
+            <select 
+              className="px-3 py-2 bg-ink-900 border border-ink-800 rounded-lg text-sm text-ink-100 focus:outline-none focus:border-ink-600"
+              value={departmentFilter}
+              onChange={e => setDepartmentFilter(e.target.value)}
+            >
+              <option value="">All Departments</option>
+              <option value="CSE">CSE</option>
+              <option value="IT">IT</option>
+              <option value="ECE">ECE</option>
+              <option value="MECH">MECH</option>
+              <option value="CIVIL">CIVIL</option>
+              <option value="EEE">EEE</option>
+              <option value="AI&DS">AI&DS</option>
+              <option value="CSBS">CSBS</option>
+            </select>
             <button onClick={() => { setEditId(null); setForm(EMPTY_FORM); setActiveTab(1) }}
               className="flex items-center gap-2 px-4 py-2 bg-lime-400/10 border border-lime-400/30
-                text-lime-400 rounded-lg text-sm hover:bg-lime-400/20 transition">
+                text-lime-400 rounded-lg text-sm hover:bg-lime-400/20 transition whitespace-nowrap">
               <Plus size={14} /> New Test
             </button>
           </div>
@@ -430,44 +455,61 @@ export default function AdminTest() {
               <p className="text-ink-500 text-sm">No results yet</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-ink-800">
-                    {['Student', 'Test', 'Score', 'Total', 'Percentage', 'Date'].map(h => (
-                      <th key={h} className="text-left text-xs text-ink-500 font-medium pb-3 pr-6">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {results.map((r, i) => {
-                    const pct = r.total ? Math.round((r.score / r.total) * 100) : 0
-                    return (
-                      <tr key={r._id ?? i} className="border-b border-ink-800/50 hover:bg-ink-900/60 transition">
-                        <td className="py-3 pr-6 text-ink-200">{r.studentName ?? r.student?.name ?? r.student ?? '—'}</td>
-                        <td className="py-3 pr-6 text-ink-400">{r.testTitle ?? r.test?.title ?? r.test ?? '—'}</td>
-                        <td className="py-3 pr-6 text-sky-300 font-medium">{r.score}</td>
-                        <td className="py-3 pr-6 text-ink-500">{r.total}</td>
-                        <td className="py-3 pr-6">
-                          <div className="flex items-center gap-2">
-                            <div className="w-16 h-1.5 bg-ink-800 rounded-full overflow-hidden">
-                              <div className="h-full rounded-full bg-lime-400"
-                                style={{ width: `${pct}%` }} />
+            <div className="flex flex-col gap-4">
+              <div className="flex gap-3 mb-2">
+                <div className="relative flex-1 max-w-xs">
+                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-500" />
+                  <input
+                    value={resultSearch} onChange={e => setResultSearch(e.target.value)}
+                    placeholder="Search students, tests, or departments…"
+                    className="w-full pl-8 pr-3 py-2 bg-ink-900 border border-ink-800 rounded-xl text-sm
+                      text-ink-100 placeholder-ink-600 focus:outline-none focus:border-ink-600"
+                  />
+                </div>
+              </div>
+              <div className="overflow-x-auto bg-ink-900 border border-ink-800 rounded-xl">
+                <table className="w-full text-sm min-w-[700px]">
+                  <thead>
+                    <tr className="border-b border-ink-800 bg-ink-900">
+                      {['Student', 'Dept/Batch', 'Test', 'Score', 'Total', '%', 'Date'].map(h => (
+                        <th key={h} className="text-left text-xs text-ink-500 font-medium py-3 px-4 whitespace-nowrap">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredResults.map((r, i) => {
+                      const pct = r.total ? Math.round((r.score / r.total) * 100) : 0
+                      return (
+                        <tr key={r._id ?? i} className="border-b border-ink-800/50 hover:bg-ink-800/40 transition">
+                          <td className="py-3 px-4 text-ink-200 max-w-[120px] truncate">{r.studentName ?? r.student?.name ?? r.student ?? '—'}</td>
+                          <td className="py-3 px-4 text-ink-400 text-xs whitespace-nowrap">{(r.student?.department || r.student?.batch) ? `${r.student?.department || ''} ${r.student?.batch ? `(${r.student?.batch})` : ''}` : '—'}</td>
+                          <td className="py-3 px-4 text-ink-400 max-w-[120px] truncate">{r.testTitle ?? r.test?.title ?? r.test ?? '—'}</td>
+                          <td className="py-3 px-4 text-sky-400 font-medium">{r.score}</td>
+                          <td className="py-3 px-4 text-ink-500">{r.total}</td>
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-2">
+                              <div className="w-12 h-1.5 bg-ink-800 rounded-full overflow-hidden">
+                                <div className="h-full rounded-full bg-lime-400"
+                                  style={{ width: `${pct}%` }} />
+                              </div>
+                              <span className={`text-xs font-medium whitespace-nowrap
+                                ${pct >= 75 ? 'text-lime-400' : pct >= 50 ? 'text-sky-300' : 'text-sky-400'}`}>
+                                {pct}%
+                              </span>
                             </div>
-                            <span className={`text-xs font-medium
-                              ${pct >= 75 ? 'text-lime-400' : pct >= 50 ? 'text-sky-300' : 'text-sky-400'}`}>
-                              {pct}%
-                            </span>
-                          </div>
-                        </td>
-                        <td className="py-3 pr-6 text-ink-600 text-xs">
-                          {r.createdAt ? new Date(r.createdAt).toLocaleDateString() : '—'}
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
+                          </td>
+                          <td className="py-3 px-4 text-ink-600 text-xs whitespace-nowrap">
+                            {r.createdAt ? new Date(r.createdAt).toLocaleDateString() : '—'}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                    {filteredResults.length === 0 && (
+                      <tr><td colSpan={7} className="px-5 py-8 text-center text-ink-500">No results found</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>

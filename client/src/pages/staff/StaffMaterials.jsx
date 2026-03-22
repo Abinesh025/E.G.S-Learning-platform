@@ -47,8 +47,16 @@ export default function StaffMaterials() {
     e.preventDefault()
     
     // Validate required fields
-    if (!form.title || !form.subject || !form.department || !form.unit || !form.topic || !form.type) {
-      return toast.error('Please fill all required fields')
+    if (!editId) {
+      // Upload mode: all fields required
+      if (!form.title || !form.subject || !form.department || !form.unit || !form.topic || !form.type) {
+        return toast.error('Please fill all required fields')
+      }
+    } else {
+      // Edit mode: only updateable fields required
+      if (!form.subject || !form.department || !form.topic || !form.type) {
+        return toast.error('Please fill subject, department, topic and type')
+      }
     }
 
     if (!editId && !file) return toast.error('Please select a file')
@@ -137,17 +145,19 @@ export default function StaffMaterials() {
           <h2 className="section-title mb-4">{editId ? 'Edit Material Metadata' : 'Upload New Material'}</h2>
           <form onSubmit={handleUpload} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="label">Title</label>
-                <input
-                  className="input"
-                  placeholder="Material title"
-                  value={form.title}
-                  onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
-                  required
-                />
-              </div>
-              <div>
+              {!editId && (
+                <div>
+                  <label className="label">Title</label>
+                  <input
+                    className="input"
+                    placeholder="Material title"
+                    value={form.title}
+                    onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
+                    required
+                  />
+                </div>
+              )}
+              <div className={editId ? 'sm:col-span-2' : ''}>
                 <label className="label">Type</label>
                 <select
                   className="input"
@@ -183,16 +193,18 @@ export default function StaffMaterials() {
                   required
                 />
               </div>
-              <div>
-                <label className="label">Unit</label>
-                <input
-                  className="input"
-                  placeholder="Unit"
-                  value={form.unit}
-                  onChange={e => setForm(p => ({ ...p, unit: e.target.value }))}
-                  required
-                />
-              </div>
+              {!editId && (
+                <div>
+                  <label className="label">Unit</label>
+                  <input
+                    className="input"
+                    placeholder="Unit"
+                    value={form.unit}
+                    onChange={e => setForm(p => ({ ...p, unit: e.target.value }))}
+                    required
+                  />
+                </div>
+              )}
               <div>
                 <label className="label">Topic</label>
                 <input
@@ -294,7 +306,12 @@ export default function StaffMaterials() {
                       </div>
                     </td>
                     <td className="px-5 py-3">
-                      <span className={cfg.color}>{m.type}</span>
+                      <span className={`badge ${cfg.color}`}>{m.type}</span>
+                      {m.fileUrl && (
+                        <span className="ml-1 text-[10px] text-ink-500 font-mono uppercase">
+                          {m.fileUrl.split('.').pop()?.split('?')[0]?.toUpperCase() || ''}
+                        </span>
+                      )}
                     </td>
                     <td className="px-5 py-3 text-ink-500 text-xs">
                       {m.createdAt ? new Date(m.createdAt).toLocaleDateString('en-IN') : '—'}

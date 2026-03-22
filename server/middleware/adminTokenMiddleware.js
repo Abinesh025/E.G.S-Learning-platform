@@ -1,10 +1,5 @@
 const jwt = require('jsonwebtoken')
 
-/**
- * Middleware to verify admin access tokens.
- * Expects header: x-admin-token: <JWT>
- * Token is short-lived (10 min) and issued by /api/auth/verify-password
- */
 exports.verifyAdminToken = (req, res, next) => {
   const token = req.headers['x-admin-token']
 

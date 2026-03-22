@@ -25,6 +25,7 @@ import toast from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
 import { useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
+import Ai from './pages/Ai/Ai'
 
 function ProtectedRoute({ children, role }) {
   const { user, loading } = useAuth()
@@ -63,6 +64,43 @@ function LoadingScreen() {
 }
 
 
+
+import { Helmet } from 'react-helmet-async'
+
+const routeTitles = {
+  '/': 'Home',
+  '/login': 'Login',
+  '/register': 'Register',
+  '/admin-login': 'Admin Login',
+  '/student': 'Student Dashboard',
+  '/student/materials': 'Materials',
+  '/student/tests': 'Tests',
+  '/student/results': 'Results',
+  '/student/chat': 'Chat',
+  '/staff': 'Staff Dashboard',
+  '/staff/materials': 'Materials',
+  '/staff/tests': 'Tests',
+  '/staff/results': 'Results',
+  '/staff/chat': 'Chat',
+  '/admin': 'Admin Dashboard',
+  '/admin/staff': 'Staff Management',
+  '/admin/students': 'Student Management',
+  '/admin/materials': 'Materials Management',
+  '/admin/tests': 'Tests Management',
+  '/admin/results': 'Results Management',
+}
+
+function DynamicTitle() {
+  const location = useLocation()
+  const currentTitle = routeTitles[location.pathname] || ''
+  const pageTitle = currentTitle ? `${currentTitle} | Academic Hub` : 'Academic Hub'
+
+  return (
+    <Helmet>
+      <title>{pageTitle}</title>
+    </Helmet>
+  )
+}
 
 function AppRoutes() {
   const { user, loading } = useAuth()
@@ -103,38 +141,42 @@ function AppRoutes() {
   const adminGuard = (element) => hasAdminToken ? <Navigate to="/admin" replace /> : element
 
   return (
-    <Routes>
-      {/* Public — blocked when admin mode is active */}
-      <Route path="/" element={adminGuard(user ? <Navigate to={homeRedirect} replace /> : <LandingPage />)} />
-      <Route path="/login" element={adminGuard(user ? <Navigate to={homeRedirect} replace /> : <LoginPage />)} />
-      <Route path="/register" element={adminGuard(user ? <Navigate to={homeRedirect} replace /> : <RegisterPage />)} />
-      <Route path="/admin-login" element={<AdminLogin />} />
+    <>
+      <DynamicTitle />
+      <Routes>
+        {/* Public — blocked when admin mode is active */}
+        <Route path="/" element={adminGuard(user ? <Navigate to={homeRedirect} replace /> : <LandingPage />)} />
+        <Route path="/login" element={adminGuard(user ? <Navigate to={homeRedirect} replace /> : <LoginPage />)} />
+        <Route path="/register" element={adminGuard(user ? <Navigate to={homeRedirect} replace /> : <RegisterPage />)} />
+        <Route path="/admin-login" element={<AdminLogin />} />
 
-      {/* Student routes */}
-      <Route path="/student" element={<ProtectedRoute role="student"><Layout><StudentDashboard /></Layout></ProtectedRoute>} />
-      <Route path="/student/materials" element={<ProtectedRoute role="student"><Layout><StudentMaterials /></Layout></ProtectedRoute>} />
-      <Route path="/student/tests" element={<ProtectedRoute role="student"><Layout><StudentTests /></Layout></ProtectedRoute>} />
-      <Route path="/student/results" element={<ProtectedRoute role="student"><Layout><StudentResults /></Layout></ProtectedRoute>} />
-      <Route path="/student/chat" element={<ProtectedRoute role="student"><Layout><ChatPage /></Layout></ProtectedRoute>} />
+        {/* Student routes */}
+        <Route path="/student" element={<ProtectedRoute role="student"><Layout><StudentDashboard /></Layout></ProtectedRoute>} />
+        <Route path="/student/materials" element={<ProtectedRoute role="student"><Layout><StudentMaterials /></Layout></ProtectedRoute>} />
+        <Route path="/student/tests" element={<ProtectedRoute role="student"><Layout><StudentTests /></Layout></ProtectedRoute>} />
+        <Route path="/student/results" element={<ProtectedRoute role="student"><Layout><StudentResults /></Layout></ProtectedRoute>} />
+        <Route path="/student/chat" element={<ProtectedRoute role="student"><Layout><ChatPage /></Layout></ProtectedRoute>} />
+        <Route path="/student/ai" element={<ProtectedRoute role="student"><Layout><Ai /></Layout></ProtectedRoute>} />
 
-      {/* Staff routes */}
-      <Route path="/staff" element={<ProtectedRoute role="staff"><Layout><StaffDashboard /></Layout></ProtectedRoute>} />
-      <Route path="/staff/materials" element={<ProtectedRoute role="staff"><Layout><StaffMaterials /></Layout></ProtectedRoute>} />
-      <Route path="/staff/tests" element={<ProtectedRoute role="staff"><Layout><StaffTests /></Layout></ProtectedRoute>} />
-      <Route path="/staff/results" element={<ProtectedRoute role="staff"><Layout><StaffResults /></Layout></ProtectedRoute>} />
-      <Route path="/staff/chat" element={<ProtectedRoute role="staff"><Layout><ChatPage /></Layout></ProtectedRoute>} />
+        {/* Staff routes */}
+        <Route path="/staff" element={<ProtectedRoute role="staff"><Layout><StaffDashboard /></Layout></ProtectedRoute>} />
+        <Route path="/staff/materials" element={<ProtectedRoute role="staff"><Layout><StaffMaterials /></Layout></ProtectedRoute>} />
+        <Route path="/staff/tests" element={<ProtectedRoute role="staff"><Layout><StaffTests /></Layout></ProtectedRoute>} />
+        <Route path="/staff/results" element={<ProtectedRoute role="staff"><Layout><StaffResults /></Layout></ProtectedRoute>} />
+        <Route path="/staff/chat" element={<ProtectedRoute role="staff"><Layout><ChatPage /></Layout></ProtectedRoute>} />
 
-      {/* Admin routes */}
-      <Route path="/admin" element={<ProtectedRoute role="admin"><Layout><AdminDashboard /></Layout></ProtectedRoute>} />
-      <Route path="/admin/staff" element={<ProtectedRoute role="admin"><Layout><AdminStaff /></Layout></ProtectedRoute>} />
-      <Route path="/admin/students" element={<ProtectedRoute role="admin"><Layout><AdminStudents /></Layout></ProtectedRoute>} />
-      <Route path="/admin/materials" element={<ProtectedRoute role="admin"><Layout><AdminMaterials /></Layout></ProtectedRoute>} />
-      <Route path="/admin/tests" element={<ProtectedRoute role="admin"><Layout><AdminTests /></Layout></ProtectedRoute>} />
-      <Route path="/admin/results" element={<ProtectedRoute role="admin"><Layout><AdminResults /></Layout></ProtectedRoute>} />
+        {/* Admin routes */}
+        <Route path="/admin" element={<ProtectedRoute role="admin"><Layout><AdminDashboard /></Layout></ProtectedRoute>} />
+        <Route path="/admin/staff" element={<ProtectedRoute role="admin"><Layout><AdminStaff /></Layout></ProtectedRoute>} />
+        <Route path="/admin/students" element={<ProtectedRoute role="admin"><Layout><AdminStudents /></Layout></ProtectedRoute>} />
+        <Route path="/admin/materials" element={<ProtectedRoute role="admin"><Layout><AdminMaterials /></Layout></ProtectedRoute>} />
+        <Route path="/admin/tests" element={<ProtectedRoute role="admin"><Layout><AdminTests /></Layout></ProtectedRoute>} />
+        <Route path="/admin/results" element={<ProtectedRoute role="admin"><Layout><AdminResults /></Layout></ProtectedRoute>} />
 
-      {/* Catch-all — also redirects to /admin if admin mode is on */}
-      <Route path="*" element={hasAdminToken ? <Navigate to="/admin" replace /> : <Navigate to="/" replace />} />
-    </Routes>
+        {/* Catch-all — also redirects to /admin if admin mode is on */}
+        <Route path="*" element={hasAdminToken ? <Navigate to="/admin" replace /> : <Navigate to="/" replace />} />
+      </Routes>
+    </>
   )
 }
 

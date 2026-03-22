@@ -5,7 +5,7 @@ import { Pencil, Trash2, Plus } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useEffect, useState } from 'react'
 
-const empty = { name: '', email: '', phone: '', course: '', batch: '', department: '', password: '' }
+const empty = { name: '', email: '', phone: '',regnum:"", batch: '', department: '', password: '' }
 
 export default function AdminStudents() {
   const { token } = useAuth()
@@ -15,6 +15,7 @@ export default function AdminStudents() {
   const [editing, setEditing]   = useState(null)
   const [form, setForm]         = useState(empty)
   const [search, setSearch]     = useState('')
+  const [departmentFilter, setDepartmentFilter] = useState('')
     
   const fetch = () => {
     setLoading(true)
@@ -33,7 +34,7 @@ export default function AdminStudents() {
   }, [token])
 
   const openAdd  = () => { setEditing(null); setForm(empty); setShowModal(true) }
-  const openEdit = s  => { setEditing(s._id); setForm({ name: s.name, email: s.email, phone: s.phone || '', course: s.course || '', batch: s.batch || '', department: s.department || '', password: '' }); setShowModal(true) }
+  const openEdit = s  => { setEditing(s._id); setForm({ name: s.name, email: s.email,regnum :s.regnum, phone: s.phone || '', batch: s.batch || '', department: s.department || '', password: '' }); setShowModal(true) }
 
   const handleSave = async () => {
     try {
@@ -62,8 +63,9 @@ export default function AdminStudents() {
   }
 
   const filtered = students.filter(s =>
-    s.name.toLowerCase().includes(search.toLowerCase()) ||
-    s.email.toLowerCase().includes(search.toLowerCase())
+    (s.name.toLowerCase().includes(search.toLowerCase()) ||
+    s.email.toLowerCase().includes(search.toLowerCase())) &&
+    (departmentFilter === '' || s.department === departmentFilter)
   )
 
   return (
@@ -76,8 +78,23 @@ export default function AdminStudents() {
       </div>
 
       <div className="bg-ink-900 border border-ink-800 rounded-xl overflow-hidden">
-        <div className="p-4 border-b border-ink-800">
-          <input className="input w-64 text-sm" placeholder="Search students..." value={search} onChange={e => setSearch(e.target.value)} />
+        <div className="p-4 border-b border-ink-800 flex flex-col sm:flex-row gap-3">
+          <input className="input w-full sm:w-64 text-sm" placeholder="Search students..." value={search} onChange={e => setSearch(e.target.value)} />
+          <select 
+            className="input w-full sm:w-48 text-sm"
+            value={departmentFilter}
+            onChange={e => setDepartmentFilter(e.target.value)}
+          >
+            <option value="">All Departments</option>
+            <option value="CSE">CSE</option>
+            <option value="IT">IT</option>
+            <option value="ECE">ECE</option>
+            <option value="MECH">MECH</option>
+            <option value="CIVIL">CIVIL</option>
+            <option value="EEE">EEE</option>
+            <option value="AI&DS">AI&DS</option>
+            <option value="CSBS">CSBS</option>
+          </select>
         </div>
 
         {loading ? (
@@ -88,8 +105,8 @@ export default function AdminStudents() {
               <thead className="text-ink-500 text-xs uppercase border-b border-ink-800">
               <tr>
                 <th className="px-5 py-3 text-left">Name</th>
-                <th className="px-5 py-3 text-left">Course</th>
                 <th className="px-5 py-3 text-left">Department</th>
+                 <th className="px-5 py-3 text-left">Reg Num</th>
                 <th className="px-5 py-3 text-left">Batch</th>
                 <th className="px-5 py-3 text-left">Status</th>
                 <th className="px-5 py-3 text-left sticky right-0 bg-ink-900 border-l border-ink-800 z-10 shadow-[-4px_0_10px_-4px_rgba(0,0,0,0.5)]">Actions</th>
@@ -102,8 +119,8 @@ export default function AdminStudents() {
                     <p className="text-ink-100 font-medium">{s.name}</p>
                     <p className="text-ink-500 text-xs">{s.email}</p>
                   </td>
-                  <td className="px-5 py-3 text-ink-300">{s.course || '—'}</td>
                   <td className="px-5 py-3 text-ink-300">{s.department || '—'}</td>
+                  <td className="px-5 py-3 text-ink-300">{s.regnum || '—'}</td>
                   <td className="px-5 py-3 text-ink-300">{s.batch || '—'}</td>
                   <td className="px-5 py-3">
                     <span className={`badge text-xs ${s.isActive !== false ? 'tag-lime' : 'tag-red'}`}>
@@ -132,7 +149,7 @@ export default function AdminStudents() {
           <div className="bg-ink-900 border border-ink-800 rounded-2xl p-6 w-full max-w-sm mx-4">
             <h2 className="text-ink-100 font-semibold mb-4">{editing ? 'Edit Student' : 'Add Student'}</h2>
             <div className="space-y-3">
-              {[['name','Name'],['email','Email'],['phone','Phone'],['course','Course'],['department','Department'],['batch','Batch']].map(([field, label]) => (
+              {[['name','Name'],['email','Email'],['phone','Phone'],['regnum','RegNum'],['department','Department'],['batch','Batch']].map(([field, label]) => (
                 <div key={field}>
                   <label className="text-ink-500 text-xs mb-1 block">{label}</label>
                   <input className="input w-full text-sm" value={form[field]} onChange={e => setForm({ ...form, [field]: e.target.value })} />

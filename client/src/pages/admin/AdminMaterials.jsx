@@ -21,6 +21,32 @@ export default function AdminMaterials() {
   const [submitting, setSubmitting] = useState(false)
   const [selectedMaterial, setSelectedMaterial] = useState(null)
     
+  const handleDownload = async (url, filename) => {
+    try {
+      if (!url) return;
+      toast.loading('Starting download...', { id: 'download' });
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Network response was not ok');
+      const blob = await response.blob();
+      const objectUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = objectUrl;
+      let ext = url.split('.').pop()?.split('?')[0];
+      if (!ext || ext.length > 4) ext = 'file';
+      const downloadName = filename ? `${filename}.${ext}` : `download.${ext}`;
+      link.download = downloadName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(objectUrl);
+      toast.success('Download complete', { id: 'download' });
+    } catch (error) {
+      console.error('Download failed:', error);
+      toast.error('Download failed. Opening in new tab...', { id: 'download' });
+      window.open(url, '_blank');
+    }
+  };
+    
   const fetch = () => {
     setLoading(true)
     api.get('/admin/materials')
@@ -46,8 +72,16 @@ export default function AdminMaterials() {
   }
 
   const handleSave = async () => {
-    if (!form.title || !form.subject || !form.department || !form.unit || !form.topic) {
-      return toast.error('Please fill required fields (title, subject, department, unit, topic)');
+    if (!editing) {
+      // New upload: all fields required
+      if (!form.title || !form.subject || !form.department || !form.unit || !form.topic) {
+        return toast.error('Please fill required fields (title, subject, department, unit, topic)');
+      }
+    } else {
+      // Edit: only non-file fields required
+      if (!form.subject || !form.department || !form.topic) {
+        return toast.error('Please fill subject, department and topic');
+      }
     }
     setSubmitting(true)
 
@@ -104,7 +138,7 @@ export default function AdminMaterials() {
 
       <div className="bg-ink-900 border border-ink-800 rounded-xl overflow-hidden">
         <div className="p-4 border-b border-ink-800">
-          <input className="input w-64 text-sm" placeholder="Search materials..." value={search} onChange={e => setSearch(e.target.value)} />
+          <input className="input w-full sm:w-64 text-sm" placeholder="Search materials..." value={search} onChange={e => setSearch(e.target.value)} />
         </div>
 
         {loading ? (
@@ -133,15 +167,24 @@ export default function AdminMaterials() {
                   </td>
                   <td className="px-5 py-3 text-ink-300">
                     <span className="badge tag-lime text-xs">{m.fileType?.toUpperCase()}</span>
+                    {m.fileUrl && (
+                      <span className="ml-1 text-[10px] text-ink-500 font-mono uppercase">
+                        {m.fileUrl.split('.').pop()?.split('?')[0]?.toUpperCase() || ''}
+                      </span>
+                    )}
                   </td>
                   <td className="px-5 py-3 sticky right-0 bg-ink-900 border-l border-ink-800 z-10 shadow-[-4px_0_10px_-4px_rgba(0,0,0,0.5)]">
                     <div className="flex gap-2">
                       <button onClick={() => setSelectedMaterial(m)} className="btn-ghost p-1.5 hover:text-lime-300">
                         <Eye size={14} />
                       </button>
-                      <a href={`${import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace('/api', '') : ''}${m.fileUrl}`} target="_blank" rel="noreferrer" className="btn-ghost p-1.5 hover:text-sky-400">
+                      <button onClick={() => {
+                        const baseUrl = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace('/api', '') : '';
+                        const url = (m.fileUrl && m.fileUrl.startsWith('http')) ? m.fileUrl : `${baseUrl}${m.fileUrl.startsWith('/') ? '' : '/'}${m.fileUrl}`;
+                        handleDownload(url, m.title);
+                      }} className="btn-ghost p-1.5 hover:text-sky-400">
                         <Download size={14} />
-                      </a>
+                      </button>
                       <button onClick={() => openEdit(m)} className="btn-ghost p-1.5"><Pencil size={14} /></button>
                       <button onClick={() => handleDelete(m._id)} className="btn-ghost p-1.5 text-red-400 hover:text-red-300"><Trash2 size={14} /></button>
                     </div>
@@ -166,13 +209,15 @@ export default function AdminMaterials() {
 
       {showModal && (
         <div className="fixed inset-0 bg-ink-950/80 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-ink-900 border border-ink-800 rounded-2xl p-6 w-[32rem]">
+        <div className="bg-ink-900 border border-ink-800 rounded-2xl p-6 w-full max-w-lg mx-4">
             <h2 className="text-ink-100 font-semibold mb-4">{editing ? 'Edit Material' : 'Add Material'}</h2>
             <div className="grid grid-cols-2 gap-3 mb-3">
-              <div className="col-span-2">
-                <label className="text-ink-500 text-xs mb-1 block">Title *</label>
-                <input className="input w-full text-sm" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} />
-              </div>
+              {!editing && (
+                <div className="col-span-2">
+                  <label className="text-ink-500 text-xs mb-1 block">Title *</label>
+                  <input className="input w-full text-sm" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} />
+                </div>
+              )}
               <div className="col-span-2">
                 <label className="text-ink-500 text-xs mb-1 block">Description</label>
                 <input className="input w-full text-sm" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
@@ -185,10 +230,12 @@ export default function AdminMaterials() {
                 <label className="text-ink-500 text-xs mb-1 block">Department *</label>
                 <input className="input w-full text-sm" value={form.department} onChange={e => setForm({ ...form, department: e.target.value })} />
               </div>
-              <div>
-                <label className="text-ink-500 text-xs mb-1 block">Unit *</label>
-                <input className="input w-full text-sm" value={form.unit} onChange={e => setForm({ ...form, unit: e.target.value })} />
-              </div>
+              {!editing && (
+                <div>
+                  <label className="text-ink-500 text-xs mb-1 block">Unit *</label>
+                  <input className="input w-full text-sm" value={form.unit} onChange={e => setForm({ ...form, unit: e.target.value })} />
+                </div>
+              )}
               <div>
                 <label className="text-ink-500 text-xs mb-1 block">Topic *</label>
                 <input className="input w-full text-sm" value={form.topic} onChange={e => setForm({ ...form, topic: e.target.value })} />

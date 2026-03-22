@@ -53,10 +53,17 @@
 
   * { box-sizing: border-box; }
 
+  html, body {
+    overflow-x: hidden;
+    max-width: 100%;
+  }
+
   body {
     @apply bg-ink-950 text-ink-100 font-body antialiased transition-colors duration-300;
     font-size: 15px;
     line-height: 1.6;
+    /* Better touch targets on mobile */
+    -webkit-tap-highlight-color: transparent;
   }
 
   ::-webkit-scrollbar { width: 4px; height: 4px; }
@@ -138,4 +145,13 @@
   .animate-delay-100 { animation-delay: 100ms; }
   .animate-delay-200 { animation-delay: 200ms; }
   .animate-delay-300 { animation-delay: 300ms; }
+
+  /* Hide scrollbar while keeping scroll functionality */
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
 }

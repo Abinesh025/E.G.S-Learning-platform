@@ -273,9 +273,8 @@ exports.getDashboardStats = async (req, res) => {
       totalTests    = await Test.countDocuments()
       totalResults  = await Result.countDocuments()
     } else if (req.user.role === 'staff') {
-      totalStudents  = await User.countDocuments({ role: 'student' })
-      totalMaterials = await Material.countDocuments({ uploadedBy: req.user._id })
-      totalTests     = await Test.countDocuments({ createdBy: req.user._id })
+      totalMaterials = await Material.countDocuments({ uploadedBy: req.user._id });
+      totalTests     = await Test.countDocuments({ createdBy: req.user._id });
       totalResults   = await Result.countDocuments()
     }
 

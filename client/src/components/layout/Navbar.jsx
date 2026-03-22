@@ -7,8 +7,13 @@ import egs from '../../assets/egs.png'
 import { Moon, Sun, Menu, Bell, Settings, Key, MoreVertical, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
+import nba from "../../assets/nba-logo.svg";
+import nirf from "../../assets/nirf.webp";
+import naac from "../../assets/NAAC.png";
+import aicte from "../../assets/aicte.png";
+import annau from "../../assets/annau.svg"; 
 
-const accreditationLogos = [] // Add any valid accreditation logos here if needed
+const accreditationLogos = [{src:nba},{src:nirf},{src:naac},{src:aicte},{src:annau}] // Add any valid accreditation logos here if needed
 
 export default function Navbar({ onMenuClick }) {
     const [menuOpen, setMenuOpen] = useState(false)
@@ -42,34 +47,24 @@ export default function Navbar({ onMenuClick }) {
 
                 {/* Desktop accreditation logos & controls */}
                 <div className="hidden md:flex items-center gap-4 lg:gap-6 xl:gap-8 flex-wrap justify-end">
-                    {accreditationLogos.map((item) => (
-                        <img
-                            key={item.alt}
-                            src={item.src}
-                            alt={item.alt}
-                            className="h-8 lg:h-10 xl:h-12 w-auto object-contain transition-transform duration-200 hover:scale-105"
-                        />
-                    ))}
-
-                    <div className="flex items-center gap-2 border-l border-ink-800 pl-4 ml-2">
-                        {user ? (
-                            <>
-                                <button className="btn-ghost p-2 relative" title="Notifications">
-                                    <Bell size={16} />
-                                    <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-lime-300 rounded-full" />
-                                </button>
-                                <button className="btn-ghost p-2" title="Settings">
-                                    <Settings size={16} />
-                                </button>
-                                </>
-                        ) : (
-                            <div className="flex items-center gap-2 ml-2">
-                                <Link to="/admin-login" className="btn-ghost text-sm py-1.5 text-yellow-600 hover:text-sky-300">Admin</Link>
-                                <Link to="/login" className="btn-ghost text-sm py-1.5">Sign In</Link>
-                                <Link to="/register" className="btn-primary py-1.5 text-sm px-4">Register</Link>
-                            </div>
-                        )}
-                    </div>
+                    {user ? (
+                        <>
+                            {accreditationLogos.map((item, idx) => (
+                                <img
+                                    key={idx}
+                                    src={item.src}
+                                    alt={item.alt || ''}
+                                    className="h-8 lg:h-10 xl:h-12 w-auto object-contain transition-transform duration-200 hover:scale-105 rounded-full"
+                                />
+                            ))}
+                        </>
+                    ) : (
+                        <div className="flex items-center gap-2 ml-2">
+                            <Link to="/admin-login" className="btn-ghost text-sm py-1.5 text-yellow-600 hover:text-sky-300">Admin</Link>
+                            <Link to="/login" className="btn-ghost text-sm py-1.5">Sign In</Link>
+                            <Link to="/register" className="btn-primary py-1.5 text-sm px-4">Register</Link>
+                        </div>
+                    )}
                 </div>
 
                 {/* Mobile hamburger button for dropdown */}
@@ -104,23 +99,13 @@ export default function Navbar({ onMenuClick }) {
                         </div>
                     )}
                     <div className="flex items-center gap-4 border-t border-ink-800 pt-4 w-full justify-center">
-                        {user ? (
-                            <>
-                                <button className="btn-ghost px-4 py-2 relative">
-                                    <Bell size={18} className="mr-2" /> Notifications
-                                    <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-lime-300 rounded-full" />
-                                </button>
-                                <button className="btn-ghost px-4 py-2">
-                                    <Settings size={18} className="mr-2" /> Settings
-                                </button>
-                            </>
-                        ) : (
+                        {(!user) && 
                             <div className="flex items-center gap-4 flex-wrap justify-center">
                                 <Link to="/admin-login" className="btn-ghost px-6 py-2 text-sky-400 hover:text-sky-300">Admin</Link>
                                 <Link to="/login" className="btn-ghost px-6 py-2">Sign In</Link>
                                 <Link to="/register" className="btn-primary px-6 py-2">Register</Link>
                             </div>
-                        )}
+                        }
                     </div>
                 </div>
             </div>

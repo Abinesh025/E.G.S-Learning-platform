@@ -82,30 +82,32 @@ export default function StudentDashboard() {
             </Link>
           </div>
           <div className="card overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-ink-800">
-                  <th className="text-left px-4 py-3 text-ink-500 font-500 text-xs uppercase tracking-wider">Test</th>
-                  <th className="text-left px-4 py-3 text-ink-500 font-500 text-xs uppercase tracking-wider">Score</th>
-                  <th className="text-left px-4 py-3 text-ink-500 font-500 text-xs uppercase tracking-wider">Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {stats.results.slice(0, 5).map((r, i) => (
-                  <tr key={r._id || i} className="table-row">
-                    <td className="px-4 py-3 text-ink-200">{r.test?.title || 'Test'}</td>
-                    <td className="px-4 py-3">
-                      <span className={`badge ${r.score >= 70 ? 'tag-lime' : r.score >= 50 ? 'tag-amber' : 'tag-red'}`}>
-                        {r.score}%
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-ink-500">
-                      {r.createdAt ? new Date(r.createdAt).toLocaleDateString() : '—'}
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm min-w-[360px]">
+                <thead>
+                  <tr className="border-b border-ink-800">
+                    <th className="text-left px-4 py-3 text-ink-500 font-500 text-xs uppercase tracking-wider">Test</th>
+                    <th className="text-left px-4 py-3 text-ink-500 font-500 text-xs uppercase tracking-wider">Score</th>
+                    <th className="text-left px-4 py-3 text-ink-500 font-500 text-xs uppercase tracking-wider">Date</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {stats.results.slice(0, 5).map((r, i) => (
+                    <tr key={r._id || i} className="table-row">
+                      <td className="px-4 py-3 text-ink-200 max-w-[160px] truncate">{r.test?.title || 'Test'}</td>
+                      <td className="px-4 py-3">
+                        <span className={`badge ${r.score >= 70 ? 'tag-lime' : r.score >= 50 ? 'tag-amber' : 'tag-red'}`}>
+                          {r.score}%
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-ink-500">
+                        {r.createdAt ? new Date(r.createdAt).toLocaleDateString() : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}

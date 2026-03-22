@@ -10,6 +10,11 @@ const userSchema = new mongoose.Schema({
     required: true,
     unique: true
   },
+  regnum: {
+    type: String,
+    default: '',
+    sparse: true   // allows multiple docs without regnum (e.g. admin)
+  },
   password: {
     type: String,
     required: true
@@ -28,10 +33,6 @@ const userSchema = new mongoose.Schema({
     default: ''
   },
   phone: {
-    type: String,
-    default: ''
-  },
-  course: {
     type: String,
     default: ''
   },

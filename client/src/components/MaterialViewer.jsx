@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { File, Download, X, Play, Pause, BookOpen, Video, Mic, Loader } from 'lucide-react'
 import { renderAsync } from 'docx-preview'
+import toast from 'react-hot-toast'
 
 const typeConfig = {
   notes: { icon: BookOpen, color: 'tag-lime', label: 'Notes' },
@@ -78,6 +79,35 @@ export default function MaterialViewer({ material, onClose }) {
     }
 
   }, [material, sType])
+
+  const handleDownload = async (url, filename) => {
+    try {
+      if (!url) return;
+      toast.loading('Starting download...', { id: 'download' });
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Network response was not ok');
+      const blob = await response.blob();
+      const objectUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = objectUrl;
+      
+      // Try to determine extension
+      let ext = url.split('.').pop()?.split('?')[0];
+      if (!ext || ext.length > 4) ext = 'file';
+      const downloadName = filename ? `${filename}.${ext}` : `download.${ext}`;
+      
+      link.download = downloadName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(objectUrl);
+      toast.success('Download complete', { id: 'download' });
+    } catch (error) {
+      console.error('Download failed:', error);
+      toast.error('Download failed. Opening in new tab...', { id: 'download' });
+      window.open(url, '_blank');
+    }
+  };
 
   const toggleAudioPlay = () => {
     if (!audioElement) return
@@ -165,16 +195,13 @@ export default function MaterialViewer({ material, onClose }) {
           </div>
           <div className="flex items-center gap-2">
             {getBackendUrl(material.fileUrl) && (
-              <a
-                href={getBackendUrl(material.fileUrl)}
-                download
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                onClick={() => handleDownload(getBackendUrl(material.fileUrl), material.title)}
                 className="btn-ghost p-2 text-ink-400 hover:text-lime-300"
                 title="Download"
               >
                 <Download size={18} />
-              </a>
+              </button>
             )}
             <button
               onClick={onClose}
@@ -222,13 +249,12 @@ export default function MaterialViewer({ material, onClose }) {
                     <div className="flex flex-col items-center justify-center h-full gap-3">
                       <File size={36} className="text-ink-600" />
                       <p className="text-red-400 text-sm">{wordError}</p>
-                      <a
-                        href={getBackendUrl(material.fileUrl)}
-                        download={material.title || 'document'}
+                      <button
+                        onClick={() => handleDownload(getBackendUrl(material.fileUrl), material.title)}
                         className="btn-primary flex items-center gap-2 mt-2"
                       >
                         <Download size={14} /> Download Instead
-                      </a>
+                      </button>
                     </div>
                   )}
                   <div
@@ -297,13 +323,12 @@ export default function MaterialViewer({ material, onClose }) {
                       <File size={48} className="text-ink-600 mb-4" />
                       <h4 className="text-ink-100 font-medium mb-2">Unsupported file type</h4>
                       <p className="text-ink-500 text-sm mb-6">This file cannot be previewed directly in the browser.</p>
-                      <a
-                        href={getBackendUrl(material.fileUrl)}
-                        download
+                      <button
+                        onClick={() => handleDownload(getBackendUrl(material.fileUrl), material.title)}
                         className="btn-primary"
                       >
                           Download File
-                      </a>
+                      </button>
                   </div>
               )}
             </>

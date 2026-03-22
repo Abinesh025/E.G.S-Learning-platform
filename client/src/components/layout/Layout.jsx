@@ -10,7 +10,9 @@ import {
   LayoutDashboard, BookOpen, FileText, MessageSquare,
   Users, BarChart3, Upload, LogOut, Menu, X,
   GraduationCap, Bell, ChevronDown, Settings, ShieldCheck,
-  Sun, Moon
+  Sun, Moon,
+  Sparkle,
+  SparkleIcon
 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -20,6 +22,7 @@ const studentNav = [
   { to: '/student/tests', label: 'Tests', icon: FileText },
   { to: '/student/results', label: 'My Results', icon: BarChart3 },
   { to: '/student/chat', label: 'Chat', icon: MessageSquare },
+  { to: '/student/ai', label: 'Learn About Ai', icon: SparkleIcon},
 ]
 
 const staffNav = [
@@ -125,7 +128,7 @@ export default function Layout({ children }) {
           <GraduationCap size={16} className="text-white" />
         </div>
         <span className="font-display font-700 text-ink-50 text-lg tracking-tight">
-          EduPortal
+          Academic Hub
         </span>
       </div>
 

@@ -38,7 +38,7 @@ export default function AdminDashboard() {
       {loading ? (
         <p className="text-ink-500 text-sm">Loading...</p>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
           {cards.map(({ label, value, icon: Icon, color, link }) => (
             <Link key={label} to={link} className="bg-ink-900 border border-ink-800 rounded-xl p-4 hover:border-ink-700 hover:shadow-lg hover:shadow-ink-900/50 hover:-translate-y-1 transition-all duration-300 cursor-pointer group block">
               <div className="flex items-center justify-between mb-3">

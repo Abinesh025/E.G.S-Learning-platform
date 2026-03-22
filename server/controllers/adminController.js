@@ -4,6 +4,7 @@ const Test = require("../models/Test");
 const Result = require("../models/Result");
 const bcrypt = require("bcryptjs");
 const { getIo } = require("../socket/chatSocket");
+const { validateRegNum } = require('../utils/regNumValidator');
 
 // ─────────────────────────────────────────────
 // DASHBOARD
@@ -39,7 +40,7 @@ exports.getDashboardStats = async (req, res) => {
 // ─────────────────────────────────────────────
 exports.createStaff = async (req, res) => {
   try {
-    const { name, email, password, phone, department } = req.body;
+    const { name, email, password, phone, department, regnum } = req.body;
 
     if (!name || !email || !password) {
       return res.status(400).json({
@@ -53,6 +54,18 @@ exports.createStaff = async (req, res) => {
       return res.status(400).json({ success: false, message: "Email already exists" });
     }
 
+    // Validate staff regnum if provided
+    if (regnum && regnum.trim()) {
+      const regValidation = validateRegNum(regnum.trim(), 'staff');
+      if (!regValidation.valid) {
+        return res.status(400).json({ success: false, message: regValidation.message });
+      }
+      const regnumExists = await User.findOne({ regnum: regnum.trim().toUpperCase() });
+      if (regnumExists) {
+        return res.status(400).json({ success: false, message: 'Registration number already in use' });
+      }
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const staff = await User.create({
@@ -61,6 +74,7 @@ exports.createStaff = async (req, res) => {
       password: hashedPassword,
       phone,
       department,
+      regnum: regnum ? regnum.trim().toUpperCase() : '',
       role: "staff",
     });
 
@@ -85,7 +99,7 @@ exports.createStaff = async (req, res) => {
 // ─────────────────────────────────────────────
 exports.updateStaff = async (req, res) => {
   try {
-    const { name, email, phone, department, isActive, password } = req.body;
+    const { name, email, phone, department, isActive, password, regnum } = req.body;
 
     const updateData = {};
 
@@ -100,6 +114,20 @@ exports.updateStaff = async (req, res) => {
     if (phone) updateData.phone = phone;
     if (department) updateData.department = department;
     if (typeof isActive !== "undefined") updateData.isActive = isActive;
+
+    // Validate and update regnum if provided
+    if (regnum !== undefined) {
+      if (regnum && regnum.trim()) {
+        const regValidation = validateRegNum(regnum.trim(), 'staff');
+        if (!regValidation.valid) {
+          return res.status(400).json({ success: false, message: regValidation.message });
+        }
+
+        updateData.regnum = regnum.trim().toUpperCase();
+      } else {
+        updateData.regnum = '';
+      }
+    }
 
     if (password) {
       updateData.password = await bcrypt.hash(password, 10);
@@ -178,7 +206,7 @@ exports.getAllStudents = async (req, res) => {
 // ─────────────────────────────────────────────
 exports.updateStudent = async (req, res) => {
   try {
-    const { name, email, phone, batch, course, department, isActive, password } = req.body;
+    const { name, email, regnum, phone, batch, department, isActive, password } = req.body;
 
     const updateData = {};
 
@@ -194,7 +222,17 @@ exports.updateStudent = async (req, res) => {
 
     if (phone) updateData.phone = phone;
     if (batch) updateData.batch = batch;
-    if (course) updateData.course = course;
+
+    if (regnum) {
+      const regValidation = validateRegNum(regnum, 'student')
+      if (!regValidation.valid) {
+        return res.status(400).json({ success: false, message: regValidation.message })
+      }
+      const regnumExists = await User.findOne({ regnum: regnum.trim().toUpperCase(), _id: { $ne: req.params.id } })
+      if (regnumExists) return res.status(400).json({ success: false, message: 'Registration number already in use' })
+      updateData.regnum = regnum.trim().toUpperCase()
+    }
+
     if (department) updateData.department = department;
     if (typeof isActive !== "undefined") updateData.isActive = isActive;
 
@@ -265,11 +303,26 @@ exports.getAllStaff = async (req, res) => {
 // ─────────────────────────────────────────────
 exports.createStudent = async (req, res) => {
   try {
-    const { name, email, password, phone, batch, course, department } = req.body;
+    const { name, email, password, phone, batch, regnum, department } = req.body;
     if (!name || !email || !password) return res.status(400).json({ success: false, message: "Required fields missing" });
     if (await User.findOne({ email })) return res.status(400).json({ success: false, message: "Email already exists" });
+
+    // Validate reg num if provided
+    if (regnum) {
+      const regValidation = validateRegNum(regnum, 'student')
+      if (!regValidation.valid) {
+        return res.status(400).json({ success: false, message: regValidation.message })
+      }
+      const regnumExists = await User.findOne({ regnum: regnum.trim().toUpperCase() })
+      if (regnumExists) return res.status(400).json({ success: false, message: 'Registration number already in use' })
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
-    const student = await User.create({ name, email, password: hashedPassword, phone, batch, course, department, role: "student" });
+    const student = await User.create({
+      name, email, password: hashedPassword, phone, batch,
+      regnum: regnum ? regnum.trim().toUpperCase() : '',
+      department, role: "student"
+    });
     const data = student.toObject(); delete data.password;
 
     const io = getIo();

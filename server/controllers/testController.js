@@ -1,7 +1,7 @@
 const Test = require('../models/Test')
 const Result = require('../models/Result')
 
-// 📌 Create Test (Staff Only)
+//  Create Test (Staff Only)
 exports.createTest = async (req, res) => {
   try {
     const { title, subject, department, duration, questions } = req.body
@@ -37,7 +37,7 @@ exports.createTest = async (req, res) => {
   }
 }
 
-// 📌 Get All Tests (Student View)
+//  Get All Tests (Student View)
 exports.getTests = async (req, res) => {
   try {
     const tests = await Test.find()
@@ -50,7 +50,7 @@ exports.getTests = async (req, res) => {
   }
 }
 
-// 📌 Get Single Test
+//  Get Single Test
 exports.getTestById = async (req, res) => {
   try {
     const test = await Test.findById(req.params.id)
@@ -64,7 +64,7 @@ exports.getTestById = async (req, res) => {
   }
 }
 
-// 📌 Submit Test (🔥 FIXED)
+//  Submit Test (🔥 FIXED)
 exports.submitTest = async (req, res) => {
   try {
     const { answers } = req.body
@@ -111,7 +111,7 @@ exports.submitTest = async (req, res) => {
   }
 }
 
-// 📌 Get Student Results
+//  Get Student Results
 exports.getStudentResults = async (req, res) => {
   try {
     const results = await Result.find({ student: req.user._id })
@@ -124,7 +124,7 @@ exports.getStudentResults = async (req, res) => {
   }
 }
 
-// 📌 Delete Test (Staff Only)
+//  Delete Test (Staff Only)
 exports.deleteTest = async (req, res) => {
   try {
     const test = await Test.findById(req.params.id)

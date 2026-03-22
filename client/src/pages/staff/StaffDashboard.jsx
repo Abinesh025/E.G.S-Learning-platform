@@ -104,39 +104,41 @@ export default function StaffDashboard() {
           ) : materials.length === 0 ? (
             <div className="p-8 text-center text-ink-500 text-sm">No materials yet</div>
           ) : (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-ink-800">
-                  {['Title', 'Department', 'Uploaded'].map(h => (
-                    <th key={h}
-                      className="text-left px-5 py-3 text-ink-500 font-500 text-xs uppercase tracking-wider">
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {materials?.map((m, i) => {
-                  const initials = m.type?.slice(0, 2).toUpperCase() || '?'
-                  return (
-                    <tr key={m._id || i} className="table-row">
-                      <td className="px-5 py-3">
-                        <div className="flex items-center gap-3">
-                          <div className="w-7 h-7 rounded-lg bg-ink-800 flex items-center justify-center">
-                            <span className="text-ink-400 font-display font-600 text-xs">{initials}</span>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm min-w-[400px]">
+                <thead>
+                  <tr className="border-b border-ink-800">
+                    {['Title', 'Department', 'Uploaded'].map(h => (
+                      <th key={h}
+                        className="text-left px-5 py-3 text-ink-500 font-500 text-xs uppercase tracking-wider">
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {materials?.map((m, i) => {
+                    const initials = m.type?.slice(0, 2).toUpperCase() || '?'
+                    return (
+                      <tr key={m._id || i} className="table-row">
+                        <td className="px-5 py-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-7 h-7 rounded-lg bg-ink-800 flex items-center justify-center">
+                              <span className="text-ink-400 font-display font-600 text-xs">{initials}</span>
+                            </div>
+                            <span className="text-ink-200 truncate max-w-[140px]">{m.title}</span>
                           </div>
-                          <span className="text-ink-200">{m.title}</span>
-                        </div>
-                      </td>
-                      <td className="px-5 py-3 text-ink-500">{m.department || m.subject}</td>
-                      <td className="px-5 py-3 text-ink-500 text-xs">
-                        {m.createdAt ? new Date(m.createdAt).toLocaleDateString('en-IN') : '—'}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+                        </td>
+                        <td className="px-5 py-3 text-ink-500">{m.department || m.subject}</td>
+                        <td className="px-5 py-3 text-ink-500 text-xs">
+                          {m.createdAt ? new Date(m.createdAt).toLocaleDateString('en-IN') : '—'}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       </div>

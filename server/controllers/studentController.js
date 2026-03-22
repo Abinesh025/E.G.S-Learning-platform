@@ -3,7 +3,7 @@ const Material = require('../models/Material')
 const Test = require('../models/Test')
 const Result = require('../models/Result')
 
-// 📌 Get Student Profile
+//  Get Student Profile
 exports.getStudentProfile = async (req, res) => {
   try {
     const student = await User.findById(req.user._id).select('-password')
@@ -15,7 +15,7 @@ exports.getStudentProfile = async (req, res) => {
   }
 }
 
-// 📌 Update Student Profile
+//  Update Student Profile
 exports.updateStudentProfile = async (req, res) => {
   try {
     const { name, department, avatar } = req.body
@@ -35,7 +35,7 @@ exports.updateStudentProfile = async (req, res) => {
   }
 }
 
-// 📌 Get All Study Materials (Filter supported)
+//  Get All Study Materials (Filter supported)
 exports.getAllMaterials = async (req, res) => {
   try {
     const { subject, topic, department } = req.query
@@ -55,7 +55,7 @@ exports.getAllMaterials = async (req, res) => {
   }
 }
 
-// 📌 Get Single Material
+//  Get Single Material
 exports.getMaterialById = async (req, res) => {
   try {
     const material = await Material.findById(req.params.id)
@@ -67,7 +67,7 @@ exports.getMaterialById = async (req, res) => {
   }
 }
 
-// 📌 Get Available Tests
+//  Get Available Tests
 exports.getAvailableTests = async (req, res) => {
   try {
     const { department } = req.query
@@ -92,7 +92,7 @@ exports.getAvailableTests = async (req, res) => {
   }
 }
 
-// 📌 Get Test Details (hide answers)
+//  Get Test Details (hide answers)
 exports.getTestDetails = async (req, res) => {
   try {
     const test = await Test.findById(req.params.id)
@@ -106,7 +106,7 @@ exports.getTestDetails = async (req, res) => {
   }
 }
 
-// 📌 Submit Test (🔥 IMPORTANT – YOU MISSED THIS)
+//  Submit Test (🔥 IMPORTANT – YOU MISSED THIS)
 exports.submitTest = async (req, res) => {
   try {
     const { answers } = req.body
@@ -142,7 +142,7 @@ exports.submitTest = async (req, res) => {
   }
 }
 
-// 📌 Get My Results
+//  Get My Results
 exports.getMyResults = async (req, res) => {
   try {
     const results = await Result.find({ student: req.user._id })

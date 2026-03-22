@@ -1,11 +1,12 @@
 import api from '../../services/api'
 import { getSocket } from '../../services/socket'
 import { useAuth } from '../../context/AuthContext'
-import { Pencil, Trash2, Plus } from 'lucide-react'
+import { Pencil, Trash2, Plus, CheckCircle, XCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useEffect, useState } from 'react'
+import { validateRegNum } from '../../utils/regNumValidator'
 
-const empty = { name: '', email: '', phone: '', department: '', password: '' }
+const empty = { name: '', email: '', phone: '', department: '', password: '', regnum: '' }
 
 export default function AdminStaff() {
   const { token } = useAuth()
@@ -15,6 +16,7 @@ export default function AdminStaff() {
   const [editing, setEditing]   = useState(null)
   const [form, setForm]         = useState(empty)
   const [search, setSearch]     = useState('')
+  const [departmentFilter, setDepartmentFilter] = useState('')
 
  
   const fetch = () => {
@@ -34,12 +36,22 @@ export default function AdminStaff() {
   }, [token])
 
   const openAdd  = () => { setEditing(null); setForm(empty); setShowModal(true) }
-  const openEdit = s  => { setEditing(s._id); setForm({ name: s.name, email: s.email, phone: s.phone || '', department: s.department || '', password: '' }); setShowModal(true) }
+  const openEdit = s  => { setEditing(s._id); setForm({ name: s.name, email: s.email, phone: s.phone || '', department: s.department || '', regnum: s.regnum || '', password: '' }); setShowModal(true) }
 
   const handleSave = async () => {
     try {
       const payload = { ...form }
       if (!payload.password) delete payload.password
+
+      // Validate regnum format if provided
+      if (payload.regnum && payload.regnum.trim()) {
+        const rv = validateRegNum(payload.regnum.trim(), 'staff')
+        if (!rv.valid) {
+          toast.error(rv.message)
+          return
+        }
+        payload.regnum = payload.regnum.trim().toUpperCase()
+      }
 
       if (editing) await api.put(`/admin/staff/${editing}`, payload)
       else         await api.post('/admin/staff', payload)
@@ -63,8 +75,9 @@ export default function AdminStaff() {
   }
 
   const filtered = staff.filter(s =>
-    s.name.toLowerCase().includes(search.toLowerCase()) ||
-    s.email.toLowerCase().includes(search.toLowerCase())
+    (s.name.toLowerCase().includes(search.toLowerCase()) ||
+    s.email.toLowerCase().includes(search.toLowerCase())) &&
+    (departmentFilter === '' || s.department === departmentFilter)
   )
 
   return (
@@ -77,13 +90,28 @@ export default function AdminStaff() {
       </div>
 
       <div className="bg-ink-900 border border-ink-800 rounded-xl overflow-hidden">
-        <div className="p-4 border-b border-ink-800">
+        <div className="p-4 border-b border-ink-800 flex flex-col sm:flex-row gap-3">
           <input
-            className="input w-64 text-sm"
+            className="input w-full sm:w-64 text-sm"
             placeholder="Search staff..."
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
+          <select 
+            className="input w-full sm:w-48 text-sm"
+            value={departmentFilter}
+            onChange={e => setDepartmentFilter(e.target.value)}
+          >
+            <option value="">All Departments</option>
+            <option value="CSE">CSE</option>
+            <option value="IT">IT</option>
+            <option value="ECE">ECE</option>
+            <option value="MECH">MECH</option>
+            <option value="CIVIL">CIVIL</option>
+            <option value="EEE">EEE</option>
+            <option value="AI&DS">AI&DS</option>
+            <option value="CSBS">CSBS</option>
+          </select>
         </div>
 
         {loading ? (
@@ -94,6 +122,7 @@ export default function AdminStaff() {
               <thead className="text-ink-500 text-xs uppercase border-b border-ink-800">
               <tr>
                 <th className="px-5 py-3 text-left">Name</th>
+                <th className="px-5 py-3 text-left">Reg. No</th>
                 <th className="px-5 py-3 text-left">Department</th>
                 <th className="px-5 py-3 text-left">Phone</th>
                 <th className="px-5 py-3 text-left">Status</th>
@@ -106,6 +135,13 @@ export default function AdminStaff() {
                   <td className="px-5 py-3">
                     <p className="text-ink-100 font-medium">{s.name}</p>
                     <p className="text-ink-500 text-xs">{s.email}</p>
+                  </td>
+                  <td className="px-5 py-3">
+                    {s.regnum ? (
+                      <span className="badge tag-sky text-xs font-mono">{s.regnum}</span>
+                    ) : (
+                      <span className="text-ink-600 text-xs">—</span>
+                    )}
                   </td>
                   <td className="px-5 py-3 text-ink-300">{s.department || '—'}</td>
                   <td className="px-5 py-3 text-ink-300">{s.phone || '—'}</td>
@@ -142,6 +178,34 @@ export default function AdminStaff() {
                   <input className="input w-full text-sm" value={form[field]} onChange={e => setForm({ ...form, [field]: e.target.value })} />
                 </div>
               ))}
+              {/* Reg Number with validation */}
+              <div>
+                <label className="text-ink-500 text-xs mb-1 block">Reg. Number (e.g. EGSP001 / EGSPE001)</label>
+                <div className="relative">
+                  <input
+                    className={`input w-full text-sm pr-8 ${
+                      form.regnum
+                        ? validateRegNum(form.regnum, 'staff').valid
+                          ? 'border-lime-400/60'
+                          : 'border-red-400/60'
+                        : ''
+                    }`}
+                    placeholder="EGSP001 or EGSPE001"
+                    value={form.regnum}
+                    onChange={e => setForm({ ...form, regnum: e.target.value })}
+                  />
+                  {form.regnum && (
+                    <span className="absolute right-2 top-1/2 -translate-y-1/2">
+                      {validateRegNum(form.regnum, 'staff').valid
+                        ? <CheckCircle size={14} className="text-lime-400" />
+                        : <XCircle size={14} className="text-red-400" />}
+                    </span>
+                  )}
+                </div>
+                {form.regnum && !validateRegNum(form.regnum, 'staff').valid && (
+                  <p className="text-red-400 text-[10px] mt-1">{validateRegNum(form.regnum, 'staff').message}</p>
+                )}
+              </div>
               {!editing && (
                 <div>
                   <label className="text-ink-500 text-xs mb-1 block">Password</label>
