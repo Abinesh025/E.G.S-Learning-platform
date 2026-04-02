@@ -387,7 +387,9 @@ exports.deleteMaterial = async (req, res) => {
 // ─────────────────────────────────────────────
 exports.getAllTests = async (req, res) => {
   try {
-    const tests = await Test.find().populate("createdBy", "name").sort({ createdAt: -1 });
+    const filter = {}
+    if (req.query.department) filter.department = req.query.department
+    const tests = await Test.find(filter).populate("createdBy", "name department").sort({ createdAt: -1 });
     res.status(200).json({ success: true, data: tests });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -435,7 +437,10 @@ exports.deleteTest = async (req, res) => {
 // ─────────────────────────────────────────────
 exports.getAllResults = async (req, res) => {
   try {
-    const results = await Result.find().populate("student", "name email").populate("test", "title").sort({ createdAt: -1 });
+    const results = await Result.find()
+      .populate("student", "name email department batch")
+      .populate("test", "title department")
+      .sort({ createdAt: -1 });
     res.status(200).json({ success: true, data: results });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

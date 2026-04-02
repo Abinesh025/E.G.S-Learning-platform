@@ -98,10 +98,21 @@ exports.uploadVoice = async (req, res) => {
       })
     }
 
+    // Convert disk path (uploads/voice/xxx.webm) to a proper URL path (/uploads/voice/xxx.webm)
+    // If Cloudinary is used, req.file.path is already an https:// URL
+    let audioUrl = req.file.path
+    if (audioUrl && !audioUrl.startsWith('http')) {
+      // Normalize Windows backslashes and ensure leading slash
+      audioUrl = '/' + audioUrl.replace(/\\/g, '/')
+      if (!audioUrl.startsWith('/uploads')) {
+        audioUrl = '/uploads' + audioUrl
+      }
+    }
+
     res.status(200).json({
       success: true,
       message: "Voice uploaded successfully",
-      audioUrl: req.file.path
+      audioUrl
     })
 
   } catch (error) {

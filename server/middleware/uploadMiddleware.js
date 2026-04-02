@@ -1,5 +1,13 @@
 const multer = require('multer')
 const path = require('path')
+const fs = require('fs')
+
+// Auto-create upload directories if they don't exist
+;['uploads/images', 'uploads/videos', 'uploads/voice', 'uploads/files'].forEach(dir => {
+  const fullPath = path.join(__dirname, '..', dir)
+  if (!fs.existsSync(fullPath)) fs.mkdirSync(fullPath, { recursive: true })
+})
+
 
 // 📌 Storage config
 const storage = multer.diskStorage({

@@ -36,7 +36,7 @@ const {
   deleteResult,
 } = require("../controllers/adminController");
 
-const { uploadMaterial: uploadMaterialHandler } = require("../controllers/materialController");
+const { uploadMaterial: uploadMaterialHandler, downloadMaterial } = require("../controllers/materialController");
 
 // 🔐 All admin routes require a valid admin JWT token
 router.use(verifyAdminToken);
@@ -62,6 +62,8 @@ router.post("/materials", createMaterial);
 router.post("/materials/upload", uploadMaterial.single('file'), uploadMaterialHandler);
 router.put("/materials/:id", updateMaterial);
 router.delete("/materials/:id", deleteMaterial);
+// Download proxy — uses admin token (not Bearer JWT) so admin can download without redirect
+router.get("/materials/download/:id", downloadMaterial);
 
 /* ── Tests ── */
 router.get("/tests", getAllTests);
@@ -73,4 +75,4 @@ router.delete("/tests/:id", deleteTest);
 router.get("/results", getAllResults);
 router.delete("/results/:id", deleteResult);
 
-module.exports = router;
+module.exports = router;

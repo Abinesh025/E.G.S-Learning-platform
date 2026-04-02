@@ -1,5 +1,30 @@
 const Material = require('../models/Material')
 const { cloudinary } = require('../config/cloudinary')
+const https = require('https')
+const http = require('http')
+const path = require('path')
+const fs = require('fs')
+
+// Map common extensions → MIME types for correct browser previewing
+const MIME_MAP = {
+  pdf:  'application/pdf',
+  mp4:  'video/mp4',
+  webm: 'video/webm',
+  mp3:  'audio/mpeg',
+  wav:  'audio/wav',
+  ogg:  'audio/ogg',
+  png:  'image/png',
+  jpg:  'image/jpeg',
+  jpeg: 'image/jpeg',
+  gif:  'image/gif',
+  webp: 'image/webp',
+  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  doc:  'application/msword',
+  pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  txt:  'text/plain',
+}
+
 
 // ─────────────────────────────────────────────
 // GET ALL MATERIALS (WITH FILTER)
@@ -155,3 +180,90 @@ exports.deleteMaterial = async (req, res) => {
     })
   }
 }
+
+// ─────────────────────────────────────────────
+// DOWNLOAD MATERIAL (proxy to avoid CORS)
+// Supports ?inline=1 for in-browser preview (iframe)
+// ─────────────────────────────────────────────
+exports.downloadMaterial = async (req, res) => {
+  try {
+    const material = await Material.findById(req.params.id)
+    if (!material) {
+      return res.status(404).json({ success: false, message: 'Material not found' })
+    }
+
+    const fileUrl = material.fileUrl
+    if (!fileUrl) {
+      return res.status(404).json({ success: false, message: 'No file URL for this material' })
+    }
+
+    // ── Determine extension & MIME ────────────────────────────────────────
+    // Cloudinary often stores raw files WITHOUT an extension in the URL.
+    // When that happens, fall back to the fileType / type stored in MongoDB.
+    const dbType = (material.fileType || material.type || '').toLowerCase()
+
+    // DB type → default extension (used when URL has no recognisable ext)
+    const TYPE_EXT_MAP = {
+      pdf:   'pdf',
+      notes: 'pdf',   // staff/students upload PDFs as "notes"
+      video: 'mp4',
+      voice: 'mp3',
+      file:  'bin',
+      image: 'png',
+    }
+
+    let rawExt = (fileUrl.split('?')[0].split('.').pop() || '').toLowerCase()
+    // If the "extension" is very long it's not really an extension (Cloudinary ID suffix)
+    let ext = rawExt.length > 0 && rawExt.length <= 5 ? rawExt : (TYPE_EXT_MAP[dbType] || 'bin')
+
+    const safeName = material.title.replace(/[^a-z0-9_\- ]/gi, '_')
+    const filename = `${safeName}.${ext}`
+
+    // Use inline disposition for preview requests (?inline=1), attachment for downloads
+    const disposition = req.query.inline === '1' ? 'inline' : 'attachment'
+
+    // DB-type MIME map (used when URL ext gives nothing useful)
+    const DB_MIME_MAP = {
+      pdf:   'application/pdf',
+      notes: 'application/pdf',
+      video: 'video/mp4',
+      voice: 'audio/mpeg',
+      image: 'image/jpeg',
+      file:  'application/octet-stream',
+    }
+
+    // Prefer URL-extension MIME, then DB-type MIME
+    const knownMime = MIME_MAP[ext] || DB_MIME_MAP[dbType]
+
+    if (fileUrl.startsWith('http')) {
+      // Remote URL (Cloudinary) — pipe through this server
+      const proto = fileUrl.startsWith('https') ? https : http
+      proto.get(fileUrl, (fileRes) => {
+        // Use our known MIME type if available; otherwise fall back to what the remote says
+        const contentType = knownMime || fileRes.headers['content-type'] || 'application/octet-stream'
+        res.setHeader('Content-Type', contentType)
+        res.setHeader('Content-Disposition', `${disposition}; filename="${filename}"`)
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        if (fileRes.headers['content-length']) {
+          res.setHeader('Content-Length', fileRes.headers['content-length'])
+        }
+        fileRes.pipe(res)
+      }).on('error', (err) => {
+        console.error('Download proxy error:', err.message)
+        res.status(500).json({ success: false, message: 'Failed to download file' })
+      })
+    } else {
+      // Local file
+      const localPath = path.join(__dirname, '..', fileUrl.startsWith('/') ? fileUrl.slice(1) : fileUrl)
+      if (!fs.existsSync(localPath)) {
+        return res.status(404).json({ success: false, message: 'Local file not found' })
+      }
+      const contentType = knownMime || 'application/octet-stream'
+      res.setHeader('Content-Type', contentType)
+      res.setHeader('Content-Disposition', `${disposition}; filename="${filename}"`)
+      res.sendFile(localPath)
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message })
+  }
+}

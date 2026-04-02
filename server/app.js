@@ -18,7 +18,7 @@ const app = express()
 // 🌐 CORS
 app.use(
   cors({
-    origin: true,
+    origin: [process.env.CLIENT_URL , `https://localhost:/${process.env.PORT}` ],
     credentials: true,
   })
 )
