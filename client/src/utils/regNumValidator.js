@@ -83,7 +83,7 @@ export function validateRegNum(regnum, role) {
  * @returns {string}
  */
 export function regNumPlaceholder(role) {
-  if (role === 'student') return '8208E23BSR001  or  8208E23BSL001'
-  if (role === 'staff')   return 'EGSP001  or  EGSPE001'
+  if (role === 'student') return '8208E23BSRXXX  or  8208E23BSLXXX'
+  if (role === 'staff')   return 'EGSPXXX  or  EGSPEXXX'
   return 'Registration number'
 }

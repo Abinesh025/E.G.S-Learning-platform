@@ -21,31 +21,32 @@ export default function AdminMaterials() {
   const [submitting, setSubmitting] = useState(false)
   const [selectedMaterial, setSelectedMaterial] = useState(null)
     
-  const handleDownload = async (url, filename) => {
+  const handleDownload = async (material) => {
+    if (!material?._id) return
     try {
-      if (!url) return;
-      toast.loading('Starting download...', { id: 'download' });
-      const response = await fetch(url);
-      if (!response.ok) throw new Error('Network response was not ok');
-      const blob = await response.blob();
-      const objectUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = objectUrl;
-      let ext = url.split('.').pop()?.split('?')[0];
-      if (!ext || ext.length > 4) ext = 'file';
-      const downloadName = filename ? `${filename}.${ext}` : `download.${ext}`;
-      link.download = downloadName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(objectUrl);
-      toast.success('Download complete', { id: 'download' });
+      toast.loading('Starting download...', { id: 'dl' })
+      // Use api instance so x-admin-token header is sent automatically
+      const response = await api.get(`/api/admin/materials/download/${material._id}`, {
+        responseType: 'blob',
+      })
+      const blob = new Blob([response.data])
+      const objectUrl = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = objectUrl
+      // Pull filename from Content-Disposition if available
+      const cd = response.headers['content-disposition'] || ''
+      const match = cd.match(/filename="?([^"]+)"?/)
+      link.download = match ? match[1] : (material.title || 'download')
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(objectUrl)
+      toast.success('Download complete', { id: 'dl' })
     } catch (error) {
-      console.error('Download failed:', error);
-      toast.error('Download failed. Opening in new tab...', { id: 'download' });
-      window.open(url, '_blank');
+      console.error('Download failed:', error)
+      toast.error('Download failed', { id: 'dl' })
     }
-  };
+  }
     
   const fetch = () => {
     setLoading(true)
@@ -178,11 +179,7 @@ export default function AdminMaterials() {
                       <button onClick={() => setSelectedMaterial(m)} className="btn-ghost p-1.5 hover:text-lime-300">
                         <Eye size={14} />
                       </button>
-                      <button onClick={() => {
-                        const baseUrl = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace('/api', '') : '';
-                        const url = (m.fileUrl && m.fileUrl.startsWith('http')) ? m.fileUrl : `${baseUrl}${m.fileUrl.startsWith('/') ? '' : '/'}${m.fileUrl}`;
-                        handleDownload(url, m.title);
-                      }} className="btn-ghost p-1.5 hover:text-sky-400">
+                      <button onClick={() => handleDownload(m)} className="btn-ghost p-1.5 hover:text-sky-400">
                         <Download size={14} />
                       </button>
                       <button onClick={() => openEdit(m)} className="btn-ghost p-1.5"><Pencil size={14} /></button>

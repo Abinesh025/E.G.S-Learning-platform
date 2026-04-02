@@ -31,6 +31,7 @@ export default function AdminTest() {
   const [search, setSearch] = useState('')
   const [departmentFilter, setDepartmentFilter] = useState('')
   const [resultSearch, setResultSearch] = useState('')
+  const [resultDeptFilter, setResultDeptFilter] = useState('')
   const [editId, setEditId] = useState(null)
   const [deleteId, setDeleteId] = useState(null)
   const [toast, setToast] = useState(null)
@@ -158,12 +159,16 @@ export default function AdminTest() {
     (departmentFilter === '' || t.assignedTo === departmentFilter || String(t.assignedTo ?? '').includes(departmentFilter))
   )
 
-  const filteredResults = results.filter(r => 
-    (r.studentName ?? r.student?.name ?? r.student ?? '').toLowerCase().includes(resultSearch.toLowerCase()) ||
-    (r.testTitle ?? r.test?.title ?? r.test ?? '').toLowerCase().includes(resultSearch.toLowerCase()) ||
-    (r.student?.department ?? '').toLowerCase().includes(resultSearch.toLowerCase()) ||
-    (r.student?.batch ?? '').toLowerCase().includes(resultSearch.toLowerCase())
-  )
+  const filteredResults = results.filter(r => {
+    const dept = (r.student?.department ?? '').toLowerCase()
+    const matchSearch =
+      (r.studentName ?? r.student?.name ?? r.student ?? '').toLowerCase().includes(resultSearch.toLowerCase()) ||
+      (r.testTitle ?? r.test?.title ?? r.test ?? '').toLowerCase().includes(resultSearch.toLowerCase()) ||
+      dept.includes(resultSearch.toLowerCase()) ||
+      (r.student?.batch ?? '').toLowerCase().includes(resultSearch.toLowerCase())
+    const matchDept = resultDeptFilter === '' || dept === resultDeptFilter.toLowerCase()
+    return matchSearch && matchDept
+  })
 
   // ─────────────────────────────────────────────────────────────
   return (
@@ -274,6 +279,11 @@ export default function AdminTest() {
                     <div className="flex items-center gap-4">
                       {/* meta pills */}
                       <div className="hidden sm:flex items-center gap-3 text-xs text-ink-500">
+                        {test.department && (
+                          <span className="px-2 py-0.5 rounded-md bg-violet-400/10 text-violet-300 border border-violet-400/20 text-xs font-medium">
+                            {test.department}
+                          </span>
+                        )}
                         <span className="flex items-center gap-1">
                           <Hash size={11} className="text-violet-400" />
                           {test.questions?.length ?? 0} Qs
@@ -456,16 +466,31 @@ export default function AdminTest() {
             </div>
           ) : (
             <div className="flex flex-col gap-4">
-              <div className="flex gap-3 mb-2">
+              <div className="flex flex-wrap gap-3 mb-2">
                 <div className="relative flex-1 max-w-xs">
                   <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-500" />
                   <input
                     value={resultSearch} onChange={e => setResultSearch(e.target.value)}
-                    placeholder="Search students, tests, or departments…"
+                    placeholder="Search students, tests…"
                     className="w-full pl-8 pr-3 py-2 bg-ink-900 border border-ink-800 rounded-xl text-sm
                       text-ink-100 placeholder-ink-600 focus:outline-none focus:border-ink-600"
                   />
                 </div>
+                <select
+                  value={resultDeptFilter}
+                  onChange={e => setResultDeptFilter(e.target.value)}
+                  className="px-3 py-2 bg-ink-900 border border-ink-800 rounded-xl text-sm text-ink-100 focus:outline-none focus:border-ink-600"
+                >
+                  <option value="">All Departments</option>
+                  <option value="CSE">CSE</option>
+                  <option value="IT">IT</option>
+                  <option value="ECE">ECE</option>
+                  <option value="MECH">MECH</option>
+                  <option value="CIVIL">CIVIL</option>
+                  <option value="EEE">EEE</option>
+                  <option value="AI&DS">AI&DS</option>
+                  <option value="CSBS">CSBS</option>
+                </select>
               </div>
               <div className="overflow-x-auto bg-ink-900 border border-ink-800 rounded-xl">
                 <table className="w-full text-sm min-w-[700px]">
@@ -482,7 +507,12 @@ export default function AdminTest() {
                       return (
                         <tr key={r._id ?? i} className="border-b border-ink-800/50 hover:bg-ink-800/40 transition">
                           <td className="py-3 px-4 text-ink-200 max-w-[120px] truncate">{r.studentName ?? r.student?.name ?? r.student ?? '—'}</td>
-                          <td className="py-3 px-4 text-ink-400 text-xs whitespace-nowrap">{(r.student?.department || r.student?.batch) ? `${r.student?.department || ''} ${r.student?.batch ? `(${r.student?.batch})` : ''}` : '—'}</td>
+                          <td className="py-3 px-4 text-ink-400 text-xs whitespace-nowrap">
+                            {r.student?.department
+                              ? <span className="px-2 py-0.5 rounded-md bg-violet-400/10 text-violet-300 border border-violet-400/20">{r.student.department}</span>
+                              : '—'}
+                            {r.student?.batch ? ` (${r.student.batch})` : ''}
+                          </td>
                           <td className="py-3 px-4 text-ink-400 max-w-[120px] truncate">{r.testTitle ?? r.test?.title ?? r.test ?? '—'}</td>
                           <td className="py-3 px-4 text-sky-400 font-medium">{r.score}</td>
                           <td className="py-3 px-4 text-ink-500">{r.total}</td>

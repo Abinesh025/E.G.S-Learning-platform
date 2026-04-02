@@ -5,7 +5,7 @@ import axios from 'axios'
 // In dev: VITE_API_URL is not set → baseURL is '' → Vite dev proxy handles /api → localhost:5000
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL ?? '',
-  timeout: 15000,
+  timeout: 0, // No timeout — needed for large video/file uploads
 })
 
 api.interceptors.request.use(config => {

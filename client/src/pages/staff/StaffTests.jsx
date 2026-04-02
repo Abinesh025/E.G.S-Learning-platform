@@ -185,6 +185,7 @@ const handleSave = async (e) => {
               <thead>
                 <tr className="border-b border-ink-800">
                   <th className="text-left px-5 py-3 text-ink-500 font-500 text-xs uppercase tracking-wider">Title</th>
+                  <th className="text-left px-5 py-3 text-ink-500 font-500 text-xs uppercase tracking-wider hidden sm:table-cell">Department</th>
                   <th className="text-left px-5 py-3 text-ink-500 font-500 text-xs uppercase tracking-wider">Questions</th>
                   <th className="text-left px-5 py-3 text-ink-500 font-500 text-xs uppercase tracking-wider hidden sm:table-cell">Duration</th>
                   <th className="text-left px-5 py-3 text-ink-500 font-500 text-xs uppercase tracking-wider hidden sm:table-cell">Created</th>
@@ -195,6 +196,11 @@ const handleSave = async (e) => {
                 {tests.map((t, i) => (
                   <tr key={t._id || i} className="table-row">
                     <td className="px-5 py-3 text-ink-200 font-500 max-w-[140px] truncate">{t.title}</td>
+                    <td className="px-5 py-3 hidden sm:table-cell">
+                      {t.department
+                        ? <span className="tag-sky badge">{t.department}</span>
+                        : <span className="text-ink-600 text-xs">—</span>}
+                    </td>
                     <td className="px-5 py-3"><span className="tag-sky badge">{t.questions?.length || 0} Qs</span></td>
                     <td className="px-5 py-3 text-ink-400 hidden sm:table-cell">{t.duration || 30} min</td>
                     <td className="px-5 py-3 text-ink-500 text-xs hidden sm:table-cell">

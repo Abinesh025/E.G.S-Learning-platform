@@ -3,7 +3,7 @@ import axios from "axios";
 // Create axios instance
 const axiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_URL, // baseURL must NOT end with /api — use /api/ prefix in each request path
-  timeout: 10000,
+  timeout: 0, // No timeout — needed for large video/file uploads
   headers: {
     "Content-Type": "application/json",
   },

@@ -202,8 +202,8 @@ export function RegisterPage() {
           {!regValidation && (
             <p className="text-ink-600 text-xs mt-1">
               {form.role === 'student'
-                ? 'Format: 8208E[YY][DEPT][3 digits] — e.g. 8208E23BSR001'
-                : 'Format: EGSP001 or EGSPE001'}
+                ? 'Format: 8208E[YY][DEPT][3 digits] — e.g. 8208E23BSRxxx'
+                : 'Format: EGSPxxx or EGSPExxx'}
             </p>
           )}
         </div>

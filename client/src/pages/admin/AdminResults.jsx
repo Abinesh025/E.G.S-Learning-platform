@@ -1,13 +1,17 @@
 import api from '../../services/api'
-import { Trash2 } from 'lucide-react'
+import { Trash2, Search } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
+
+const DEPARTMENTS = ['CSE', 'IT', 'ECE', 'MECH', 'CIVIL', 'EEE', 'AI&DS', 'CSBS']
 
 export default function AdminResults() {
   const [results, setResults] = useState([])
   const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
+  const [deptFilter, setDeptFilter] = useState('')
 
-  const fetch = () => {
+  const fetchResults = () => {
     setLoading(true)
     api.get('/api/admin/results')
       .then(r => setResults(r.data.data))
@@ -15,22 +19,54 @@ export default function AdminResults() {
       .finally(() => setLoading(false))
   }
 
-  useEffect(() => { fetch() }, [])
+  useEffect(() => { fetchResults() }, [])
 
   const handleDelete = async id => {
     if (!window.confirm('Delete this result?')) return
     try {
       await api.delete(`/api/admin/results/${id}`)
       toast.success('Result deleted')
-      fetch()
+      fetchResults()
     } catch (err) {
       toast.error(err.response?.data?.message || 'Something went wrong')
     }
   }
 
+  const filtered = results.filter(r => {
+    const dept = (r.student?.department ?? '').toLowerCase()
+    const matchSearch =
+      (r.student?.name ?? '').toLowerCase().includes(search.toLowerCase()) ||
+      (r.test?.title ?? '').toLowerCase().includes(search.toLowerCase()) ||
+      dept.includes(search.toLowerCase()) ||
+      (r.student?.batch ?? '').toLowerCase().includes(search.toLowerCase())
+    const matchDept = deptFilter === '' || dept === deptFilter.toLowerCase()
+    return matchSearch && matchDept
+  })
+
   return (
     <div className="p-6">
-      <h1 className="text-xl font-semibold text-ink-100 mb-6">Results</h1>
+      <h1 className="text-xl font-semibold text-ink-100 mb-5">Results</h1>
+
+      {/* Filters */}
+      <div className="flex flex-wrap gap-3 mb-4">
+        <div className="relative flex-1 min-w-[180px] max-w-xs">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-500" />
+          <input
+            value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="Search student, test…"
+            className="w-full pl-8 pr-3 py-2 bg-ink-900 border border-ink-800 rounded-lg text-sm
+              text-ink-100 placeholder-ink-600 focus:outline-none focus:border-ink-600"
+          />
+        </div>
+        <select
+          value={deptFilter}
+          onChange={e => setDeptFilter(e.target.value)}
+          className="px-3 py-2 bg-ink-900 border border-ink-800 rounded-lg text-sm text-ink-100 focus:outline-none focus:border-ink-600"
+        >
+          <option value="">All Departments</option>
+          {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
+        </select>
+      </div>
 
       <div className="bg-ink-900 border border-ink-800 rounded-xl overflow-hidden">
         {loading ? (
@@ -41,6 +77,7 @@ export default function AdminResults() {
               <thead className="text-ink-500 text-xs uppercase border-b border-ink-800">
                 <tr>
                   <th className="px-5 py-3 text-left">Student</th>
+                  <th className="px-5 py-3 text-left hidden sm:table-cell">Department</th>
                   <th className="px-5 py-3 text-left">Test</th>
                   <th className="px-5 py-3 text-left">Score</th>
                   <th className="px-5 py-3 text-left hidden sm:table-cell">Progress</th>
@@ -50,12 +87,18 @@ export default function AdminResults() {
                 </tr>
               </thead>
               <tbody>
-                {results.map(r => {
-                  const pct     = r.test?.totalMarks ? Math.round((r.score / r.test.totalMarks) * 100) : 0
-                  const passed  = r.score >= (r.test?.passingMarks || 0)
+                {filtered.map(r => {
+                  const pct    = r.test?.totalMarks ? Math.round((r.score / r.test.totalMarks) * 100) : 0
+                  const passed = r.score >= (r.test?.passingMarks || 0)
                   return (
                     <tr key={r._id} className="border-t border-ink-800 hover:bg-ink-800/40">
                       <td className="px-5 py-3 text-ink-100 font-medium max-w-[120px] truncate">{r.student?.name || '—'}</td>
+                      <td className="px-5 py-3 hidden sm:table-cell">
+                        {r.student?.department
+                          ? <span className="px-2 py-0.5 rounded-md bg-violet-400/10 text-violet-300 border border-violet-400/20 text-xs">{r.student.department}</span>
+                          : <span className="text-ink-600 text-xs">—</span>}
+                        {r.student?.batch ? <span className="text-ink-500 text-xs ml-1">({r.student.batch})</span> : null}
+                      </td>
                       <td className="px-5 py-3 text-ink-300 max-w-[120px] truncate">{r.test?.title || '—'}</td>
                       <td className="px-5 py-3 text-ink-300">{r.score}/{r.test?.totalMarks || '?'}</td>
                       <td className="px-5 py-3 hidden sm:table-cell">
@@ -85,8 +128,8 @@ export default function AdminResults() {
                     </tr>
                   )
                 })}
-                {results.length === 0 && (
-                  <tr><td colSpan={7} className="px-5 py-8 text-center text-ink-500">No results found</td></tr>
+                {filtered.length === 0 && (
+                  <tr><td colSpan={8} className="px-5 py-8 text-center text-ink-500">No results found</td></tr>
                 )}
               </tbody>
             </table>

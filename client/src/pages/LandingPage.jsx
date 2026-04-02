@@ -19,7 +19,7 @@ export default function LandingPage() {
           <div className="absolute inset-0 bg-black/55"></div>
 
           <div className="relative z-10 px-4 sm:px-10 py-12 rounded-2xl text-center max-w-3xl mx-auto">
-            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-bold mb-4 leading-tight">
+            <h1 className="text-3xl sm:text-5xl lg:text-5.5xl font-bold mb-4 leading-tight">
               E.G.S. Pillay Academic Hub
             </h1>
             <p className="mb-8 font-semibold text-base sm:text-lg text-white/90">

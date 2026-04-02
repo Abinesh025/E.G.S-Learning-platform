@@ -63,6 +63,21 @@ export default function ChatPage() {
 
   const startRecording = async () => {
     try {
+      // Microphone requires a secure context (HTTPS) — always true in dev (basicSsl) and prod (Render)
+      if (!window.isSecureContext) {
+        toast.error(
+          'Microphone requires HTTPS. Please use the deployed site or restart the dev server.',
+          { duration: 6000 }
+        )
+        return
+      }
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        toast.error(
+          'Microphone not supported in this browser. Try Chrome or Edge.',
+          { duration: 5000 }
+        )
+        return
+      }
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       const mediaRecorder = new MediaRecorder(stream)
       mediaRecorderRef.current = mediaRecorder
@@ -82,13 +97,18 @@ export default function ChatPage() {
         setRecordingTime(prev => prev + 1)
       }, 1000)
     } catch (err) {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        toast.error('Microphone requires HTTPS or localhost connection')
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        toast.error('Microphone access denied. Please allow microphone permission in your browser settings.')
+      } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+        toast.error('No microphone found. Please connect a microphone and try again.')
+      } else if (err.name === 'NotReadableError') {
+        toast.error('Microphone is in use by another application. Please close it and try again.')
       } else {
-        toast.error('Microphone access denied')
+        toast.error('Could not access microphone: ' + (err.message || err.name))
       }
     }
   }
+
 
   const stopRecordingAndSend = () => {
     if (mediaRecorderRef.current && isRecording) {
@@ -232,7 +252,20 @@ export default function ChatPage() {
                 <Send size={15} />
               </button>
             ) : (
-              <button type="button" onClick={startRecording} className="btn-ghost px-4 text-ink-400 hover:text-lime-300 hover:bg-lime-400/10 transition-colors">
+              <button
+                type="button"
+                onClick={startRecording}
+                title={
+                  !window.isSecureContext
+                    ? 'Microphone requires HTTPS or localhost'
+                    : 'Record voice message'
+                }
+                className={`btn-ghost px-4 transition-colors ${
+                  !window.isSecureContext
+                    ? 'text-ink-700 cursor-not-allowed opacity-50'
+                    : 'text-ink-400 hover:text-lime-300 hover:bg-lime-400/10'
+                }`}
+              >
                 <Mic size={18} />
               </button>
             )}
