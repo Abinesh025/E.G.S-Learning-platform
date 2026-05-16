@@ -30,6 +30,7 @@ const userSchema = new mongoose.Schema({
   },
   department: {
     type: String,
+    enum:["Artificial Intelligence and Data Science","Biomedical Engineering","Civil Engineering","Computer Science and Business Systems","Computer Science and Engineering","Electronics and Communication Engineering","Electrical and Electronics Engineering","Information Technology","Master of Business Administration","Master of Computer Applications","Mechanical Engineering"],
     default: ''
   },
   phone: {
@@ -43,6 +44,23 @@ const userSchema = new mongoose.Schema({
   isActive: {
     type: Boolean,
     default: true
+  },
+  otpHash: {
+    type: String,
+    default: null
+  },
+  otpExpiresAt: {
+    type: Date,
+    default: null
+  },
+  otpPurpose: {
+    type: String,
+    enum: ["staff_login", "password_change", null],
+    default: null
+  },
+  otpVerified: {
+    type: Boolean,
+    default: false
   }
 }, { timestamps: true })
 

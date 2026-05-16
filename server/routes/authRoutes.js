@@ -6,7 +6,11 @@ const {
   getMe,
   login,
   verifyPassword,
-  updateProfile
+  updateProfile,
+  verifyStaffLoginOtp,
+  sendPasswordChangeOtp,
+  verifyPasswordChangeOtp,
+  changePassword
 } = require('../controllers/authController')
 const { protectMe } = require('../middleware/authMiddleware')
 
@@ -39,5 +43,9 @@ router.post('/login', login)
 router.get('/profile', protectMe, getMe)
 router.post('/verify-password', verifyPassword)
 router.put('/profile', protectMe, uploadAvatar.single('avatar'), updateProfile)
+router.post('/verify-staff-login-otp', verifyStaffLoginOtp)
+router.post('/send-password-change-otp', protectMe, sendPasswordChangeOtp)
+router.post('/verify-password-change-otp', protectMe, verifyPasswordChangeOtp)
+router.put('/change-password', protectMe, changePassword)
 
 module.exports = router

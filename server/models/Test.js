@@ -34,6 +34,7 @@ const testSchema = new mongoose.Schema(
     },
     department: {
       type: String,
+      enum:["Artificial Intelligence and Data Science","Biomedical Engineering","Civil Engineering","Computer Science and Business Systems","Computer Science and Engineering","Electronics and Communication Engineering","Electrical and Electronics Engineering","Information Technology","Master of Business Administration","Master of Computer Applications","Mechanical Engineering"],
       default: ''
     },
     duration: {

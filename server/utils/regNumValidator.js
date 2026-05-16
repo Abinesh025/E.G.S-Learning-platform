@@ -1,16 +1,16 @@
-
+const { DEPART_CHECKER } = require('./deptChecker')
 
 // Regular entry dept codes (suffix R)
-const STUDENT_DEPT_CODES_REGULAR = ['CSR', 'ITR', 'MER', 'ADR', 'BSR', 'BER', 'EER', 'ECR', 'CER']
+const STUDENT_DEPT_CODES_REGULAR = ['BSR','ITR','CSR','ADR', 'BMR','ECR','EER', 'CER','MER', 'MBAR', 'MCAR']
 
 // Lateral entry dept codes (suffix L)
-const STUDENT_DEPT_CODES_LATERAL = ['CSL', 'ITL', 'MEL', 'ADL', 'BSL', 'BEL', 'EEL', 'ECL', 'CEL']
+const STUDENT_DEPT_CODES_LATERAL = ['BSL','ITL','CSL','ADL', 'BML','ECL', 'EEL','CEL','MEL', 'MBAL', 'MCAL']
 
 // All valid dept codes (regular + lateral)
 const STUDENT_DEPT_CODES = [...STUDENT_DEPT_CODES_REGULAR, ...STUDENT_DEPT_CODES_LATERAL]
 
 // Fixed valid years: 2023, 2024, 2025
-const VALID_YEARS = ['23', '24', '25']
+const VALID_YEARS = ['23', '24', '25', '26']
 
 /**
  * Build the student regex with a fixed year range (23 | 24 | 25).
@@ -31,9 +31,10 @@ const STAFF_REGEX = /^EGSPE?\d+$/
  *
  * @param {string} regnum - The registration number to validate.
  * @param {'student'|'staff'} role - The user's role.
+ * @param {string} [department] - Optional department to cross-validate.
  * @returns {{ valid: boolean, message: string }}
  */
-function validateRegNum(regnum, role) {
+function validateRegNum(regnum, role, department) {
   if (!regnum || typeof regnum !== 'string') {
     return { valid: false, message: 'Registration number is required' }
   }
@@ -42,17 +43,35 @@ function validateRegNum(regnum, role) {
 
   if (role === 'student') {
     const regex = buildStudentRegex()
-    if (!regex.test(trimmed)) {
+    const match = trimmed.match(regex)
+    
+    if (!match) {
       return {
         valid: false,
         message:
           `Invalid student registration number. ` +
           `Format: 8208E[YY][DEPT][3 digits] — ` +
-          `Regular e.g. 8208E23BSR001 | Lateral e.g. 8208E23BSL001. ` +
-          `Regular codes: ${STUDENT_DEPT_CODES_REGULAR.join(', ')}. ` +
-          `Lateral codes: ${STUDENT_DEPT_CODES_LATERAL.join(', ')}.`
+          `Regular e.g. 8208E23BSR001 | Lateral e.g. 8208E23BSL001.`
       }
     }
+
+    // Extract dept code from match (group 2)
+    const extractedDeptCode = match[2]
+
+    // Cross-validate with selected department
+    if (department) {
+      const allowedCodes = DEPART_CHECKER[department]
+      if (!allowedCodes) {
+        return { valid: false, message: 'Invalid department selected.' }
+      }
+      if (!allowedCodes.includes(extractedDeptCode)) {
+        return { 
+          valid: false, 
+          message: `Department mismatch: '${extractedDeptCode}' code does not belong to '${department}'.` 
+        }
+      }
+    }
+
     return { valid: true, message: 'Valid' }
   }
 

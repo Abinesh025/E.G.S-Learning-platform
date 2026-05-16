@@ -5,6 +5,7 @@ import { ThemeProvider } from './context/ThemeContext'
 import Layout  from './components/layout/Layout'
 import LandingPage from './pages/LandingPage'
 import { LoginPage, RegisterPage } from './pages/auth/AuthPages'
+import ChangePassword from './pages/auth/ChangePassword'
 import StudentDashboard from './pages/student/StudentDashboard'
 import StudentMaterials from './pages/student/StudentMaterials'
 import StudentTests from './pages/student/StudentTests'
@@ -172,6 +173,9 @@ function AppRoutes() {
         <Route path="/admin/materials" element={<ProtectedRoute role="admin"><Layout><AdminMaterials /></Layout></ProtectedRoute>} />
         <Route path="/admin/tests" element={<ProtectedRoute role="admin"><Layout><AdminTests /></Layout></ProtectedRoute>} />
         <Route path="/admin/results" element={<ProtectedRoute role="admin"><Layout><AdminResults /></Layout></ProtectedRoute>} />
+        
+        {/* Universal Protected Routes */}
+        <Route path="/change-password" element={<ProtectedRoute><Layout><ChangePassword /></Layout></ProtectedRoute>} />
 
         {/* Catch-all — also redirects to /admin if admin mode is on */}
         <Route path="*" element={hasAdminToken ? <Navigate to="/admin" replace /> : <Navigate to="/" replace />} />

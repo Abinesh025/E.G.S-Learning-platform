@@ -2,7 +2,11 @@ const User = require('../models/User')
 const bcrypt = require('bcryptjs')
 const generateToken = require('../config/jwt')
 const { validateRegNum } = require('../utils/regNumValidator')
-   const jwt = require('jsonwebtoken')
+const { validateName } = require('../utils/nameValidator')
+const { validatePassword } = require('../utils/passwordValidator')
+const { generateOtp, hashOtp } = require('../utils/generateOtp')
+const sendEmail = require('../utils/sendEmail')
+const jwt = require('jsonwebtoken')
 
 // ─────────────────────────────────────────────
 // REGISTER
@@ -10,13 +14,22 @@ const { validateRegNum } = require('../utils/regNumValidator')
 exports.register = async (req, res) => {
 
   try {
-    const { name, email, password, role, regnum } = req.body
+    const { name, email, password, role, regnum, department } = req.body;
 
-    // ✅ Basic field validation
-    if (!name || !email || !password || !regnum) {
+    // ✅ Name validation
+    const nameValidation = validateName(name)
+    if (!nameValidation.valid) {
       return res.status(400).json({
         success: false,
-        message: 'All fields are required (name, email, password, registration number)'
+        message: nameValidation.message
+      })
+    }
+
+    // ✅ Basic field validation
+    if (!name || !email || !password || !regnum || !department) {
+      return res.status(400).json({
+        success: false,
+        message: 'All fields are required (name, email, password, registration number, department)'
       })
     }
 
@@ -31,7 +44,7 @@ exports.register = async (req, res) => {
     }
 
     // ✅ Registration number validation (role-aware)
-    const regValidation = validateRegNum(regnum, userRole)
+    const regValidation = validateRegNum(regnum, userRole, department)
     if (!regValidation.valid) {
       return res.status(400).json({
         success: false,
@@ -57,6 +70,15 @@ exports.register = async (req, res) => {
       })
     }
 
+    // ✅ Password validation
+    const passwordValidation = validatePassword(password)
+    if (!passwordValidation.valid) {
+      return res.status(400).json({
+        success: false,
+        message: passwordValidation.message
+      })
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10)
 
     const user = await User.create({
@@ -64,7 +86,8 @@ exports.register = async (req, res) => {
       email,
       password: hashedPassword,
       regnum: normalizedRegnum,
-      role: userRole
+      role: userRole,
+      department
     })
 
     const token = generateToken(user._id, user.role)
@@ -121,10 +144,46 @@ exports.login = async (req, res) => {
       })
     }
 
+    // ✅ Handle Staff OTP Login
+    if (user.role === 'staff') {
+      const otp = generateOtp();
+      const hashedOtp = hashOtp(otp);
+      const otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
+      user.otpHash = hashedOtp;
+      user.otpExpiresAt = otpExpiresAt;
+      user.otpPurpose = 'staff_login';
+      user.otpVerified = false;
+      await user.save();
+
+      try {
+        await sendEmail({
+          email: user.email,
+          subject: 'Your Staff Login OTP Code',
+          message: `Your OTP is ${otp}. This OTP is valid for 5 minutes. Do not share it with anyone.`,
+          html: `<p>Your OTP is <b>${otp}</b>. This OTP is valid for 5 minutes. Do not share it with anyone.</p>`
+        });
+
+        return res.status(200).json({
+          success: true,
+          requiresOtp: true,
+          message: "OTP sent to staff email."
+        });
+      } catch (err) {
+        user.otpHash = null;
+        user.otpExpiresAt = null;
+        user.otpPurpose = null;
+        await user.save();
+        return res.status(500).json({ success: false, message: "Failed to send OTP email" });
+      }
+    }
+
+    // ✅ Normal Login (Student or Admin)
     const token = generateToken(user._id, user.role)
 
     res.status(200).json({
       success: true,
+      requiresOtp: false,
       token,
       user: {
         _id: user._id,
@@ -232,10 +291,24 @@ exports.updateProfile = async (req, res) => {
     }
 
     if (name) {
+      const nameValidation = validateName(name)
+      if (!nameValidation.valid) {
+        return res.status(400).json({
+          success: false,
+          message: nameValidation.message
+        })
+      }
       user.name = name
     }
 
     if (password) {
+      const passwordValidation = validatePassword(password)
+      if (!passwordValidation.valid) {
+        return res.status(400).json({
+          success: false,
+          message: passwordValidation.message
+        })
+      }
       const bcrypt = require('bcryptjs')
       user.password = await bcrypt.hash(password, 10)
     }
@@ -261,5 +334,169 @@ exports.updateProfile = async (req, res) => {
       message: "Failed to update profile",
       error: error.message
     })
+  }
+}
+
+// ─────────────────────────────────────────────
+// VERIFY STAFF LOGIN OTP
+// ─────────────────────────────────────────────
+exports.verifyStaffLoginOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body
+
+    if (!email || !otp) {
+      return res.status(400).json({ success: false, message: "Email and OTP are required" })
+    }
+
+    const user = await User.findOne({ email, role: 'staff' })
+    if (!user) {
+      return res.status(400).json({ success: false, message: "Invalid request" })
+    }
+
+    // Check OTP
+    if (!user.otpHash || !user.otpExpiresAt || user.otpPurpose !== 'staff_login') {
+      return res.status(400).json({ success: false, message: "OTP not found or expired" })
+    }
+
+    if (user.otpExpiresAt < new Date()) {
+      return res.status(400).json({ success: false, message: "OTP expired" })
+    }
+
+    if (user.otpHash !== hashOtp(otp)) {
+      return res.status(400).json({ success: false, message: "Invalid OTP" })
+    }
+
+    // Clear OTP
+    user.otpHash = null
+    user.otpExpiresAt = null
+    user.otpPurpose = null
+    user.otpVerified = true
+    await user.save()
+
+    const token = generateToken(user._id, user.role)
+
+    res.status(200).json({
+      success: true,
+      token,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        department: user.department || '',
+        avatar: user.avatar || null
+      },
+      message: "Staff login successful."
+    })
+
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message })
+  }
+}
+
+// ─────────────────────────────────────────────
+// SEND PASSWORD CHANGE OTP
+// ─────────────────────────────────────────────
+exports.sendPasswordChangeOtp = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id)
+    if (!user) return res.status(404).json({ success: false, message: "User not found" })
+
+    const otp = generateOtp();
+    const hashedOtp = hashOtp(otp);
+    const otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
+    user.otpHash = hashedOtp;
+    user.otpExpiresAt = otpExpiresAt;
+    user.otpPurpose = 'password_change';
+    user.otpVerified = false;
+    await user.save();
+
+    await sendEmail({
+      email: user.email,
+      subject: 'Password Change Verification Code',
+      message: `Your OTP for changing password is ${otp}. Valid for 5 minutes.`,
+      html: `<p>Your OTP for changing password is <b>${otp}</b>. Valid for 5 minutes.</p>`
+    });
+
+    res.status(200).json({ success: true, message: "Password change OTP sent to registered email." })
+
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message })
+  }
+}
+
+// ─────────────────────────────────────────────
+// VERIFY PASSWORD CHANGE OTP
+// ─────────────────────────────────────────────
+exports.verifyPasswordChangeOtp = async (req, res) => {
+  try {
+    const { otp } = req.body
+    if (!otp) return res.status(400).json({ success: false, message: "OTP is required" })
+
+    const user = await User.findById(req.user._id)
+    if (!user) return res.status(404).json({ success: false, message: "User not found" })
+
+    if (!user.otpHash || !user.otpExpiresAt || user.otpPurpose !== 'password_change') {
+      return res.status(400).json({ success: false, message: "OTP not found" })
+    }
+
+    if (user.otpExpiresAt < new Date()) {
+      return res.status(400).json({ success: false, message: "OTP expired" })
+    }
+
+    if (user.otpHash !== hashOtp(otp)) {
+      return res.status(400).json({ success: false, message: "Invalid OTP" })
+    }
+
+    user.otpVerified = true;
+    await user.save();
+
+    res.status(200).json({ success: true, message: "OTP verified. You can now change your password." })
+
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message })
+  }
+}
+
+// ─────────────────────────────────────────────
+// CHANGE PASSWORD
+// ─────────────────────────────────────────────
+exports.changePassword = async (req, res) => {
+  try {
+    const { newPassword, confirmPassword } = req.body
+
+    if (!newPassword || !confirmPassword) {
+      return res.status(400).json({ success: false, message: "All fields are required" })
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({ success: false, message: "Passwords do not match" })
+    }
+
+    const user = await User.findById(req.user._id)
+    if (!user) return res.status(404).json({ success: false, message: "User not found" })
+
+    if (!user.otpVerified || user.otpPurpose !== 'password_change') {
+      return res.status(400).json({ success: false, message: "Please verify OTP before changing password." })
+    }
+
+    // Validate new password strength
+    const passwordValidation = validatePassword(newPassword)
+    if (!passwordValidation.valid) {
+      return res.status(400).json({ success: false, message: passwordValidation.message })
+    }
+
+    user.password = await bcrypt.hash(newPassword, 10)
+    user.otpHash = null
+    user.otpExpiresAt = null
+    user.otpPurpose = null
+    user.otpVerified = false
+    await user.save()
+
+    res.status(200).json({ success: true, message: "Password changed successfully." })
+
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message })
   }
 }

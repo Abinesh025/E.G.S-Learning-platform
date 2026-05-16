@@ -5,6 +5,8 @@ const Result = require("../models/Result");
 const bcrypt = require("bcryptjs");
 const { getIo } = require("../socket/chatSocket");
 const { validateRegNum } = require('../utils/regNumValidator');
+const { validateName } = require('../utils/nameValidator');
+const { validatePassword } = require('../utils/passwordValidator');
 
 // ─────────────────────────────────────────────
 // DASHBOARD
@@ -48,6 +50,12 @@ exports.createStaff = async (req, res) => {
         message: "Name, email and password are required",
       });
     }
+    
+    // ✅ Name validation
+    const nameValidation = validateName(name)
+    if (!nameValidation.valid) {
+      return res.status(400).json({ success: false, message: nameValidation.message });
+    }
 
     const existing = await User.findOne({ email });
     if (existing) {
@@ -64,6 +72,12 @@ exports.createStaff = async (req, res) => {
       if (regnumExists) {
         return res.status(400).json({ success: false, message: 'Registration number already in use' });
       }
+    }
+
+    // ✅ Password validation
+    const passwordValidation = validatePassword(password)
+    if (!passwordValidation.valid) {
+      return res.status(400).json({ success: false, message: passwordValidation.message });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -103,7 +117,13 @@ exports.updateStaff = async (req, res) => {
 
     const updateData = {};
 
-    if (name) updateData.name = name;
+    if (name) {
+      const nameValidation = validateName(name)
+      if (!nameValidation.valid) {
+        return res.status(400).json({ success: false, message: nameValidation.message });
+      }
+      updateData.name = name;
+    }
     if (email) {
       const exists = await User.findOne({ email, _id: { $ne: req.params.id } });
       if (exists) {
@@ -130,6 +150,10 @@ exports.updateStaff = async (req, res) => {
     }
 
     if (password) {
+      const passwordValidation = validatePassword(password)
+      if (!passwordValidation.valid) {
+        return res.status(400).json({ success: false, message: passwordValidation.message });
+      }
       updateData.password = await bcrypt.hash(password, 10);
     }
 
@@ -210,7 +234,13 @@ exports.updateStudent = async (req, res) => {
 
     const updateData = {};
 
-    if (name) updateData.name = name;
+    if (name) {
+      const nameValidation = validateName(name)
+      if (!nameValidation.valid) {
+        return res.status(400).json({ success: false, message: nameValidation.message });
+      }
+      updateData.name = name;
+    }
 
     if (email) {
       const exists = await User.findOne({ email, _id: { $ne: req.params.id } });
@@ -237,6 +267,10 @@ exports.updateStudent = async (req, res) => {
     if (typeof isActive !== "undefined") updateData.isActive = isActive;
 
     if (password) {
+      const passwordValidation = validatePassword(password)
+      if (!passwordValidation.valid) {
+        return res.status(400).json({ success: false, message: passwordValidation.message });
+      }
       updateData.password = await bcrypt.hash(password, 10);
     }
 
@@ -305,6 +339,13 @@ exports.createStudent = async (req, res) => {
   try {
     const { name, email, password, phone, batch, regnum, department } = req.body;
     if (!name || !email || !password) return res.status(400).json({ success: false, message: "Required fields missing" });
+    
+    // ✅ Name validation
+    const nameValidation = validateName(name)
+    if (!nameValidation.valid) {
+      return res.status(400).json({ success: false, message: nameValidation.message });
+    }
+
     if (await User.findOne({ email })) return res.status(400).json({ success: false, message: "Email already exists" });
 
     // Validate reg num if provided
@@ -315,6 +356,12 @@ exports.createStudent = async (req, res) => {
       }
       const regnumExists = await User.findOne({ regnum: regnum.trim().toUpperCase() })
       if (regnumExists) return res.status(400).json({ success: false, message: 'Registration number already in use' })
+    }
+
+    // ✅ Password validation
+    const passwordValidation = validatePassword(password)
+    if (!passwordValidation.valid) {
+      return res.status(400).json({ success: false, message: passwordValidation.message });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);

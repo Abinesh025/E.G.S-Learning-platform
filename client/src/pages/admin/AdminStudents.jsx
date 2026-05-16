@@ -39,7 +39,26 @@ export default function AdminStudents() {
   const handleSave = async () => {
     try {
       const payload = { ...form }
+
+      // Name validation
+      if (!payload.name || payload.name.trim().length < 3) {
+        toast.error('Name must contain at least 3 characters');
+        return;
+      }
+      if (!/^[A-Za-z\s]+$/.test(payload.name)) {
+        toast.error('Name must contain only letters (A-Za-z)');
+        return;
+      }
+
       if (!payload.password) delete payload.password
+      else {
+        // Password validation if provided
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#\-_^()]).{8,}$/;
+        if (!passwordRegex.test(payload.password)) {
+          toast.error('Password must be at least 8 characters long and include uppercase, lowercase, number, and special character');
+          return;
+        }
+      }
 
       if (editing) await api.put(`/api/admin/students/${editing}`, payload)
       else         await api.post('/api/admin/students', payload)
@@ -158,7 +177,14 @@ export default function AdminStudents() {
               {!editing && (
                 <div>
                   <label className="text-ink-500 text-xs mb-1 block">Password</label>
-                  <input type="password" className="input w-full text-sm" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} />
+                  <input
+                    type="password"
+                    className="input w-full text-sm"
+                    value={form.password}
+                    onChange={e => setForm({ ...form, password: e.target.value })}
+                    pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#\-_^()]).{8,}$"
+                    title="Password must be at least 8 characters long and include uppercase, lowercase, number, and special character"
+                  />
                 </div>
               )}
             </div>

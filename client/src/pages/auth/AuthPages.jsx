@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext'
 import { GraduationCap, Eye, EyeOff, ArrowRight, ArrowLeft, CheckCircle, XCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { validateRegNum, regNumPlaceholder } from '../../utils/regNumValidator'
+import { DEPART_CHECKER } from '../../utils/deptChecker'
 
 const validateEmail = (email) => {
   if (/[A-Z]/.test(email)) {
@@ -23,26 +24,107 @@ const validateEmail = (email) => {
   return true;
 }
 
+const validateName = (name) => {
+  if (!name || name.trim().length < 3) {
+    toast.error('Name must contain at least 3 characters');
+    return false;
+  }
+  if (!/^[A-Za-z\s]+$/.test(name)) {
+    toast.error('Name must contain only letters (A-Za-z)');
+    return false;
+  }
+  return true;
+}
+
+const validatePassword = (password) => {
+  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#\-_^()]).{8,}$/;
+  if (!passwordRegex.test(password)) {
+    toast.error('Password must be at least 8 characters long and include uppercase, lowercase, number, and special character');
+    return false;
+  }
+  return true;
+}
+
 export function LoginPage() {
-  const { login } = useAuth()
+  const { login, verifyStaffOtp } = useAuth()
   const navigate = useNavigate()
   const [form, setForm] = useState({ email: '', password: '' })
   const [show, setShow] = useState(false)
   const [loading, setLoading] = useState(false)
+  
+  // OTP state
+  const [requiresOtp, setRequiresOtp] = useState(false)
+  const [otp, setOtp] = useState('')
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!validateEmail(form.email)) return;
     setLoading(true)
     try {
-      const user = await login(form.email, form.password)
-      toast.success(`Welcome back, ${user.name}!`)
-      navigate(user.role === 'staff' ? '/staff' : '/student')
+      const data = await login(form.email, form.password)
+      
+      if (data.requiresOtp) {
+        setRequiresOtp(true)
+        toast.success('OTP sent to your email')
+      } else {
+        const user = data.user
+        toast.success(`Welcome back, ${user.name}!`)
+        navigate(user.role === 'staff' ? '/staff' : '/student')
+      }
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Login failed')
+      toast.error(err.message || 'Login failed')
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault()
+    if (!otp || otp.length !== 6) {
+      toast.error('Please enter a valid 6-digit OTP')
+      return
+    }
+    setLoading(true)
+    try {
+      const user = await verifyStaffOtp(form.email, otp)
+      toast.success(`Welcome back, ${user.name}!`)
+      navigate('/staff')
+    } catch (err) {
+      toast.error(err.message || 'OTP verification failed')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (requiresOtp) {
+    return (
+      <AuthShell title="Staff Verification" subtitle="Enter the 6-digit code sent to your email">
+        <form onSubmit={handleVerifyOtp} className="space-y-4">
+          <div>
+            <label className="label">OTP Code</label>
+            <input
+              type="text"
+              className="input text-center tracking-[1em] font-700 text-lg"
+              placeholder="000000"
+              maxLength={6}
+              value={otp}
+              onChange={e => setOtp(e.target.value.replace(/\D/g, ''))}
+              required
+            />
+          </div>
+          <button type="submit" disabled={loading} className="btn-primary w-full justify-center mt-2">
+            {loading ? 'Verifying…' : <>Verify & Login <ArrowRight size={15} /></>}
+          </button>
+          <button 
+            type="button" 
+            className="text-sm text-ink-500 hover:text-ink-300 w-full text-center mt-2"
+            onClick={() => setRequiresOtp(false)}
+          >
+            Back to Login
+          </button>
+        </form>
+      </AuthShell>
+    )
   }
 
   return (
@@ -90,19 +172,25 @@ export function LoginPage() {
 export function RegisterPage() {
   const { register } = useAuth()
   const navigate = useNavigate()
-  const [form, setForm] = useState({ name: '', email: '', password: '', regnum: '', role: 'student' })
+  const [form, setForm] = useState({ name: '', email: '', password: '', regnum: '', role: 'student', department: '' })
   const [loading, setLoading] = useState(false)
   const [show, setShow] = useState(false)
 
-  // Live reg-num validation state
-  const regValidation = form.regnum ? validateRegNum(form.regnum, form.role) : null
+  // Live reg-num validation state (now including department cross-check)
+  const regValidation = form.regnum ? validateRegNum(form.regnum, form.role, form.department) : null
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (!validateName(form.name)) return
     if (!validateEmail(form.email)) return
+    if (!validatePassword(form.password)) return
+    if (!form.department) {
+      toast.error('Please select a department')
+      return
+    }
 
     // Client-side reg num check before hitting the server
-    const rv = validateRegNum(form.regnum, form.role)
+    const rv = validateRegNum(form.regnum, form.role, form.department)
     if (!rv.valid) {
       toast.error(rv.message)
       return
@@ -125,7 +213,7 @@ export function RegisterPage() {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="label">Full Name</label>
-          <input className="input" placeholder="John Doe" value={form.name}
+          <input className="input" placeholder="Enter Your Name" value={form.name}
             onChange={e => setForm(p => ({ ...p, name: e.target.value }))} required />
         </div>
         <div>
@@ -144,6 +232,8 @@ export function RegisterPage() {
               onChange={e => setForm(p => ({ ...p, password: e.target.value }))}
               required
               minLength={8}
+              pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#\-_^()]).{8,}$"
+              title="Password must be at least 8 characters long and include uppercase, lowercase, number, and special character"
             />
             <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-500 hover:text-ink-300" onClick={() => setShow(s => !s)}>
               {show ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -170,8 +260,36 @@ export function RegisterPage() {
             ))}
           </div>
         </div>
-        {/* Registration Number with live feedback */}
+          {/* Department selector */}
         <div>
+          <label className="label">Department</label>
+          <select
+            className="input appearance-none bg-no-repeat bg-[right_1rem_center]"
+            style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`, backgroundSize: '1.25rem' }}
+            value={form.department}
+            onChange={e => setForm(p => ({ ...p, department: e.target.value }))}
+            required
+          >
+            <option value="" disabled>Select your department</option>
+            {[
+              { value: "Artificial Intelligence and Data Science", label: "Artificial Intelligence and Data Science (AIDS)" },
+              { value: "Biomedical Engineering", label: "Biomedical Engineering (BME)" },
+              { value: "Civil Engineering", label: "Civil Engineering (CIVIL)" },
+              { value: "Computer Science and Business Systems", label: "Computer Science and Business Systems (CSBS)" },
+              { value: "Computer Science and Engineering", label: "Computer Science and Engineering (CSE)" },
+              { value: "Electronics and Communication Engineering", label: "Electronics and Communication Engineering (ECE)" },
+              { value: "Electrical and Electronics Engineering", label: "Electrical and Electronics Engineering (EEE)" },
+              { value: "Information Technology", label: "Information Technology (IT)" },
+              { value: "Master of Business Administration", label: "Master of Business Administration (MBA)" },
+              { value: "Master of Computer Applications", label: "Master of Computer Applications (MCA)" },
+              { value: "Mechanical Engineering", label: "Mechanical Engineering (ME)" }
+            ].map(dept => (
+              <option key={dept.value} value={dept.value}>{dept.label}</option>
+            ))}
+          </select>
+        </div>
+        {/* Registration Number with live feedback */}
+        <div >
           <label className="label">Registration Number</label>
           <div className="relative">
             <input
@@ -197,17 +315,23 @@ export function RegisterPage() {
           </div>
           {/* Hint line */}
           {regValidation && !regValidation.valid && (
-            <p className="text-red-400 text-xs mt-1">{regValidation.message}</p>
+            <p className="text-red-400 text-xs mt-1 mb-5">{regValidation.message}</p>
           )}
           {!regValidation && (
-            <p className="text-ink-600 text-xs mt-1">
+            <p className="text-ink-600 text-xs mt-2">
               {form.role === 'student'
-                ? 'Format: 8208E[YY][DEPT][3 digits] — e.g. 8208E23BSRxxx'
+                ? `Format: 8208E[YY][DEPT][3 digits] ${form.department && DEPART_CHECKER[form.department] ? `— Use: ${DEPART_CHECKER[form.department].join(' or ')}` : ''}`
                 : 'Format: EGSPxxx or EGSPExxx'}
             </p>
           )}
         </div>
-        <button type="submit" disabled={loading} className="btn-primary w-full justify-center mt-2">
+      
+
+        <button 
+          type="submit" 
+          disabled={loading || (form.regnum && regValidation && !regValidation.valid)} 
+          className={`btn-primary w-full justify-center mt-2 ${ (form.regnum && regValidation && !regValidation.valid) ? 'opacity-50 cursor-not-allowed' : ''}`}
+        >
           {loading ? 'Creating…' : <>Create account <ArrowRight size={15} /></>}
         </button>
       </form>

@@ -1,4 +1,5 @@
 const User = require('../models/User')
+const { validateName } = require('../utils/nameValidator')
 const Material = require('../models/Material')
 const Test = require('../models/Test')
 const Result = require('../models/Result')
@@ -23,9 +24,15 @@ exports.updateStudentProfile = async (req, res) => {
     const student = await User.findById(req.user._id)
     if (!student) return res.status(404).json({ message: 'Student not found' })
 
-    student.name = name || student.name
-    student.department = department || student.department
-    student.avatar = avatar || student.avatar
+    if (name) {
+      const nameValidation = validateName(name)
+      if (!nameValidation.valid) {
+        return res.status(400).json({ success: false, message: nameValidation.message })
+      }
+      student.name = name
+    }
+    if (department) student.department = department
+    if (avatar) student.avatar = avatar
 
     await student.save()
 

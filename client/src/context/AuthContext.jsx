@@ -24,6 +24,10 @@ const login = async (email, password) => {
   try {
     const res = await api.post('/api/auth/login', { email, password })
 
+    if (res.data.requiresOtp) {
+      return res.data
+    }
+
     const { token: t, user: u } = res.data
 
     localStorage.setItem('token', t)
@@ -31,7 +35,7 @@ const login = async (email, password) => {
     setToken(t)
     setUser(u)
 
-    return u
+    return res.data
   } catch (err) {
     const message =
       err.response?.data?.message ||
@@ -41,6 +45,22 @@ const login = async (email, password) => {
     throw new Error(message)
   }
 }
+
+  const verifyStaffOtp = async (email, otp) => {
+    try {
+      const res = await api.post('/api/auth/verify-staff-login-otp', { email, otp })
+      const { token: t, user: u } = res.data
+
+      localStorage.setItem('token', t)
+      api.defaults.headers.common['Authorization'] = `Bearer ${t}`
+      setToken(t)
+      setUser(u)
+
+      return u
+    } catch (err) {
+      throw new Error(err.response?.data?.message || "OTP verification failed")
+    }
+  }
 
   const register = async (data) => {
     const res = await api.post('/api/auth/register', data)
@@ -60,7 +80,7 @@ const login = async (email, password) => {
   }
 
   return (
-    <AuthContext.Provider value={{ user, setUser, token, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, setUser, token, loading, login, register, logout, verifyStaffOtp }}>
       {children}
     </AuthContext.Provider>
   )

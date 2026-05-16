@@ -1,4 +1,5 @@
 const User = require('../models/User')
+const { validateName } = require('../utils/nameValidator')
 const Material = require('../models/Material')
 const Test = require('../models/Test')
 const Result = require('../models/Result')
@@ -48,7 +49,16 @@ exports.updateStaffProfile = async (req, res) => {
       })
     }
 
-    if (name) staff.name = name
+    if (name) {
+      const nameValidation = validateName(name)
+      if (!nameValidation.valid) {
+        return res.status(400).json({
+          success: false,
+          message: nameValidation.message
+        })
+      }
+      staff.name = name
+    }
     if (department) staff.department = department
     if (avatar) staff.avatar = avatar
 
