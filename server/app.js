@@ -18,7 +18,7 @@ const app = express()
 // 🌐 CORS
 app.use(
   cors({
-    origin: [process.env.CLIENT_URL, 'http://localhost:5000', 'http://127.0.0.1:5000',"http://e-g-s-learning-platform-rwqx.vercel.app"],
+    origin: [process.env.CLIENT_URL, 'http://localhost:5000', 'http://127.0.0.1:5000',"https://e-g-s-learning-platform-uy7c.vercel.app/"],
     credentials: true,
   })
 )
