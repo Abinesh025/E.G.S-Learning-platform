@@ -76,4 +76,4 @@ exports.protectAny = async (req, res, next) => {
   } catch (error) {
     return res.status(401).json({ message: 'Token failed or expired' })
   }
-}
+}

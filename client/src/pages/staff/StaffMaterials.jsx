@@ -3,6 +3,7 @@ import api from '../../services/api'
 import { BookOpen, Upload, Trash2, Video, Mic, File, Plus, X, Play, Eye, Download, Pause, ArrowLeft, Pencil } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
+import { DEPART_CHECKER } from '../../utils/deptChecker'
 
 const typeConfig = {
   notes: { icon: BookOpen, color: 'tag-lime' },
@@ -19,6 +20,7 @@ export default function StaffMaterials() {
   const [editId, setEditId] = useState(null)
   const [uploading, setUploading] = useState(false)
   const [progress, setProgress] = useState(0)
+  const [filterDept, setFilterDept] = useState('')
   const [form, setForm] = useState({
     title: '',
     description: '',
@@ -123,20 +125,36 @@ export default function StaffMaterials() {
       toast.error(err.response?.data?.message || 'Delete failed')
     }
   }
+
+  const filteredMaterials = filterDept 
+    ? materials.filter(m => m.department === filterDept) 
+    : materials;
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
       <Link to="/staff" className="inline-flex items-center gap-2 text-ink-400 hover:text-lime-300 transition-colors mb-2 text-sm font-500">
         <ArrowLeft size={16} /> Back to Dashboard
       </Link>
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <h1 className="page-title">Materials</h1>
-        <button onClick={() => {
-          setEditId(null)
-          setForm({ title: '', description: '', type: 'notes', subject: '', department: '', unit: '', topic: '' })
-          setShowForm(s => !s)
-        }} className="btn-primary">
-          {showForm ? <><X size={15} /> Cancel</> : <><Plus size={15} /> Upload</>}
-        </button>
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          <select 
+            className="input py-1.5 min-w-[200px]" 
+            value={filterDept} 
+            onChange={e => setFilterDept(e.target.value)}
+          >
+            <option value="">All Departments</option>
+            {Object.keys(DEPART_CHECKER).map(dept => (
+              <option key={dept} value={dept}>{dept}</option>
+            ))}
+          </select>
+          <button onClick={() => {
+            setEditId(null)
+            setForm({ title: '', description: '', type: 'notes', subject: '', department: '', unit: '', topic: '' })
+            setShowForm(s => !s)
+          }} className="btn-primary whitespace-nowrap">
+            {showForm ? <><X size={15} /> Cancel</> : <><Plus size={15} /> Upload</>}
+          </button>
+        </div>
       </div>
 
       {/* Upload/Edit form */}
@@ -185,13 +203,17 @@ export default function StaffMaterials() {
               </div>
               <div>
                 <label className="label">Department</label>
-                <input
+                <select
                   className="input"
-                  placeholder="Department (e.g., CSE)"
                   value={form.department}
                   onChange={e => setForm(p => ({ ...p, department: e.target.value }))}
                   required
-                />
+                >
+                  <option value="" disabled>Select Department</option>
+                  {Object.keys(DEPART_CHECKER).map(dept => (
+                    <option key={dept} value={dept}>{dept}</option>
+                  ))}
+                </select>
               </div>
               {!editId && (
                 <div>
@@ -273,7 +295,7 @@ export default function StaffMaterials() {
       <div className="card overflow-hidden">
         {loading ? (
           <div className="p-8 text-center text-ink-500 text-sm">Loading…</div>
-        ) : materials.length === 0 ? (
+        ) : filteredMaterials.length === 0 ? (
           <div className="p-12 text-center">
             <BookOpen size={32} className="text-ink-700 mx-auto mb-3" />
             <p className="text-ink-500 text-sm">No materials uploaded yet</p>
@@ -289,7 +311,7 @@ export default function StaffMaterials() {
               </tr>
             </thead>
             <tbody>
-              {Array.isArray(materials) && materials.map((m, i) => {
+              {Array.isArray(filteredMaterials) && filteredMaterials.map((m, i) => {
                 const cfg = typeConfig[m.type] || typeConfig.file
                 const Icon = cfg.icon
                 return (

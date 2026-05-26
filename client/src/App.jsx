@@ -26,7 +26,8 @@ import toast from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
 import { useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
-import Ai from './pages/Ai/Ai'
+import Ai from './pages/DeptContent/Ai'
+import EEE from './pages/DeptContent/EEE'
 
 function ProtectedRoute({ children, role }) {
   const { user, loading } = useAuth()
@@ -103,6 +104,9 @@ function DynamicTitle() {
   )
 }
 
+import Settings from './pages/settings/Settings'
+import EditProfile from './pages/settings/EditProfile'
+
 function AppRoutes() {
   const { user, loading } = useAuth()
   const hasAdminToken = !!sessionStorage.getItem('adminToken')
@@ -158,6 +162,7 @@ function AppRoutes() {
         <Route path="/student/results" element={<ProtectedRoute role="student"><Layout><StudentResults /></Layout></ProtectedRoute>} />
         <Route path="/student/chat" element={<ProtectedRoute role="student"><Layout><ChatPage /></Layout></ProtectedRoute>} />
         <Route path="/student/ai" element={<ProtectedRoute role="student"><Layout><Ai /></Layout></ProtectedRoute>} />
+        <Route path="/student/eee" element={<ProtectedRoute role="student"><Layout><EEE /></Layout></ProtectedRoute>} />
 
         {/* Staff routes */}
         <Route path="/staff" element={<ProtectedRoute role="staff"><Layout><StaffDashboard /></Layout></ProtectedRoute>} />
@@ -176,6 +181,8 @@ function AppRoutes() {
         
         {/* Universal Protected Routes */}
         <Route path="/change-password" element={<ProtectedRoute><Layout><ChangePassword /></Layout></ProtectedRoute>} />
+        <Route path="/settings" element={<ProtectedRoute><Layout><Settings /></Layout></ProtectedRoute>} />
+        <Route path="/profile/edit" element={<ProtectedRoute><Layout><EditProfile /></Layout></ProtectedRoute>} />
 
         {/* Catch-all — also redirects to /admin if admin mode is on */}
         <Route path="*" element={hasAdminToken ? <Navigate to="/admin" replace /> : <Navigate to="/" replace />} />

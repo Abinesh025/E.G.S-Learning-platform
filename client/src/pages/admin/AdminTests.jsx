@@ -7,6 +7,7 @@ import {
   ChevronDown, ChevronUp, Users, Clock, Hash, Search, ArrowLeft
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { DEPART_CHECKER } from '../../utils/deptChecker'
 
 const TABS = ['All Tests', 'Create Test', 'Student Results']
 
@@ -240,14 +241,9 @@ export default function AdminTest() {
               onChange={e => setDepartmentFilter(e.target.value)}
             >
               <option value="">All Departments</option>
-              <option value="CSE">CSE</option>
-              <option value="IT">IT</option>
-              <option value="ECE">ECE</option>
-              <option value="MECH">MECH</option>
-              <option value="CIVIL">CIVIL</option>
-              <option value="EEE">EEE</option>
-              <option value="AI&DS">AI&DS</option>
-              <option value="CSBS">CSBS</option>
+              {Object.keys(DEPART_CHECKER).map(dept => (
+                <option key={dept} value={dept}>{dept}</option>
+              ))}
             </select>
             <button onClick={() => { setEditId(null); setForm(EMPTY_FORM); setActiveTab(1) }}
               className="flex items-center gap-2 px-4 py-2 bg-lime-400/10 border border-lime-400/30
@@ -482,14 +478,9 @@ export default function AdminTest() {
                   className="px-3 py-2 bg-ink-900 border border-ink-800 rounded-xl text-sm text-ink-100 focus:outline-none focus:border-ink-600"
                 >
                   <option value="">All Departments</option>
-                  <option value="CSE">CSE</option>
-                  <option value="IT">IT</option>
-                  <option value="ECE">ECE</option>
-                  <option value="MECH">MECH</option>
-                  <option value="CIVIL">CIVIL</option>
-                  <option value="EEE">EEE</option>
-                  <option value="AI&DS">AI&DS</option>
-                  <option value="CSBS">CSBS</option>
+                  {Object.keys(DEPART_CHECKER).map(dept => (
+                    <option key={dept} value={dept}>{dept}</option>
+                  ))}
                 </select>
               </div>
               <div className="overflow-x-auto bg-ink-900 border border-ink-800 rounded-xl">

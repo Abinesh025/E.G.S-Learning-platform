@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext'
 import { Link } from 'react-router-dom'
 import { FileText, Clock, CheckCircle, Play, X, ChevronRight, ChevronLeft, ArrowLeft } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { DEPART_CHECKER } from '../../utils/deptChecker'
 
 export default function StudentTests() {
   const { token } = useAuth()
@@ -53,14 +54,9 @@ export default function StudentTests() {
             onChange={e => setDepartmentFilter(e.target.value)}
           >
             <option value="">My Department's Tests</option>
-            <option value="CSE">CSE</option>
-            <option value="IT">IT</option>
-            <option value="ECE">ECE</option>
-            <option value="MECH">MECH</option>
-            <option value="CIVIL">CIVIL</option>
-            <option value="EEE">EEE</option>
-            <option value="AI&DS">AI&DS</option>
-            <option value="CSBS">CSBS</option>
+            {Object.keys(DEPART_CHECKER).map(dept => (
+              <option key={dept} value={dept}>{dept}</option>
+            ))}
           </select>
         </div>
       </div>

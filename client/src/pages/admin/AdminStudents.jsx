@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext'
 import { Pencil, Trash2, Plus } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useEffect, useState } from 'react'
+import { DEPART_CHECKER } from '../../utils/deptChecker'
 
 const empty = { name: '', email: '', phone: '',regnum:"", batch: '', department: '', password: '' }
 
@@ -105,14 +106,9 @@ export default function AdminStudents() {
             onChange={e => setDepartmentFilter(e.target.value)}
           >
             <option value="">All Departments</option>
-            <option value="CSE">CSE</option>
-            <option value="IT">IT</option>
-            <option value="ECE">ECE</option>
-            <option value="MECH">MECH</option>
-            <option value="CIVIL">CIVIL</option>
-            <option value="EEE">EEE</option>
-            <option value="AI&DS">AI&DS</option>
-            <option value="CSBS">CSBS</option>
+            {Object.keys(DEPART_CHECKER).map(dept => (
+              <option key={dept} value={dept}>{dept}</option>
+            ))}
           </select>
         </div>
 
@@ -168,12 +164,21 @@ export default function AdminStudents() {
           <div className="bg-ink-900 border border-ink-800 rounded-2xl p-6 w-full max-w-sm mx-4">
             <h2 className="text-ink-100 font-semibold mb-4">{editing ? 'Edit Student' : 'Add Student'}</h2>
             <div className="space-y-3">
-              {[['name','Name'],['email','Email'],['phone','Phone'],['regnum','RegNum'],['department','Department'],['batch','Batch']].map(([field, label]) => (
+              {[['name','Name'],['email','Email'],['phone','Phone'],['regnum','RegNum'],['batch','Batch']].map(([field, label]) => (
                 <div key={field}>
                   <label className="text-ink-500 text-xs mb-1 block">{label}</label>
                   <input className="input w-full text-sm" value={form[field]} onChange={e => setForm({ ...form, [field]: e.target.value })} />
                 </div>
               ))}
+              <div>
+                <label className="text-ink-500 text-xs mb-1 block">Department</label>
+                <select className="input w-full text-sm" value={form.department} onChange={e => setForm({ ...form, department: e.target.value })}>
+                  <option value="" disabled>Select Department</option>
+                  {Object.keys(DEPART_CHECKER).map(dept => (
+                    <option key={dept} value={dept}>{dept}</option>
+                  ))}
+                </select>
+              </div>
               {!editing && (
                 <div>
                   <label className="text-ink-500 text-xs mb-1 block">Password</label>

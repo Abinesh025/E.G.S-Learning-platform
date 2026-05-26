@@ -20,6 +20,11 @@ const materialSchema = new mongoose.Schema(
       trim: true
     },
 
+    subjectName: {
+      type: String,
+      trim: true
+    },
+
     unit: {
       type: String,
       required: true,
@@ -51,6 +56,10 @@ const materialSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: true
+    },
+    staffName: {
+      type: String,
+      trim: true
     }
   },
   {

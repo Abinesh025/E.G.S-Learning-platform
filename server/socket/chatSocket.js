@@ -26,6 +26,13 @@ const initSocket = (server) => {
       console.log('User joined room:', room)
     })
     
+    socket.on('joinDepartmentRoom', (data) => {
+      if (data && data.department) {
+        socket.join(data.department)
+        console.log(`User joined department room: ${data.department}`)
+      }
+    })
+
     socket.on('leaveRoom', (room) => {
       socket.leave(room)
       console.log('User left room:', room)

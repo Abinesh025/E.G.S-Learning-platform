@@ -1,0 +1,5 @@
+ValidationError: Material validation failed: department: `Computer Science and Business ...` is not a valid enum value for path `department`.
+    at Document.invalidate (C:\Users\abi18\OneDrive\Desktop\egs\E.G.S-Learning-Platform\server\node_modules\mongoose\lib\document.js:3381:32)
+    at C:\Users\abi18\OneDrive\Desktop\egs\E.G.S-Learning-Platform\server\node_modules\mongoose\lib\document.js:3142:17
+    at C:\Users\abi18\OneDrive\Desktop\egs\E.G.S-Learning-Platform\server\node_modules\mongoose\lib\schemaType.js:1446:9
+    at process.processTicksAndRejections (node:internal/process/task_queues:85:11)

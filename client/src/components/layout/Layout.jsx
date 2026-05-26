@@ -27,6 +27,7 @@ const studentNav = [
   { to: '/student/results', label: 'My Results', icon: BarChart3 },
   { to: '/student/chat', label: 'Chat', icon: MessageSquare },
   { to: '/student/ai', label: 'Learn About Ai', icon: SparkleIcon},
+  { to: '/student/eee', label: 'Learn About Micro-Controller', icon: SparkleIcon},
 ]
 
 const staffNav = [
@@ -150,30 +151,41 @@ export default function Layout({ children }) {
 
   const Sidebar = ({ collapsed, onToggle }) => (
     <aside className={clsx(
-      collapsed ? 'w-0 border-none opacity-0' : 'w-64 border-r opacity-100',
-      'flex flex-col h-full bg-ink-900 border-ink-800 transition-all duration-300 overflow-hidden'
+      collapsed ? 'w-16 opacity-100' : 'w-64 opacity-100',
+      'flex flex-col h-full bg-ink-900 border-ink-800 transition-all duration-300 overflow-hidden border-r'
     )}>
       {/* Logo */}
-      <div className="flex items-center justify-between gap-3 px-5 py-5 border-b border-ink-800">
-        <div className="w-8 h-8 bg-lime-400 rounded-lg flex items-center justify-center">
-          <GraduationCap size={16} className="text-white" />
-        </div>
-        {!collapsed && (
-          <span className="font-display font-700 text-ink-50 text-lg tracking-tight">
-            Academic Hub
-          </span>
+      <div className={clsx(
+        "flex items-center justify-between gap-3 border-b border-ink-800",
+        collapsed ? "px-2 py-5 justify-center" : "px-5 py-5"
+      )}>
+        {collapsed ? (
+          <button onClick={onToggle} className="p-1.5 rounded-lg hover:bg-ink-800 text-ink-400" title="Expand Sidebar">
+            <PanelLeft size={18} />
+          </button>
+        ) : (
+          <>
+            <div className="w-8 h-8 bg-lime-400 rounded-lg flex items-center justify-center shrink-0">
+              <GraduationCap size={16} className="text-white" />
+            </div>
+            <span className="font-display font-700 text-ink-50 text-lg tracking-tight truncate">
+              Academic Hub
+            </span>
+            <button onClick={onToggle} className="p-1.5 rounded-lg hover:bg-ink-800 text-ink-400 shrink-0" title="Collapse Sidebar">
+              <PanelLeftClose size={18} />
+            </button>
+          </>
         )}
-        <button onClick={onToggle} className="p-1.5 rounded-lg hover:bg-ink-800 text-ink-400">
-          {collapsed ? <PanelLeft size={18} /> : <PanelLeftClose size={18} />}
-        </button>
       </div>
 
       {/* Role badge */}
-      <div className="px-5 py-3">
-        <span className={clsx('badge text-xs', roleBadgeClass,roleLabel==="⬡ Admin" ? "bg-yellow-100  text-yellow":"")}>
-          {roleLabel}
-        </span>
-      </div>
+      {!collapsed && (
+        <div className="px-5 py-3">
+          <span className={clsx('badge text-xs', roleBadgeClass, roleLabel==="⬡ Admin" ? "bg-yellow-100 text-yellow" : "")}>
+            {roleLabel}
+          </span>
+        </div>
+      )}
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-2 space-y-0.5 overflow-y-auto">
@@ -184,6 +196,7 @@ export default function Layout({ children }) {
           return (
             <button
               key={to}
+              title={collapsed ? label : undefined}
               onClick={() => {
                 setOpen(false)
                 if (isActive) return // Do nothing if already there
@@ -199,8 +212,8 @@ export default function Layout({ children }) {
               }}
               className={clsx('nav-link w-full text-left', isActive && 'active', collapsed && 'justify-center px-0')}
             >
-              <Icon size={16} />
-              {!collapsed && label}
+              <Icon size={16} className="shrink-0" />
+              {!collapsed && <span className="truncate">{label}</span>}
             </button>
           )
         })}
@@ -442,17 +455,6 @@ export default function Layout({ children }) {
       {/* ── Middle row: sidebar + scrollable content ── */}
       <div className="flex flex-1 min-h-0 overflow-hidden relative">
         
-        {/* Sidebar toggle button (below navbar, only when collapsed) */}
-        {sidebarCollapsed && (
-          <button 
-            onClick={toggleSidebar}
-            className="absolute top-4 left-4 z-40 p-2.5 rounded-xl bg-ink-900 border border-ink-800 text-ink-400 hover:text-lime-400 hover:border-lime-400/50 transition-all duration-300 shadow-xl hidden md:flex items-center justify-center group" 
-            aria-label="Open sidebar"
-          >
-            <PanelLeftOpen size={20} className="group-hover:scale-110 transition-transform duration-300" />
-          </button>
-        )}
-
         {/* Desktop sidebar — sits between navbar and footer */}
         <div className="hidden md:flex md:flex-shrink-0">
           <Sidebar collapsed={sidebarCollapsed} onToggle={toggleSidebar} />
@@ -462,17 +464,14 @@ export default function Layout({ children }) {
         {open && (
           <div className="fixed inset-0 z-50 md:hidden flex">
             <div className="flex-shrink-0">
-      <Sidebar collapsed={sidebarCollapsed} onToggle={toggleSidebar} />
+              <Sidebar collapsed={false} onToggle={() => setOpen(false)} />
             </div>
             <div className="flex-1 bg-ink-950/80 backdrop-blur-sm" onClick={() => setOpen(false)} />
           </div>
         )}
 
         {/* Page content */}
-        <main className={clsx(
-          "flex-1 overflow-y-auto min-w-0 transition-all duration-300",
-          sidebarCollapsed && "md:pl-16"
-        )}>
+        <main className="flex-1 overflow-y-auto min-w-0 transition-all duration-300">
           {children}
         </main>
       </div>

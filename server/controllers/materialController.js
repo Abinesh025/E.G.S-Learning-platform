@@ -4,6 +4,9 @@ const https = require('https')
 const http = require('http')
 const path = require('path')
 const fs = require('fs')
+const Notification = require('../models/Notification')
+const User = require('../models/User')
+const { getIo } = require('../socket/chatSocket')
 
 // Map common extensions → MIME types for correct browser previewing
 const MIME_MAP = {
@@ -118,22 +121,67 @@ exports.uploadMaterial = async (req, res) => {
       fileUrl = `/uploads/materials/${filename}`
     }
 
+    // Get staff name from req.user.name or req.user
+    const staffUser = await User.findById(req.user._id);
+    const staffName = staffUser ? staffUser.name : 'Staff';
+    // We use req.body.subjectName if available, else fallback to subject
+    const actualSubjectName = req.body.subjectName || subject;
+
     const newMaterial = await Material.create({
       title,
       description,
       type: finalType,
       subject,
+      subjectName: actualSubjectName,
       unit,
       topic,
       department,
       fileUrl,
       fileType: finalType,
       uploadedBy: req.user._id,
+      staffName
     })
+
+    // Find students in the same department
+    const students = await User.find({ role: 'student', department: department })
+    
+    // Create notifications for them
+    const notificationMessage = `${staffName} uploaded new material for ${actualSubjectName}`
+    
+    const notifications = students.map(student => ({
+      user: student._id,
+      title: "New Material Uploaded",
+      message: notificationMessage,
+      type: "material",
+      department: department,
+      staffName: staffName,
+      subjectName: actualSubjectName,
+      materialId: newMaterial._id,
+      isRead: false
+    }))
+
+    if (notifications.length > 0) {
+      await Notification.insertMany(notifications);
+    }
+
+    // Emit Socket.IO event
+    const io = getIo();
+    if (io) {
+      io.to(department).emit('newMaterialNotification', {
+        title: "New Material Uploaded",
+        message: notificationMessage,
+        staffName: staffName,
+        subjectName: actualSubjectName,
+        department: department,
+        materialId: newMaterial._id,
+        createdAt: newMaterial.createdAt
+      });
+    }
 
     res.status(201).json(newMaterial)
   } catch (err) {
     console.error(err)
+    require('fs').writeFileSync('C:/Users/abi18/OneDrive/Desktop/egs/E.G.S-Learning-Platform/server/error_log.txt', err.stack || err.message)
     res.status(500).json({ message: 'Material upload failed', error: err.message })
   }
 }

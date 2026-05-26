@@ -5,6 +5,7 @@ import { Pencil, Trash2, Plus, CheckCircle, XCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useEffect, useState } from 'react'
 import { validateRegNum } from '../../utils/regNumValidator'
+import { DEPART_CHECKER } from '../../utils/deptChecker'
 
 const empty = { name: '', email: '', phone: '', department: '', password: '', regnum: '' }
 
@@ -122,14 +123,9 @@ export default function AdminStaff() {
             onChange={e => setDepartmentFilter(e.target.value)}
           >
             <option value="">All Departments</option>
-            <option value="CSE">CSE</option>
-            <option value="IT">IT</option>
-            <option value="ECE">ECE</option>
-            <option value="MECH">MECH</option>
-            <option value="CIVIL">CIVIL</option>
-            <option value="EEE">EEE</option>
-            <option value="AI&DS">AI&DS</option>
-            <option value="CSBS">CSBS</option>
+            {Object.keys(DEPART_CHECKER).map(dept => (
+              <option key={dept} value={dept}>{dept}</option>
+            ))}
           </select>
         </div>
 
@@ -191,12 +187,21 @@ export default function AdminStaff() {
           <div className="bg-ink-900 border border-ink-800 rounded-2xl p-6 w-full max-w-sm mx-4">
             <h2 className="text-ink-100 font-semibold mb-4">{editing ? 'Edit Staff' : 'Add Staff'}</h2>
             <div className="space-y-3">
-              {[['name','Name'],['email','Email'],['phone','Phone'],['department','Department']].map(([field, label]) => (
+              {[['name','Name'],['email','Email'],['phone','Phone']].map(([field, label]) => (
                 <div key={field}>
                   <label className="text-ink-500 text-xs mb-1 block">{label}</label>
                   <input className="input w-full text-sm" value={form[field]} onChange={e => setForm({ ...form, [field]: e.target.value })} />
                 </div>
               ))}
+              <div>
+                <label className="text-ink-500 text-xs mb-1 block">Department</label>
+                <select className="input w-full text-sm" value={form.department} onChange={e => setForm({ ...form, department: e.target.value })}>
+                  <option value="" disabled>Select Department</option>
+                  {Object.keys(DEPART_CHECKER).map(dept => (
+                    <option key={dept} value={dept}>{dept}</option>
+                  ))}
+                </select>
+              </div>
               {/* Reg Number with validation */}
               <div>
                 <label className="text-ink-500 text-xs mb-1 block">Reg. Number (e.g. EGSP001 / EGSPE001)</label>

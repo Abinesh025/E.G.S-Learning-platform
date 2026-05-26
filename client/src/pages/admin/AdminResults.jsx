@@ -2,8 +2,7 @@ import api from '../../services/api'
 import { Trash2, Search } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-
-const DEPARTMENTS = ['CSE', 'IT', 'ECE', 'MECH', 'CIVIL', 'EEE', 'AI&DS', 'CSBS']
+import { DEPART_CHECKER } from '../../utils/deptChecker'
 
 export default function AdminResults() {
   const [results, setResults] = useState([])
@@ -64,7 +63,7 @@ export default function AdminResults() {
           className="px-3 py-2 bg-ink-900 border border-ink-800 rounded-lg text-sm text-ink-100 focus:outline-none focus:border-ink-600"
         >
           <option value="">All Departments</option>
-          {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
+          {Object.keys(DEPART_CHECKER).map(d => <option key={d} value={d}>{d}</option>)}
         </select>
       </div>
 

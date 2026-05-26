@@ -14,6 +14,7 @@ const typeConfig = {
 import MaterialViewer from '../../components/MaterialViewer'
 
 import { Link } from 'react-router-dom'
+import { DEPART_CHECKER } from '../../utils/deptChecker'
 
 export default function StudentMaterials() {
   const { token } = useAuth()
@@ -78,14 +79,9 @@ export default function StudentMaterials() {
             onChange={e => setDepartmentFilter(e.target.value)}
           >
             <option value="">All Departments</option>
-            <option value="CSE">CSE</option>
-            <option value="IT">IT</option>
-            <option value="ECE">ECE</option>
-            <option value="MECH">MECH</option>
-            <option value="CIVIL">CIVIL</option>
-            <option value="EEE">EEE</option>
-            <option value="AI&DS">AI&DS</option>
-            <option value="CSBS">CSBS</option>
+            {Object.keys(DEPART_CHECKER).map(dept => (
+              <option key={dept} value={dept}>{dept}</option>
+            ))}
           </select>
         </div>
         <div className="flex gap-2 flex-wrap">

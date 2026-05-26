@@ -12,13 +12,14 @@ const materialRoutes = require('./routes/materialRoutes')
 const testRoutes = require('./routes/testRoutes')
 const chatRoutes = require('./routes/chatRoutes')
 const adminRoutes = require('./routes/adminRoutes')
+const notificationRoutes = require('./routes/notificationRoutes')
 
 const app = express()
 
 // 🌐 CORS
 app.use(
   cors({
-    origin: [process.env.CLIENT_URL, 'http://localhost:5000', 'http://127.0.0.1:5000',"https://egs-lms.vercel.app",],
+    origin: [process.env.CLIENT_URL, 'http://localhost:5000', 'https://127.0.0.1:5000',"https://egs-lms.vercel.app",],
     credentials: true,
   })
 )
@@ -44,6 +45,7 @@ app.use('/api/materials', materialRoutes)
 app.use('/api/tests', testRoutes)
 app.use('/api/chat', chatRoutes)
 app.use('/api/admin', adminRoutes)
+app.use('/api/notifications', notificationRoutes)
 
 // ❤️ Root
 app.get('/', (req, res) => {
