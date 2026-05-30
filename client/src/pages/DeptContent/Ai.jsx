@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useTheme } from '../../context/ThemeContext'
 import llmImage from "../../assets/llm.png" // or ../../assets/llm-cropped.png
 
 const AI_MODELS = {
@@ -254,6 +255,7 @@ const AI_MODELS = {
 }
 
 function StepCard({ step, index, color, lightBg }) {
+  const { isLight } = useTheme();
   const ref = useRef(null)
   const [visible, setVisible] = useState(false)
   const [expanded, setExpanded] = useState(false)
@@ -311,18 +313,18 @@ function StepCard({ step, index, color, lightBg }) {
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-2 mb-1">
-              <h3 className="font-semibold text-gray-900 font-body text-[15px]">
+              <h3 className={`font-semibold ${isLight ? 'text-gray-900' : 'text-ink-50'} font-body text-[15px]`}>
                 {step.title}
               </h3>
               <span className="text-gray-400 text-sm">{expanded ? '−' : '+'}</span>
             </div>
 
-            <p className="text-gray-600 text-sm leading-relaxed">{step.desc}</p>
+            <p className={`${isLight ? 'text-gray-600' : 'text-ink-300'} text-sm leading-relaxed`}>{step.desc}</p>
 
             <div className="flex flex-wrap gap-2 mt-3">
               <div
                 className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg"
-                style={{ background: '#f9fafb', border: '1px solid #e5e7eb' }}
+                style={{ background: isLight ? '#f9fafb' : 'rgba(255, 255, 255, 0.02)', border: isLight ? '1px solid #e5e7eb' : '1px solid rgba(255, 255, 255, 0.08)' }}
               >
                 <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
                   Time
@@ -357,17 +359,17 @@ function StepCard({ step, index, color, lightBg }) {
                 >
                   Deep Dive
                 </p>
-                <p className="text-sm text-gray-700 leading-relaxed">{step.detail}</p>
+                <p className={`text-sm ${isLight ? 'text-gray-700' : 'text-ink-200'} leading-relaxed`}>{step.detail}</p>
               </div>
 
-              <div className="rounded-xl p-3 bg-gray-50">
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 mb-1.5">
+              <div className={`rounded-xl p-3 ${isLight ? 'bg-gray-50' : 'bg-ink-950'}`}>
+                <p className={`text-[11px] font-semibold uppercase tracking-wider ${isLight ? 'text-gray-500' : 'text-ink-400'} mb-1.5`}>
                   Time Complexity
                 </p>
                 <p className="complexity-badge text-base block mb-1" style={{ color }}>
                   {step.time}
                 </p>
-                <p className="text-xs text-gray-500">{step.timeNote}</p>
+                <p className={`text-xs ${isLight ? 'text-gray-500' : 'text-ink-400'}`}>{step.timeNote}</p>
               </div>
 
               <div className="rounded-xl p-3 bg-gray-50">
@@ -388,24 +390,25 @@ function StepCard({ step, index, color, lightBg }) {
 }
 
 function ComplexityTable({ model }) {
+  const { isLight } = useTheme();
   const { steps, color } = AI_MODELS[model]
 
   return (
-    <div className="overflow-x-auto rounded-2xl border border-gray-100 shadow-sm">
+    <div className={`overflow-x-auto rounded-2xl border ${isLight ? 'border-gray-100' : 'border-ink-800'} shadow-sm`}>
       <table className="w-full text-sm">
         <thead>
           <tr style={{ background: `${AI_MODELS[model].color}10` }}>
-            <th className="text-left px-4 py-3 font-semibold text-gray-700 font-body w-8">#</th>
-            <th className="text-left px-4 py-3 font-semibold text-gray-700 font-body">Step</th>
+            <th className={`text-left px-4 py-3 font-semibold ${isLight ? 'text-gray-700' : 'text-ink-200'} font-body w-8`}>#</th>
+            <th className={`text-left px-4 py-3 font-semibold ${isLight ? 'text-gray-700' : 'text-ink-200'} font-body`}>Step</th>
             <th className="text-left px-4 py-3 font-semibold text-gray-700 font-body">Time</th>
             <th className="text-left px-4 py-3 font-semibold text-gray-700 font-body">Space</th>
           </tr>
         </thead>
         <tbody>
           {steps.map((s, i) => (
-            <tr key={s.id} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+            <tr key={s.id} className={i % 2 === 0 ? (isLight ? 'bg-white' : 'bg-ink-900') : (isLight ? 'bg-gray-50' : 'bg-ink-950')}>
               <td className="px-4 py-3 text-gray-400 font-mono text-xs">{s.id}</td>
-              <td className="px-4 py-3 text-gray-800 font-medium">{s.title}</td>
+              <td className={`px-4 py-3 ${isLight ? 'text-gray-800' : 'text-ink-100'} font-medium`}>{s.title}</td>
               <td className="px-4 py-3">
                 <span className="complexity-badge" style={{ color }}>
                   {s.time}
@@ -425,15 +428,16 @@ function ComplexityTable({ model }) {
 }
 
 function PipelineDiagram({ model }) {
+  const { isLight } = useTheme();
   const m = AI_MODELS[model]
   const icons = ['⬡', '↔', '◎', '⊕', '★', '▶']
 
   return (
     <div
-      className="relative overflow-hidden rounded-2xl border border-gray-100 p-6"
+      className={`relative overflow-hidden rounded-2xl border ${isLight ? 'border-gray-100' : 'border-ink-800'} p-6`}
       style={{ background: m.lightBg }}
     >
-      <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-4">
+      <p className={`text-xs font-semibold uppercase tracking-widest ${isLight ? 'text-gray-400' : 'text-ink-500'} mb-4`}>
         Real-Time Pipeline
       </p>
 
@@ -447,7 +451,7 @@ function PipelineDiagram({ model }) {
               >
                 {icons[i]}
               </div>
-              <span className="text-[9px] text-gray-500 text-center w-14 leading-tight">
+              <span className={`text-[9px] ${isLight ? 'text-gray-500' : 'text-ink-400'} text-center w-14 leading-tight`}>
                 {s.title}
               </span>
             </div>
@@ -474,6 +478,7 @@ function PipelineDiagram({ model }) {
 }
 
 function ModelInfoCard({ model }) {
+  const { isLight } = useTheme();
   const m = AI_MODELS[model]
 
   const rows = [
@@ -484,24 +489,24 @@ function ModelInfoCard({ model }) {
   ]
 
   return (
-    <div className="rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
+    <div className={`rounded-2xl border ${isLight ? 'border-gray-100' : 'border-ink-800'} overflow-hidden shadow-sm`}>
       <div className="px-5 py-4" style={{ background: m.lightBg }}>
-        <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-2">
+        <p className={`text-xs font-semibold uppercase tracking-widest ${isLight ? 'text-gray-400' : 'text-ink-500'} mb-2`}>
           Model Specs
         </p>
         <p className="font-display font-bold text-2xl" style={{ color: m.color }}>
           {m.name}
         </p>
-        <p className="text-sm text-gray-500">{m.company}</p>
+        <p className={`text-sm ${isLight ? 'text-gray-500' : 'text-ink-400'}`}>{m.company}</p>
       </div>
 
-      <div className="divide-y divide-gray-50">
+      <div className={`divide-y ${isLight ? 'divide-gray-50' : 'divide-ink-800'}`}>
         {rows.map((r) => (
-          <div key={r.label} className="flex gap-3 px-5 py-3">
-            <span className="text-xs font-semibold text-gray-400 w-28 flex-shrink-0 mt-0.5">
+          <div key={r.label} className={`flex gap-3 px-5 py-3 ${isLight ? '' : 'bg-ink-900'}`}>
+            <span className={`text-xs font-semibold ${isLight ? 'text-gray-400' : 'text-ink-500'} w-28 flex-shrink-0 mt-0.5`}>
               {r.label}
             </span>
-            <span className="text-sm text-gray-700">{r.value}</span>
+            <span className={`text-sm ${isLight ? 'text-gray-700' : 'text-ink-200'}`}>{r.value}</span>
           </div>
         ))}
       </div>
@@ -510,6 +515,7 @@ function ModelInfoCard({ model }) {
 }
 
 export default function Ai() {
+  const { isLight } = useTheme();
   const [activeModel, setActiveModel] = useState('chatgpt')
   const m = AI_MODELS[activeModel]
 
@@ -520,9 +526,9 @@ export default function Ai() {
   ]
 
   return (
-    <div className="min-h-screen bg-white font-body">
+    <div className={`min-h-screen ${isLight ? 'bg-white text-gray-900' : 'bg-ink-950 text-ink-100'} font-body transition-colors duration-300`}>
       {/* Hero */}
-      <header className="relative border-b border-gray-100 overflow-hidden">
+      <header className={`relative border-b ${isLight ? 'border-gray-100' : 'border-ink-800'} overflow-hidden`}>
         <div
           className="absolute inset-0 opacity-[0.03]"
           style={{
@@ -533,12 +539,12 @@ export default function Ai() {
         />
 
         <div className="relative max-w-5xl mx-auto px-4 sm:px-6 py-10 sm:py-16 text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gray-200 text-xs text-gray-500 mb-6">
+          <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full border ${isLight ? 'border-gray-200 text-gray-500' : 'border-ink-800 text-ink-400'} text-xs mb-6`}>
             <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
             Real-Time Architecture Deep Dive
           </div>
 
-          <h1 className="font-body font-black text-3xl sm:text-5xl lg:text-6xl tracking-wide text-gray-900 leading-[1.1] mb-4">
+          <h1 className={`font-body font-black text-3xl sm:text-5xl lg:text-6xl tracking-wide ${isLight ? 'text-gray-900' : 'text-ink-50'} leading-[1.1] mb-4`}>
             How AI Models
             <br />
             <span
@@ -553,7 +559,7 @@ export default function Ai() {
             </span>
           </h1>
 
-          <p className="text-gray-500 text-base sm:text-lg max-w-xl mx-auto leading-relaxed">
+          <p className={`${isLight ? 'text-gray-500' : 'text-ink-400'} text-base sm:text-lg max-w-xl mx-auto leading-relaxed`}>
             A step-by-step breakdown of the 6 pipeline stages powering ChatGPT, Claude,
             and DeepSeek — with time and space complexity at every stage.
           </p>
@@ -578,7 +584,7 @@ export default function Ai() {
       </header>
 
       {/* Tabs */}
-      <div className="sticky top-0 z-40 bg-white/90 backdrop-blur-sm border-b border-gray-100">
+      <div className={`sticky top-0 z-40 ${isLight ? 'bg-white/90' : 'bg-ink-950/90'} backdrop-blur-sm border-b ${isLight ? 'border-gray-100' : 'border-ink-800'}`}>
         <div className="max-w-5xl mx-auto px-2 sm:px-6">
           <div className="flex overflow-x-auto scrollbar-none">
             {tabs.map((tab) => {
@@ -589,8 +595,7 @@ export default function Ai() {
                 <button
                   key={tab.key}
                   onClick={() => setActiveModel(tab.key)}
-                  className={`relative flex-shrink-0 px-4 sm:px-6 py-3 sm:py-4 text-sm font-semibold transition-colors duration-200 ${
-                    isActive ? '' : 'text-gray-400 hover:text-gray-600'
+                  className={`relative flex-shrink-0 px-4 sm:px-6 py-3 sm:py-4 text-sm font-semibold transition-colors duration-200 ${isActive ? '' : (isLight ? 'text-gray-400 hover:text-gray-600' : 'text-ink-500 hover:text-ink-300')} 
                   } ${isActive ? `${tab.tabClass} tab-active` : ''}`}
                   style={{ color: isActive ? model.color : undefined }}
                 >
@@ -614,7 +619,7 @@ export default function Ai() {
           {/* Left */}
           <div className="lg:col-span-2 space-y-4">
             <div className="mb-6">
-              <h2 className="font-display font-bold text-2xl text-gray-900 mb-1">
+              <h2 className={`font-display font-bold text-2xl ${isLight ? 'text-gray-900' : 'text-ink-50'} mb-1`}>
                 6-Step Processing Pipeline
               </h2>
               <p className="text-sm text-gray-500">
@@ -639,13 +644,13 @@ export default function Ai() {
             <PipelineDiagram model={activeModel} />
 
             <div>
-              <h3 className="font-semibold text-gray-800 mb-3 text-sm uppercase tracking-wider">
+              <h3 className={`font-semibold ${isLight ? 'text-gray-800' : 'text-ink-200'} mb-3 text-sm uppercase tracking-wider`}>
                 Complexity Summary
               </h3>
               <ComplexityTable model={activeModel} />
             </div>
 
-            <div className="rounded-2xl border border-gray-100 p-4 bg-gray-50">
+            <div className={`rounded-2xl border ${isLight ? 'border-gray-100' : 'border-ink-800'} p-4 ${isLight ? 'bg-gray-50' : 'bg-ink-900'}`}>
               <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-3">
                 Notation Guide
               </p>
@@ -674,7 +679,7 @@ export default function Ai() {
 
         {/* LLM Workflow Image Section */}
         <section className="mt-10 sm:mt-14">
-          <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4 sm:p-6 shadow-sm overflow-hidden">
+          <div className={`rounded-2xl border ${isLight ? 'border-gray-100' : 'border-ink-800'} ${isLight ? 'bg-gray-50' : 'bg-ink-900'} p-4 sm:p-6 shadow-sm overflow-hidden`}>
             <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-4">LLM Processing Workflow</p>
             <div className="flex justify-center">
               <img
@@ -689,19 +694,19 @@ export default function Ai() {
         {/* Comparison Table */}
         <section className="mt-16">
           <div className="text-center mb-8">
-            <h2 className="font-display font-bold text-3xl text-gray-900 mb-2">
+            <h2 className={`font-display font-bold text-3xl ${isLight ? 'text-gray-900' : 'text-ink-50'} mb-2`}>
               Side-by-Side Comparison
             </h2>
-            <p className="text-gray-500 text-sm">
+            <p className={`${isLight ? 'text-gray-500' : 'text-ink-400'} text-sm`}>
               Key architectural differences across all three models
             </p>
           </div>
 
           <div className="overflow-x-auto rounded-2xl border border-gray-100 shadow-sm">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b border-gray-100">
+              <thead className={`${isLight ? 'bg-gray-50' : 'bg-ink-900'} border-b ${isLight ? 'border-gray-100' : 'border-ink-800'}`}>
                 <tr>
-                  <th className="text-left px-5 py-4 font-semibold text-gray-600">Property</th>
+                  <th className={`text-left px-5 py-4 font-semibold ${isLight ? 'text-gray-600' : 'text-ink-400'}`}>Property</th>
                   {Object.values(AI_MODELS).map((item) => (
                     <th
                       key={item.name}
@@ -726,13 +731,13 @@ export default function Ai() {
                   { label: 'Alignment', values: ['RLHF + PPO', 'Constitutional AI', 'GRPO (no critic)'] },
                   { label: 'Unique Trait', keys: ['uniqueTrait'] },
                 ].map((row, i) => (
-                  <tr key={row.label} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
-                    <td className="px-5 py-3 font-medium text-gray-700 border-r border-gray-50">
+                  <tr key={row.label} className={i % 2 === 0 ? (isLight ? 'bg-white' : 'bg-ink-900') : (isLight ? 'bg-gray-50/50' : 'bg-ink-950/50')}>
+                    <td className={`px-5 py-3 font-medium ${isLight ? 'text-gray-700' : 'text-ink-200'} border-r ${isLight ? 'border-gray-50' : 'border-ink-800'}`}>
                       {row.label}
                     </td>
 
                     {Object.entries(AI_MODELS).map(([key, model], j) => (
-                      <td key={key} className="px-5 py-3 text-gray-600 text-xs leading-snug">
+                      <td key={key} className={`px-5 py-3 ${isLight ? 'text-gray-600' : 'text-ink-300'} text-xs leading-snug`}>
                         {row.values ? row.values[j] : row.keys ? model[row.keys[0]] : '—'}
                       </td>
                     ))}

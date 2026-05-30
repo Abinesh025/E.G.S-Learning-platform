@@ -83,7 +83,7 @@ exports.updateStaffProfile = async (req, res) => {
 // ─────────────────────────────────────────────
 exports.updateMaterial = async (req, res) => {
   try {
-    const { title, description, subject, department, unit, topic, type } = req.body
+    const { title, subject, department, unit, type, semester, course } = req.body
 
     const material = await Material.findById(req.params.id)
     if (!material) {
@@ -95,12 +95,12 @@ exports.updateMaterial = async (req, res) => {
     }
 
     if (title) material.title = title
-    if (description !== undefined) material.description = description
     if (subject) material.subject = subject
-    if (department) material.department = department
+    if (req.user.department) material.department = req.user.department
     if (unit) material.unit = unit
-    if (topic) material.topic = topic
     if (type) material.type = type
+    if (semester !== undefined) material.semester = semester ? Number(semester) : null
+    if (course !== undefined) material.course = course || ''
 
     await material.save()
 
@@ -119,7 +119,17 @@ exports.updateMaterial = async (req, res) => {
 // ─────────────────────────────────────────────
 exports.getMyMaterials = async (req, res) => {
   try {
-    const materials = await Material.find({ uploadedBy: req.user._id })
+    const { semester, course } = req.query
+    const filter = { uploadedBy: req.user._id }
+
+    if (semester) {
+      filter.semester = Number(semester)
+    }
+    if (course) {
+      filter.course = { $regex: course, $options: 'i' }
+    }
+
+    const materials = await Material.find(filter)
       .sort({ createdAt: -1 })
 
     res.status(200).json({

@@ -2,9 +2,28 @@ const mongoose = require('mongoose')
 
 const notificationSchema = new mongoose.Schema(
   {
-    user: {
+    sender: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
+      required: true
+    },
+    receiver: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true
+    },
+    receiverRole: {
+      type: String,
+      enum: ['student', 'staff', 'admin'],
+      required: true
+    },
+    department: {
+      type: String,
+      required: true
+    },
+    type: {
+      type: String,
+      enum: ['material_upload', 'test_upload', 'test_submission'],
       required: true
     },
     title: {
@@ -15,22 +34,15 @@ const notificationSchema = new mongoose.Schema(
       type: String,
       required: true
     },
-    type: {
-      type: String,
-      default: 'material'
-    },
-    department: {
-      type: String
-    },
-    staffName: {
-      type: String
-    },
-    subjectName: {
-      type: String
-    },
-    materialId: {
+    relatedId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Material'
+      required: true,
+      refPath: 'relatedModel'
+    },
+    relatedModel: {
+      type: String,
+      enum: ['Material', 'Test', 'TestSubmission'],
+      required: true
     },
     isRead: {
       type: Boolean,

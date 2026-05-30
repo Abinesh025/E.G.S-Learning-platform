@@ -1,17 +1,26 @@
 import { useState, useEffect } from 'react'
 import api from '../../services/api'
+import { useAuth } from '../../context/AuthContext'
 import { FileText, Plus, Trash2, X, PlusCircle, MinusCircle, ArrowLeft } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
+import { DEPART_CHECKER } from '../../utils/deptChecker'
 
 const emptyQuestion = () => ({ question: '', options: ['', '', '', ''], correctAnswer: 0 })
 
 export default function StaffTests() {
+  const { user } = useAuth()
   const [tests, setTests] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [form, setForm] = useState({ title: '',subject:' ',department:'',duration: 30, questions: [emptyQuestion()] })
+  const [form, setForm] = useState({ title: '', subject: ' ', department: user?.department || '', duration: 30, questions: [emptyQuestion()] })
+
+  useEffect(() => {
+    if (user?.department) {
+      setForm(f => ({ ...f, department: user.department }))
+    }
+  }, [user])
 
   const load = () => {
     setLoading(true)
@@ -61,7 +70,7 @@ const handleSave = async (e) => {
   try {
     const res = await api.post('/api/tests', form)
     setTests(t => [res.data?.data || res.data, ...t])
-    setForm({ title: '', subject:'',department:'', duration: 30, questions: [emptyQuestion()] })
+    setForm({ title: '', subject: '', department: user?.department || '', duration: 30, questions: [emptyQuestion()] })
     setShowForm(false)
     
     toast.success('Test created!')
@@ -108,9 +117,14 @@ const handleSave = async (e) => {
                   onChange={e => setForm(f => ({ ...f, title: e.target.value }))} required />
               </div>
               <div>
-                <label className="label">Departmment</label>
-                <input className="input" placeholder="e.g. CSE" value={form.department}
-                  onChange={e => setForm(f => ({ ...f, department: e.target.value }))} required />
+                <label className="label">Department</label>
+                <input
+                  type="text"
+                  className="input bg-ink-900 border-ink-800 text-ink-400 cursor-not-allowed"
+                  value={form.department || user?.department || ''}
+                  disabled
+                  readOnly
+                />
               </div>
               <div>
                 <label className="label">Subject</label>

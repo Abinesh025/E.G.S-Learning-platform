@@ -1,17 +1,39 @@
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Save, User } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import toast from 'react-hot-toast'
+import api from '../../services/api'
 
 export default function EditProfile() {
-  const { user } = useAuth()
+  const { user, setUser } = useAuth()
   const navigate = useNavigate()
+  const [name, setName] = useState(user?.name || '')
+  const [phone, setPhone] = useState(user?.phone || '')
+  const [loading, setLoading] = useState(false)
 
-  const handleSubmit = (e) => {
+  useEffect(() => {
+    if (user) {
+      setName(user.name || '')
+      setPhone(user.phone || '')
+    }
+  }, [user])
+
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    // Implementation for updating profile would go here
-    toast.success('Profile updated successfully')
-    navigate('/settings')
+    setLoading(true)
+    try {
+      const { data } = await api.put('/api/auth/profile', { name, phone })
+      if (data.success) {
+        setUser(data.user)
+        toast.success('Profile updated successfully')
+        navigate('/settings')
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to update profile')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -43,9 +65,11 @@ export default function EditProfile() {
               <label className="text-sm font-medium text-ink-900 dark:text-ink-100">Full Name</label>
               <input 
                 type="text" 
-                defaultValue={user?.name || ''}
+                value={name}
+                onChange={e => setName(e.target.value)}
                 className="w-full px-4 py-2 bg-white dark:bg-ink-950 border border-ink-300 dark:border-ink-700 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 outline-none transition-all text-ink-900 dark:text-ink-100"
                 placeholder="Enter your full name"
+                required
               />
             </div>
             <div className="space-y-2">
@@ -63,7 +87,8 @@ export default function EditProfile() {
                 <label className="text-sm font-medium text-ink-900 dark:text-ink-100">Phone Number</label>
                 <input 
                   type="tel" 
-                  defaultValue={user?.phone || ''}
+                  value={phone}
+                  onChange={e => setPhone(e.target.value)}
                   className="w-full px-4 py-2 bg-white dark:bg-ink-950 border border-ink-300 dark:border-ink-700 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 outline-none transition-all text-ink-900 dark:text-ink-100"
                   placeholder="Enter your phone number"
                 />
@@ -85,10 +110,11 @@ export default function EditProfile() {
           <div className="flex justify-end pt-6 border-t border-ink-200 dark:border-ink-800">
             <button 
               type="submit"
-              className="flex items-center gap-2 px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors font-medium shadow-sm"
+              disabled={loading}
+              className="flex items-center gap-2 px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors font-medium shadow-sm disabled:opacity-50"
             >
               <Save className="w-4 h-4" />
-              Save Changes
+              {loading ? 'Saving Changes...' : 'Save Changes'}
             </button>
           </div>
         </form>

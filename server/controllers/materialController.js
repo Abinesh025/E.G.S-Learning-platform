@@ -4,7 +4,7 @@ const https = require('https')
 const http = require('http')
 const path = require('path')
 const fs = require('fs')
-const Notification = require('../models/Notification')
+const createNotifications = require('../utils/createNotification')
 const User = require('../models/User')
 const { getIo } = require('../socket/chatSocket')
 
@@ -34,14 +34,15 @@ const MIME_MAP = {
 // ─────────────────────────────────────────────
 exports.getMaterials = async (req, res) => {
   try {
-    const { subject, unit, topic, department } = req.query
+    const { subject, unit,  department, semester, course } = req.query
 
     const filter = {}
 
     if (subject) filter.subject = subject
     if (unit) filter.unit = unit
-    if (topic) filter.topic = topic
     if (department) filter.department = department
+    if (semester) filter.semester = Number(semester)
+    if (course) filter.course = { $regex: course, $options: 'i' }
 
     const materials = await Material.find(filter)
       .populate('uploadedBy', 'name email role')
@@ -94,23 +95,31 @@ exports.getMaterialById = async (req, res) => {
 // ─────────────────────────────────────────────
 exports.uploadMaterial = async (req, res) => {
   try {
+    // Verify logged-in user role is staff
+    if (req.user.role !== 'staff') {
+      return res.status(403).json({ message: 'Only staff can upload materials' })
+    }
+
     // Validate file
     if (!req.file) return res.status(400).json({ message: 'No file uploaded' })
 
     // AdminMaterials sends 'fileType', StaffMaterials sends 'type'
-    const { title, description, type, fileType, subject, unit, topic, department } = req.body
+    const { title, type, fileType, subject, unit, semester, course } = req.body
     
     const finalType = type || fileType
 
     // Make sure all required fields exist
-    if (!title || !finalType || !subject || !unit || !topic) {
+    if (!title || !finalType || !subject || !unit) {
       return res.status(400).json({ message: 'Missing required fields' })
     }
 
-    // Department is required for new uploads
+    // Get staff department from req.user.department
+    const department = req.user.department
     if (!department) {
-      return res.status(400).json({ message: 'Department is required' })
+      return res.status(400).json({ message: 'Staff department is required' })
     }
+
+    const parsedSemester = semester ? Number(semester) : null
 
     // Cloudinary stores the full URL in req.file.path
     // If local, we need to map the relative path to /uploads/materials/...
@@ -121,67 +130,51 @@ exports.uploadMaterial = async (req, res) => {
       fileUrl = `/uploads/materials/${filename}`
     }
 
-    // Get staff name from req.user.name or req.user
-    const staffUser = await User.findById(req.user._id);
-    const staffName = staffUser ? staffUser.name : 'Staff';
+    // Get staff name from req.user
+    const staffName = req.user.name || 'Staff';
     // We use req.body.subjectName if available, else fallback to subject
     const actualSubjectName = req.body.subjectName || subject;
 
     const newMaterial = await Material.create({
       title,
-      description,
       type: finalType,
       subject,
       subjectName: actualSubjectName,
       unit,
-      topic,
       department,
+      semester: parsedSemester,
+      course: course || '',
       fileUrl,
       fileType: finalType,
       uploadedBy: req.user._id,
       staffName
     })
 
-    // Find students in the same department
-    const students = await User.find({ role: 'student', department: department })
+    // Find students where role='student' and department equals staff department
+    const studentFilter = { role: 'student', department }
+    if (parsedSemester) {
+      studentFilter.semester = parsedSemester
+    }
+    const students = await User.find(studentFilter)
     
     // Create notifications for them
-    const notificationMessage = `${staffName} uploaded new material for ${actualSubjectName}`
+    const notificationMessage = `New material uploaded by ${staffName}: ${title}`
     
-    const notifications = students.map(student => ({
-      user: student._id,
-      title: "New Material Uploaded",
+    await createNotifications({
+      senderId: req.user._id,
+      receivers: students,
+      receiverRole: 'student',
+      department,
+      type: 'material_upload',
+      title: 'New Material Uploaded',
       message: notificationMessage,
-      type: "material",
-      department: department,
-      staffName: staffName,
-      subjectName: actualSubjectName,
-      materialId: newMaterial._id,
-      isRead: false
-    }))
-
-    if (notifications.length > 0) {
-      await Notification.insertMany(notifications);
-    }
-
-    // Emit Socket.IO event
-    const io = getIo();
-    if (io) {
-      io.to(department).emit('newMaterialNotification', {
-        title: "New Material Uploaded",
-        message: notificationMessage,
-        staffName: staffName,
-        subjectName: actualSubjectName,
-        department: department,
-        materialId: newMaterial._id,
-        createdAt: newMaterial.createdAt
-      });
-    }
+      relatedId: newMaterial._id,
+      relatedModel: 'Material'
+    })
 
     res.status(201).json(newMaterial)
   } catch (err) {
     console.error(err)
-    require('fs').writeFileSync('C:/Users/abi18/OneDrive/Desktop/egs/E.G.S-Learning-Platform/server/error_log.txt', err.stack || err.message)
     res.status(500).json({ message: 'Material upload failed', error: err.message })
   }
 }
@@ -314,4 +307,4 @@ exports.downloadMaterial = async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, message: error.message })
   }
-}
+}

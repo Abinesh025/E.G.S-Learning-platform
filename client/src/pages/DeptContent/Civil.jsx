@@ -1,254 +1,254 @@
 import { useState, useEffect, useRef } from 'react'
 import { useTheme } from '../../context/ThemeContext'
-import iotImage from "../../assets/iot_workflow.png"
+import civilImage from "../../assets/civil_workflow.png"
 
-const MICRO_CONTROLLERS = {
-  arduino: {
-    name: 'Arduino (ATmega328P)',
-    company: 'Microchip Technology',
-    color: '#00979d',
-    lightBg: '#f0fbfc',
-    borderColor: 'border-[#00979d]',
-    textColor: 'text-[#00979d]',
-    bgColor: 'bg-[#00979d]',
-    tabActive: 'tab-arduino',
-    architecture: '8-bit AVR RISC Harvard Architecture',
-    tokenizer: 'AVR Instruction Set (130 instructions)',
-    contextWindow: '32 KB Flash Memory',
-    trainingData: '1024-byte EEPROM / 2 KB SRAM',
-    uniqueTrait: 'Deterministic single-cycle execution',
+const CIVIL_SYSTEMS = {
+  foundation: {
+    name: 'Bored Piling Deep Foundation',
+    company: 'Geotechnical & Structural Engineering',
+    color: '#a05a2c',
+    lightBg: '#fbf2ec',
+    borderColor: 'border-[#a05a2c]',
+    textColor: 'text-[#a05a2c]',
+    bgColor: 'bg-[#a05a2c]',
+    tabActive: 'tab-foundation',
+    architecture: 'Deep bored friction & end-bearing piles',
+    tokenizer: 'Standard Penetration Test (SPT) blow count',
+    contextWindow: 'Pile depth up to 50m+',
+    trainingData: 'High load capacity / Skin friction friction',
+    uniqueTrait: 'Load transfer to bedrock through soil layers',
     steps: [
       {
         id: 1,
-        title: 'Power-On Reset (POR)',
-        icon: '⚡',
-        desc: 'When power is applied or reset pin goes low, internal voltage comparator starts. Program Counter (PC) is forced to 0x0000, initiating startup vectors.',
-        detail: 'AVR start up time is controlled by fuses. Typically takes ~64ms for power to stabilise before first opcode execution.',
-        time: 'O(1)',
-        space: 'O(1)',
-        timeNote: 'Constant hardware delay',
-        spaceNote: 'No RAM usage at reset',
+        title: 'Geotechnical Soil Test',
+        icon: '🪨',
+        desc: 'Boreholes are drilled down to load bearing layers. Soil samples are taken; Standard Penetration Tests (SPT) record blow counts (N-values).',
+        detail: 'Determines the soil profile, moisture content, water table level, cohesion, and friction angle to calculate pile capacity.',
+        time: 'O(b)',
+        space: 'd_max',
+        timeNote: 'Proportional to borehole count b',
+        spaceNote: 'Borehole maximum depth d_max',
       },
       {
         id: 2,
-        title: 'Instruction Fetch',
-        icon: '📥',
-        desc: 'The Program Counter places flash address on the 16-bit program memory bus. 16-bit instruction word is fetched into the instruction register.',
-        detail: 'Hardware prefetching is not used; single-level pipelining means next instruction is fetched while current one executes.',
-        time: '1 Cycle',
-        space: '16-bit',
-        timeNote: 'One clock cycle',
-        spaceNote: 'Instruction register buffer',
+        title: 'Excavation & Shoring',
+        icon: '🚜',
+        desc: 'Rotary drilling rig excavates the pile shaft. Bentonite or polymer slurry is pumped in to support the borehole walls from collapse.',
+        detail: 'Slurry pressure creates a filter cake seal on the bore walls, balancing lateral soil and hydrostatic pressures.',
+        time: 'O(d)',
+        space: 'V_shaft',
+        timeNote: 'Drilling rate per metre depth d',
+        spaceNote: 'Borehole shaft volume space',
       },
       {
         id: 3,
-        title: 'Instruction Decode',
-        icon: '⚙️',
-        desc: 'Internal decoder logic maps 16-bit opcode to control lines. ALU paths, registers, and memory lines are selected for execution.',
-        detail: 'Most instructions are single-register or register-to-register. Decoding is fully hardwired for high efficiency.',
+        title: 'Borehole Cleaning',
+        icon: '🧹',
+        desc: 'Drilling tool cleans the bottom of the pile to remove loose sediment, ensuring direct end-bearing contact with bedrock.',
+        detail: 'Sediment accumulation at the pile base can cause significant settlement under structural load.',
         time: 'O(1)',
         space: 'O(1)',
-        timeNote: 'Parallel gate propagation delay',
-        spaceNote: 'Combinational logic storage',
+        timeNote: 'Clean-out cycle time',
+        spaceNote: 'Sediment thickness tolerance',
       },
       {
         id: 4,
-        title: 'ALU Execution',
-        icon: '⊕',
-        desc: 'The 8-bit Arithmetic Logic Unit performs operation (ADD, SUB, AND, OR, XOR) on contents of General Purpose Registers.',
-        detail: 'ALU connects directly to all 32 general purpose registers, enabling single-cycle ALU execution.',
-        time: '1 Cycle',
-        space: '8-bit',
-        timeNote: 'Completed in a single clock cycle',
-        spaceNote: '8-bit ALU register storage',
+        title: 'Rebar Cage Insertion',
+        icon: '🏗️',
+        desc: 'Reinforcement steel cage (vertical bars & helical ties) is fabricated and lowered into the shaft using a crane.',
+        detail: 'Helical ties resist shear forces. Spacers maintain concrete cover thickness around steel cage.',
+        time: 'O(s)',
+        space: 'W_steel',
+        timeNote: 'Splicing & lowering rate of cages s',
+        spaceNote: 'Weight capacity of steel reinforcement',
       },
       {
         id: 5,
-        title: 'SRAM Access',
-        icon: '💾',
-        desc: 'If instruction accesses data memory (LDS, STS, LDD, STD), the 8-bit data bus reads or writes data to the 2 KB SRAM space.',
-        detail: 'SRAM access takes an extra clock cycle compared to register access because of data bus limitations.',
-        time: '2 Cycles',
-        space: '8-bit',
-        timeNote: 'SRAM read/write latency',
-        spaceNote: 'Data bus width',
+        title: 'Concrete Pouring (Tremie)',
+        icon: '🔌',
+        desc: 'Tremie pipe is inserted to the bottom. High-slump concrete is poured, rising from the bottom to displace bentonite slurry upwards.',
+        detail: 'Tremie pipe must remain submerged in fresh concrete at all times to prevent contamination and aggregate separation.',
+        time: 'O(v)',
+        space: 'V_concrete',
+        timeNote: 'Pouring rate per volume v',
+        spaceNote: 'Cylinder volume capacity',
       },
       {
         id: 6,
-        title: 'I/O & Register Writeback',
+        title: 'Pile Cap Consolidation',
         icon: '▶',
-        desc: 'Results are written back to the destination register or mapped I/O ports, toggling physical pins like PORTB/PORTD.',
-        detail: 'Direct port manipulation (e.g., PORTB |= 0x20) changes physical output pin voltage state within 1 cycle.',
-        time: '1 Cycle',
-        space: 'O(1)',
-        timeNote: 'Single cycle writeback',
-        spaceNote: 'Port register flip-flops',
-      },
-    ],
-  },
-  esp32: {
-    name: 'ESP32 (WROOM-32)',
-    company: 'Espressif Systems',
-    color: '#e7352b',
-    lightBg: '#fef1f0',
-    borderColor: 'border-[#e7352b]',
-    textColor: 'text-[#e7352b]',
-    bgColor: 'bg-[#e7352b]',
-    tabActive: 'tab-esp32',
-    architecture: 'Tensilica Xtensa Dual-Core 32-bit LX6',
-    tokenizer: 'Xtensa ISA with DSP extensions',
-    contextWindow: '4 MB External SPI Flash',
-    trainingData: '520 KB Internal SRAM / 8 KB RTC',
-    uniqueTrait: 'Integrated Wi-Fi & Bluetooth baseband',
-    steps: [
-      {
-        id: 1,
-        title: 'ROM Bootloader',
-        icon: '⬡',
-        desc: 'On power up, PRO_CPU begins executing ROM code. It configures default clock speeds, SPI flash communication, and validates the partition table.',
-        detail: 'Verifies flash integrity by calculating SHA256 checksums of the bootloader header before loading apps.',
-        time: 'O(n)',
-        space: 'O(1)',
-        timeNote: 'Linear with binary size n',
-        spaceNote: 'ROM memory space only',
-      },
-      {
-        id: 2,
-        title: 'Second-Stage Boot',
-        icon: '↔',
-        desc: 'Loads bootloader from flash into internal IRAM. Configures MMU flash cache and initialises the RTC and external RAM (PSRAM) if present.',
-        detail: 'Mounts virtual flash memory maps so code can be executed directly from external flash using the cache controller.',
-        time: 'O(n)',
-        space: 'O(m)',
-        timeNote: 'Linear in memory copy block size',
-        spaceNote: 'IRAM allocation buffer m',
-      },
-      {
-        id: 3,
-        title: 'FreeRTOS Scheduler Start',
-        icon: '◎',
-        desc: 'Initialises FreeRTOS. Spawns the main task and pins the background radio control loops to Core 0 while Core 1 handles user application logic.',
-        detail: 'Preemptive scheduler ticks at 1000Hz (1ms), using task control blocks (TCBs) to perform context switches.',
-        time: 'O(1)',
-        space: 'O(k)',
-        timeNote: 'Constant scheduler ticks',
-        spaceNote: 'Memory allocated for L tasks',
-      },
-      {
-        id: 4,
-        title: 'RF Stack & LwIP Init',
-        icon: '📶',
-        desc: 'Power is applied to the internal RF synthesizer. The Wi-Fi driver allocates hardware DMA buffers and initialises the LwIP TCP/IP stack.',
-        detail: 'Maintains background RF calibration routines to adjust for temperature drift, operating on Wi-Fi/BT co-existence protocols.',
-        time: 'O(1)',
-        space: 'O(b)',
-        timeNote: 'Asynchronous stack start',
-        spaceNote: 'RX/TX DMA rings allocation',
-      },
-      {
-        id: 5,
-        title: 'App Task Loop',
-        icon: '★',
-        desc: 'User code inside loopTask runs on Core 1. Background interrupts handle network packets, UART messages, and ADC readings.',
-        detail: 'Can utilise hardware acceleration for cryptographic operations (AES, SHA, RSA) to speed up communication.',
-        time: 'O(1)',
-        space: 'O(s)',
-        timeNote: 'Per-task event loop execution',
-        spaceNote: 'Task stack allocation buffer s',
-      },
-      {
-        id: 6,
-        title: 'Power Management & Sleep',
-        icon: '▶',
-        desc: 'ESP32 monitors CPU load and enters Light Sleep or Deep Sleep (10µA draw) when idle, retaining state in RTC memory.',
-        detail: 'Deep Sleep shuts down main cores, flash, and Wi-Fi, keeping only the ULP (Ultra-Low Power) co-processor active.',
-        time: 'O(1)',
-        space: 'O(rtc)',
-        timeNote: 'Instantaneous mode switch',
-        spaceNote: '8 KB RTC fast/slow memory space',
-      },
-    ],
-  },
-  rp2040: {
-    name: 'Raspberry Pi RP2040',
-    company: 'Raspberry Pi Ltd',
-    color: '#c51a4a',
-    lightBg: '#fef1f4',
-    borderColor: 'border-[#c51a4a]',
-    textColor: 'text-[#c51a4a]',
-    bgColor: 'bg-[#c51a4a]',
-    tabActive: 'tab-rp2040',
-    architecture: 'Dual ARM Cortex-M0+ cores',
-    tokenizer: 'ARMv6-M Thumb Instruction Set',
-    contextWindow: 'Up to 16 MB External Flash',
-    trainingData: '264 KB Multi-bank SRAM / PIO block',
-    uniqueTrait: 'Programmable I/O (PIO) state machines',
-    steps: [
-      {
-        id: 1,
-        title: 'BootROM Selection',
-        icon: '⬡',
-        desc: 'Hardware checks BOOTSEL pin. If pulled low, it boots from external flash; otherwise, it presents a USB Mass Storage device for drag-and-drop programming.',
-        detail: 'ROM contains highly optimised routines for USB MSC, double-precision floating point math, and flash writing.',
-        time: 'O(1)',
-        space: 'O(1)',
-        timeNote: 'Immediate hardware check',
-        spaceNote: 'Uses ROM code exclusively',
-      },
-      {
-        id: 2,
-        title: 'Dual Core Boot',
-        icon: '↔',
-        desc: 'Core 0 starts execution from flash via XIP cache. Core 1 is held in a sleep state (WFE) waiting for entry commands from Core 0.',
-        detail: 'Core 0 configures vector tables, system clocks, and initialises the memory striping layout across 6 SRAM banks.',
-        time: 'O(1)',
-        space: 'O(1)',
-        timeNote: 'Hardware startup vector',
-        spaceNote: 'Boot vectors space',
-      },
-      {
-        id: 3,
-        title: 'Inter-Core Mailbox Setup',
-        icon: '◎',
-        desc: 'Core 0 communicates with Core 1 using hardware Mailbox FIFOs. Core 0 pushes the launch address to wake up Core 1.',
-        detail: 'FIFOs are 8 entries deep and generate interrupts when written to, enabling efficient inter-core synchronisation.',
-        time: 'O(1)',
-        space: 'O(1)',
-        timeNote: 'FIFO read/write latency',
-        spaceNote: '8-entry FIFO hardware space',
-      },
-      {
-        id: 4,
-        title: 'PIO State Machine Load',
-        icon: '⚙️',
-        desc: 'Core 0 loads custom assembly instructions into the Programmable I/O (PIO) blocks, enabling hardware-level execution of protocols.',
-        detail: 'PIO blocks run independently of the main CPUs, handling bit-banging protocols (I2S, WS2812, VGA) with cycle-accurate timing.',
+        desc: 'Pile head is chipped to expose rebar. Concrete cap is cast over pile groups to distribute skyscraper column loads uniformly.',
+        detail: 'Integrates all piles in a group to act as a single rigid foundation, resisting bending moments and axial forces.',
         time: 'O(1)',
         space: 'O(p)',
-        timeNote: 'Immediate instruction load',
-        spaceNote: '32-instruction memory per block',
+        timeNote: 'Concrete curing time',
+        spaceNote: 'Pile count in group p',
+      },
+    ],
+  },
+  water: {
+    name: 'Municipal Water Purification',
+    company: 'Environmental Engineering',
+    color: '#008080',
+    lightBg: '#f0fcfc',
+    borderColor: 'border-[#008080]',
+    textColor: 'text-[#008080]',
+    bgColor: 'bg-[#008080]',
+    tabActive: 'tab-water',
+    architecture: 'Multi-barrier physical & chemical purification',
+    tokenizer: 'Alum dosage / Turbidity NTU measurement',
+    contextWindow: 'Flow rate in Million Litres per Day (MLD)',
+    trainingData: 'IS 10500 drinking water quality standards',
+    uniqueTrait: 'Continuous chemical flocculation & filtration',
+    steps: [
+      {
+        id: 1,
+        title: 'Screening & Aeration',
+        icon: '🌊',
+        desc: 'Raw water passes screen bars to remove floating debris. Aeration sprays water into air to release gases and oxidize iron/manganese.',
+        detail: 'CO2 and H2S are stripped, improving taste and smell. Iron oxidises from soluble ferrous to insoluble ferric state.',
+        time: 'Continuous',
+        space: 'Q_flow',
+        timeNote: 'Continuous flow cycle',
+        spaceNote: 'Volumetric flow rate Q',
+      },
+      {
+        id: 2,
+        title: 'Coagulation & Flocculation',
+        icon: '🧪',
+        desc: 'Coagulant (Alum) is rapidly mixed. Negatively charged clay/silt particles are neutralised, clumping into small micro-flocs.',
+        detail: 'Slow paddle mixing in flocculator promotes collision of micro-flocs to form large, heavy macro-flocs.',
+        time: 'O(t)',
+        space: 'V_basin',
+        timeNote: 'Retention mixing time t',
+        spaceNote: 'Flocculation basin volume',
+      },
+      {
+        id: 3,
+        title: 'Sedimentation Basin',
+        icon: '⏳',
+        desc: 'Water enters a clarifier. Velocity is reduced, allowing heavy flocs to settle to the bottom as sludge due to gravity.',
+        detail: 'Sludge scrapers collect settled sludge at the bottom hopper for disposal, while clear water overflows launders.',
+        time: '2-4 hours',
+        space: 'A_surface',
+        timeNote: 'Detention settling time',
+        spaceNote: 'Surface settling area',
+      },
+      {
+        id: 4,
+        title: 'Rapid Sand Filtration',
+        icon: '⏳',
+        desc: 'Water trickles down dual-media filters (anthracite coal & sand), trapping remaining microscopic suspended flocs.',
+        detail: 'Filters are periodically cleaned by backwashing — pumping water and air upwards to loosen trapped particles.',
+        time: 'Continuous',
+        space: 'A_filter',
+        timeNote: 'Filtration rate (m3/m2/hr)',
+        spaceNote: 'Filter bed surface area',
       },
       {
         id: 5,
-        title: 'Direct Memory Access (DMA)',
-        icon: '★',
-        desc: 'DMA channels are configured to transfer data between peripherals (ADC, SPI, PIO) and SRAM without involving the CPU.',
-        detail: 'Ring buffers and scatter-gather list transfers allow continuous data logging at high speeds.',
-        time: '1 Cycle',
-        space: 'O(d)',
-        timeNote: 'Zero-CPU overhead transfer',
-        spaceNote: 'DMA configuration registers d',
+        title: 'Disinfection (Chlorination)',
+        icon: '🦠',
+        desc: 'Chlorine gas or sodium hypochlorite is injected into water to kill pathogenic bacteria, protozoa, and viruses.',
+        detail: 'Ensures residual chlorine (0.2 mg/l) remains in the distribution pipeline to prevent re-contamination.',
+        time: '30 min',
+        space: 'C_dosage',
+        timeNote: 'Disinfectant contact time',
+        spaceNote: 'Chlorine dosing concentration',
       },
       {
         id: 6,
-        title: 'Dual-Core Parallel Run',
+        title: 'Storage & Gravity Feed',
         icon: '▶',
-        desc: 'Both cores execute tasks simultaneously, sharing SRAM with no contention due to bus striping and crossbar interconnects.',
-        detail: 'Hardware spinlocks ensure thread safety when modifying shared peripherals or memory regions.',
+        desc: 'Treated water is pumped to elevated service reservoirs (ESRs) and distributed to town pipelines via gravity.',
+        detail: 'System pressures are maintained to supply domestic connections with sufficient pressure.',
+        time: 'Continuous',
+        space: 'V_storage',
+        timeNote: 'Supply schedule control',
+        spaceNote: 'Reservoir storage capacity',
+      },
+    ],
+  },
+  highway: {
+    name: 'Smart Flexible Pavement Design',
+    company: 'Transportation Highway Engineering',
+    color: '#4b5563',
+    lightBg: '#f3f4f6',
+    borderColor: 'border-[#4b5563]',
+    textColor: 'text-[#4b5563]',
+    bgColor: 'bg-[#4b5563]',
+    tabActive: 'tab-highway',
+    architecture: 'Layered asphalt flexible pavement structure',
+    tokenizer: 'California Bearing Ratio (CBR) percentage',
+    contextWindow: 'Design traffic in Million Standard Axles (MSA)',
+    trainingData: 'IRC:37 flexible pavement guidelines',
+    uniqueTrait: 'Wheel load distribution via stress dispersion',
+    steps: [
+      {
+        id: 1,
+        title: 'Subgrade Preparation',
+        icon: '⬡',
+        desc: 'Natural soil is excavated, graded, and compacted using heavy rollers to achieve maximum dry density (97% Proctor density).',
+        detail: 'Subgrade strength is measured by CBR test. Soil stabilization (using lime/cement) is performed if CBR is less than 5%.',
+        time: 'O(w)',
+        space: 'CBR_%',
+        timeNote: 'Compaction passes width w',
+        spaceNote: 'California Bearing Ratio value',
+      },
+      {
+        id: 2,
+        title: 'Granular Sub-Base (GSB)',
+        icon: '↔',
+        desc: 'Granular material (gravel/crushed stone) is laid and compacted to act as a drainage layer and distribute wheel loads.',
+        detail: 'Prevents capillary rise of water from subgrade, protecting upper pavement layers from moisture damage.',
+        time: 'O(l)',
+        space: 't_gsb',
+        timeNote: 'GSB laying rate l',
+        spaceNote: 'Sub-base layer thickness',
+      },
+      {
+        id: 3,
+        title: 'Wet Mix Macadam (WMM) Base',
+        icon: '◎',
+        desc: 'Crushed graded aggregate mixed with water is laid to form a dense base course, providing primary structural support.',
+        detail: 'Compacted using vibratory rollers. A thin bituminous primer coat is sprayed over the base to bind layers.',
+        time: 'O(l)',
+        space: 't_wmm',
+        timeNote: 'Base course laying rate',
+        spaceNote: 'Base layer thickness',
+      },
+      {
+        id: 4,
+        title: 'Dense Bituminous Macadam',
+        icon: '⊕',
+        desc: 'Coarse aggregates mixed with hot bitumen binder are laid and compacted to form the core structural asphalt layer.',
+        detail: 'Acts as the main load-bearing binder course, resisting fatigue cracking under repetitive heavy axle loads.',
+        time: 'O(l)',
+        space: 't_dbm',
+        timeNote: 'Asphalt laying rate',
+        spaceNote: 'Binder layer thickness',
+      },
+      {
+        id: 5,
+        title: 'Bituminous Concrete Wearing',
+        icon: '★',
+        desc: 'The top wearing layer is laid using premium aggregates and polymer modified bitumen to resist skid and weather action.',
+        detail: 'Provides a smooth riding surface, keeps rainwater out of the pavement, and resists rutting.',
+        time: 'O(l)',
+        space: 't_wearing',
+        timeNote: 'Surface paving speed',
+        spaceNote: 'Wearing course thickness',
+      },
+      {
+        id: 6,
+        title: 'ITS Sensors & Markings',
+        icon: '▶',
+        desc: 'Smart traffic systems (inductive loop detectors, speed cameras, solar studs, and reflective lines) are integrated.',
+        detail: 'Inductive loops count vehicles and measure axle loads in real-time, sending data to traffic management centers.',
         time: 'O(1)',
-        space: 'O(1)',
-        timeNote: 'Parallel code execution',
-        spaceNote: 'Lock registers space',
+        space: 'O(s)',
+        timeNote: 'Hardware install time',
+        spaceNote: 'Sensor density along corridor s',
       },
     ],
   }
@@ -327,7 +327,7 @@ function StepCard({ step, index, color, lightBg }) {
                 style={{ background: isLight ? '#f9fafb' : 'rgba(255, 255, 255, 0.02)', border: isLight ? '1px solid #e5e7eb' : '1px solid rgba(255, 255, 255, 0.08)' }}
               >
                 <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
-                  Time
+                  Duration
                 </span>
                 <span className="complexity-badge" style={{ color: color }}>
                   {step.time}
@@ -339,7 +339,7 @@ function StepCard({ step, index, color, lightBg }) {
                 style={{ background: '#f9fafb', border: '1px solid #e5e7eb' }}
               >
                 <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
-                  Space
+                  Scale / Volume
                 </span>
                 <span className="complexity-badge" style={{ color: color }}>
                   {step.space}
@@ -357,14 +357,14 @@ function StepCard({ step, index, color, lightBg }) {
                   className="text-[11px] font-semibold uppercase tracking-wider mb-1.5"
                   style={{ color }}
                 >
-                  Deep Dive
+                  Technical Details
                 </p>
                 <p className={`text-sm ${isLight ? 'text-gray-700' : 'text-ink-200'} leading-relaxed`}>{step.detail}</p>
               </div>
 
               <div className={`rounded-xl p-3 ${isLight ? 'bg-gray-50' : 'bg-ink-950'}`}>
                 <p className={`text-[11px] font-semibold uppercase tracking-wider ${isLight ? 'text-gray-500' : 'text-ink-400'} mb-1.5`}>
-                  Latency
+                  Process Duration
                 </p>
                 <p className="complexity-badge text-base block mb-1" style={{ color }}>
                   {step.time}
@@ -374,7 +374,7 @@ function StepCard({ step, index, color, lightBg }) {
 
               <div className="rounded-xl p-3 bg-gray-50">
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 mb-1.5">
-                  Hardware Buffer
+                  Volume / Spatial Boundary
                 </p>
                 <p className="complexity-badge text-base block mb-1" style={{ color }}>
                   {step.space}
@@ -391,17 +391,17 @@ function StepCard({ step, index, color, lightBg }) {
 
 function ComplexityTable({ model }) {
   const { isLight } = useTheme();
-  const { steps, color } = MICRO_CONTROLLERS[model]
+  const { steps, color } = CIVIL_SYSTEMS[model]
 
   return (
     <div className={`overflow-x-auto rounded-2xl border ${isLight ? 'border-gray-100' : 'border-ink-800'} shadow-sm`}>
       <table className="w-full text-sm">
         <thead>
-          <tr style={{ background: `${MICRO_CONTROLLERS[model].color}10` }}>
+          <tr style={{ background: `${CIVIL_SYSTEMS[model].color}10` }}>
             <th className={`text-left px-4 py-3 font-semibold ${isLight ? 'text-gray-700' : 'text-ink-200'} font-body w-8`}>#</th>
-            <th className={`text-left px-4 py-3 font-semibold ${isLight ? 'text-gray-700' : 'text-ink-200'} font-body`}>Step</th>
-            <th className="text-left px-4 py-3 font-semibold text-gray-700 font-body">Time</th>
-            <th className="text-left px-4 py-3 font-semibold text-gray-700 font-body">Space</th>
+            <th className={`text-left px-4 py-3 font-semibold ${isLight ? 'text-gray-700' : 'text-ink-200'} font-body`}>Stage</th>
+            <th className="text-left px-4 py-3 font-semibold text-gray-700 font-body">Duration</th>
+            <th className="text-left px-4 py-3 font-semibold text-gray-700 font-body">Volume Space</th>
           </tr>
         </thead>
         <tbody>
@@ -429,8 +429,8 @@ function ComplexityTable({ model }) {
 
 function PipelineDiagram({ model }) {
   const { isLight } = useTheme();
-  const m = MICRO_CONTROLLERS[model]
-  const icons = ['⚡', '📥', '⚙️', '⊕', '💾', '▶']
+  const m = CIVIL_SYSTEMS[model]
+  const icons = ['🪨', '🚜', '🧹', '🏗', '🔌', '▶']
 
   return (
     <div
@@ -438,7 +438,7 @@ function PipelineDiagram({ model }) {
       style={{ background: m.lightBg }}
     >
       <p className={`text-xs font-semibold uppercase tracking-widest ${isLight ? 'text-gray-400' : 'text-ink-500'} mb-4`}>
-        Execution Pipeline
+        Construction Sequence
       </p>
 
       <div className="flex items-center gap-1 flex-wrap">
@@ -479,21 +479,21 @@ function PipelineDiagram({ model }) {
 
 function ModelInfoCard({ model }) {
   const { isLight } = useTheme();
-  const m = MICRO_CONTROLLERS[model]
+  const m = CIVIL_SYSTEMS[model]
 
   const rows = [
-    { label: 'Core Architecture', value: m.architecture },
-    { label: 'Instruction Set', value: m.tokenizer },
-    { label: 'Flash Capacity', value: m.contextWindow },
-    { label: 'SRAM & Memory', value: m.trainingData },
-    { label: 'Unique Feature', value: m.uniqueTrait },
+    { label: 'Civil Sub-domain', value: m.architecture },
+    { label: 'Parameters / Standard', value: m.tokenizer },
+    { label: 'Structural Limits', value: m.contextWindow },
+    { label: 'Performance Metric', value: m.trainingData },
+    { label: 'Key Mechanism', value: m.uniqueTrait },
   ]
 
   return (
     <div className={`rounded-2xl border ${isLight ? 'border-gray-100' : 'border-ink-800'} overflow-hidden shadow-sm`}>
       <div className="px-5 py-4" style={{ background: m.lightBg }}>
         <p className={`text-xs font-semibold uppercase tracking-widest ${isLight ? 'text-gray-400' : 'text-ink-500'} mb-2`}>
-          Hardware Specs
+          Technical Specifications
         </p>
         <p className="font-display font-bold text-2xl" style={{ color: m.color }}>
           {m.name}
@@ -515,15 +515,15 @@ function ModelInfoCard({ model }) {
   )
 }
 
-export default function EEE() {
+export default function CivilEnggTopics() {
   const { isLight } = useTheme();
-  const [activeModel, setActiveModel] = useState('arduino')
-  const m = MICRO_CONTROLLERS[activeModel]
+  const [activeModel, setActiveModel] = useState('foundation')
+  const m = CIVIL_SYSTEMS[activeModel]
 
   const tabs = [
-    { key: 'arduino', label: 'Arduino (AVR)', tabClass: 'tab-gpt' },
-    { key: 'esp32', label: 'ESP32 (Xtensa)', tabClass: 'tab-claude' },
-    { key: 'rp2040', label: 'RP2040 (Cortex)', tabClass: 'tab-deepseek' },
+    { key: 'foundation', label: 'Bored Piling', tabClass: 'tab-gpt' },
+    { key: 'water', label: 'Water Purification', tabClass: 'tab-claude' },
+    { key: 'highway', label: 'Highway Pavement', tabClass: 'tab-deepseek' },
   ]
 
   return (
@@ -542,32 +542,32 @@ export default function EEE() {
 
         <div className="relative max-w-5xl mx-auto px-4 sm:px-6 py-10 sm:py-16 text-center">
           <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full border ${isLight ? 'border-gray-200 text-gray-500' : 'border-ink-800 text-ink-400'} text-xs mb-6`}>
-            <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-pulse" />
-            Hardware & Microcontroller Architecture Deep Dive
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-600 animate-pulse" />
+            Infrastructure Engineering, Hydrology & Geotechnical Deep Dive
           </div>
 
           <h1 className={`font-body font-black text-3xl sm:text-5xl lg:text-6xl tracking-wide ${isLight ? 'text-gray-900' : 'text-ink-50'} leading-[1.1] mb-4`}>
-            How Micro-Controllers
+            How Civil Infrastructures
             <br />
             <span
               className="inline-block"
               style={{
-                background: `linear-gradient(90deg, ${MICRO_CONTROLLERS.arduino.color}, ${MICRO_CONTROLLERS.esp32.color}, ${MICRO_CONTROLLERS.rp2040.color})`,
+                background: `linear-gradient(90deg, ${CIVIL_SYSTEMS.foundation.color}, ${CIVIL_SYSTEMS.water.color}, ${CIVIL_SYSTEMS.highway.color})`,
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
               }}
             >
-              Execute Code in Real-Time
+              Are Designed & Constructed
             </span>
           </h1>
 
           <p className={`${isLight ? 'text-gray-500' : 'text-ink-400'} text-base sm:text-lg max-w-xl mx-auto leading-relaxed`}>
-            A step-by-step breakdown of execution pipelines powering AVR, Xtensa,
-            and ARM Cortex chips — with hardware latency at every stage.
+            A step-by-step breakdown of deep bored foundations, water purification treatment processes,
+            and smart asphalt pavement construction — complete with design guidelines and standards.
           </p>
 
           <div className="flex justify-center gap-2 sm:gap-3 mt-6 sm:mt-8 flex-wrap">
-            {Object.values(MICRO_CONTROLLERS).map((model) => (
+            {Object.values(CIVIL_SYSTEMS).map((model) => (
               <div
                 key={model.name}
                 className="flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium"
@@ -590,13 +590,13 @@ export default function EEE() {
           <div className="flex overflow-x-auto scrollbar-none">
             {tabs.map((tab) => {
               const isActive = activeModel === tab.key
-              const model = MICRO_CONTROLLERS[tab.key]
+              const model = CIVIL_SYSTEMS[tab.key]
 
               return (
                 <button
                   key={tab.key}
                   onClick={() => setActiveModel(tab.key)}
-                  className={`relative flex-shrink-0 px-4 sm:px-6 py-3 sm:py-4 text-sm font-semibold transition-colors duration-200 ${isActive ? '' : (isLight ? 'text-gray-400 hover:text-gray-600' : 'text-ink-500 hover:text-ink-300')}  ${isActive ? `${tab.tabClass} tab-active` : ''}`}
+                  className={`relative flex-shrink-0 px-4 sm:px-6 py-3 sm:py-4 text-sm font-semibold transition-colors duration-200 ${isActive ? '' : (isLight ? 'text-gray-400 hover:text-gray-600' : 'text-ink-500 hover:text-ink-300')} ${isActive ? `${tab.tabClass} tab-active` : ''}`}
                   style={{ color: isActive ? model.color : undefined }}
                 >
                   {tab.label}
@@ -618,10 +618,10 @@ export default function EEE() {
           <div className="lg:col-span-2 space-y-4">
             <div className="mb-6">
               <h2 className={`font-display font-bold text-2xl ${isLight ? 'text-gray-900' : 'text-ink-50'} mb-1`}>
-                6-Stage Hardware Pipeline
+                6-Stage Construction Process
               </h2>
               <p className="text-sm text-gray-500">
-                Click any stage to expand technical registers & timing constraints.
+                Click any stage to expand geotechnical requirements and design codes.
               </p>
             </div>
 
@@ -654,13 +654,15 @@ export default function EEE() {
 
               <div className="space-y-1.5">
                 {[
-                  ['n', 'Binary program length'],
-                  ['m', 'RAM allocation size'],
-                  ['k', 'Number of running tasks'],
-                  ['L', 'FreeRTOS task queue limit'],
-                  ['s', 'Assigned task stack size'],
-                  ['p', 'PIO code instruction limit'],
-                  ['d', 'DMA control register channels'],
+                  ['b', 'Number of soil test boreholes'],
+                  ['d_max', 'Maximum borehole depth (Metres)'],
+                  ['d', 'Drilling rate per metre depth'],
+                  ['s', 'Splicing rate of steel cages'],
+                  ['v', 'Concrete pouring rate volume'],
+                  ['p', 'Piles count in structural group'],
+                  ['Q_flow', 'Volumetric flow rate of water treatment'],
+                  ['C_dosage', 'Chlorine dosage concentration'],
+                  ['w', 'Soil compaction roll passes'],
                 ].map(([sym, desc]) => (
                   <div key={sym} className="flex items-baseline gap-2">
                     <code className="complexity-badge text-[11px]" style={{ color: m.color }}>
@@ -676,11 +678,11 @@ export default function EEE() {
 
         <section className="mt-10 sm:mt-14">
           <div className={`rounded-2xl border ${isLight ? 'border-gray-100' : 'border-ink-800'} ${isLight ? 'bg-gray-50' : 'bg-ink-900'} p-4 sm:p-6 shadow-sm overflow-hidden`}>
-            <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-4">IoT Hardware Processing Workflow</p>
+            <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-4">Civil Engineering Infrastructure Workflow</p>
             <div className="flex justify-center">
               <img
-                src={iotImage}
-                alt="IoT workflow"
+                src={civilImage}
+                alt="Civil workflow"
                 className="w-full max-h-[400px] sm:max-h-[500px] object-contain mx-auto rounded-xl"
               />
             </div>
@@ -693,7 +695,7 @@ export default function EEE() {
               Side-by-Side Comparison
             </h2>
             <p className={`${isLight ? 'text-gray-500' : 'text-ink-400'} text-sm`}>
-              Key hardware and architecture details across all microcontrollers
+              Key operational parameters across foundation, environment, and highway fields
             </p>
           </div>
 
@@ -702,7 +704,7 @@ export default function EEE() {
               <thead className={`${isLight ? 'bg-gray-50' : 'bg-ink-900'} border-b ${isLight ? 'border-gray-100' : 'border-ink-800'}`}>
                 <tr>
                   <th className={`text-left px-5 py-4 font-semibold ${isLight ? 'text-gray-600' : 'text-ink-400'}`}>Property</th>
-                  {Object.values(MICRO_CONTROLLERS).map((item) => (
+                  {Object.values(CIVIL_SYSTEMS).map((item) => (
                     <th
                       key={item.name}
                       className="text-left px-5 py-4 font-semibold"
@@ -716,14 +718,13 @@ export default function EEE() {
 
               <tbody>
                 {[
-                  { label: 'Architecture', keys: ['architecture'] },
-                  { label: 'Instruction Set', keys: ['tokenizer'] },
-                  { label: 'Internal Cache', values: ['None', '32 KB Instruction, 16 KB Data', '16 KB Instruction Direct Cache'] },
-                  { label: 'Direct Port Access', values: ['Supported (1 Cycle)', 'Supported (Latch delay)', 'Supported (SIO bus)'] },
-                  { label: 'Execution Mode', values: ['Single-threaded', 'Dual-core preemptive thread', 'Dual-core execution'] },
-                  { label: 'Hardware Interlocks', values: ['None', 'Spinlocks / Mutexes', 'Hardware Spinlocks'] },
-                  { label: 'External Memory Support', values: ['None (Internal Only)', 'Up to 16 MB External Flash', 'Up to 16 MB QSPI Flash'] },
-                  { label: 'Peripherals', values: ['UART, SPI, I2C, ADC, PWM', 'UART, SPI, I2C, ADC, DAC, capacitive touch, Wi-Fi/BT', 'UART, SPI, I2C, ADC, PWM, PIO State Machines'] },
+                  { label: 'Civil Sub-domain', keys: ['architecture'] },
+                  { label: 'Key Design Code', keys: ['tokenizer'] },
+                  { label: 'Primary Inputs', values: ['Soil profile, column loads', 'Turbidity, chemical composition', 'Subgrade strength, axel load'] },
+                  { label: 'Primary Outputs', values: ['Pile bearing capacity, settlement', 'Purified drinking water flow', 'Pavement layer thicknesses'] },
+                  { label: 'Calculated Bounds', values: ['Bearing capacity & shaft friction', 'Floc settling velocity & filter headloss', 'Vertical subgrade strain & fatigue tensile strain'] },
+                  { label: 'Design Software', values: ['STAAD.Pro, PLAXIS, GEO5', 'EPANET, BioWin, GPS-X', 'Civil 3D, MX Road, Kenlayer'] },
+                  { label: 'Testing Method', values: ['Standard Penetration Test (SPT), Pile Load Test', 'Turbidity meter, Jar test, BOD test', 'California Bearing Ratio (CBR) test, Benkelman Beam Deflection'] },
                   { label: 'Unique Trait', keys: ['uniqueTrait'] },
                 ].map((row, i) => (
                   <tr key={row.label} className={i % 2 === 0 ? (isLight ? 'bg-white' : 'bg-ink-900') : (isLight ? 'bg-gray-50/50' : 'bg-ink-950/50')}>
@@ -731,7 +732,7 @@ export default function EEE() {
                       {row.label}
                     </td>
 
-                    {Object.entries(MICRO_CONTROLLERS).map(([key, model], j) => (
+                    {Object.entries(CIVIL_SYSTEMS).map(([key, model], j) => (
                       <td key={key} className={`px-5 py-3 ${isLight ? 'text-gray-600' : 'text-ink-300'} text-xs leading-snug`}>
                         {row.values ? row.values[j] : row.keys ? model[row.keys[0]] : '—'}
                       </td>

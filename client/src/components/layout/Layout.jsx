@@ -16,7 +16,8 @@ import {
   PanelLeft,
   PanelLeftClose,
   PanelLeftOpen,
-  Lock
+  Lock,
+  Briefcase
 } from 'lucide-react'
 import clsx from 'clsx';
 
@@ -28,7 +29,21 @@ const studentNav = [
   { to: '/student/chat', label: 'Chat', icon: MessageSquare },
   { to: '/student/ai', label: 'Learn About Ai', icon: SparkleIcon},
   { to: '/student/eee', label: 'Learn About Micro-Controller', icon: SparkleIcon},
+  { to: '/student/mech', label: 'Learn About Designs', icon: SparkleIcon},
+  { to: '/student/civil', label: 'Learn About Constructions', icon: SparkleIcon},
 ]
+
+const departmentComponentMap = {
+  "Computer Science and Engineering": ["Learn About AI", "Learn About Ai"],
+  "Computer Science and Business Systems": ["Learn About AI", "Learn About Ai"],
+  "Artificial Intelligence and Data Science": ["Learn About AI", "Learn About Ai"],
+  "Information Technology": ["Learn About AI", "Learn About Ai"],
+  "Electronics and Communication Engineering": ["Learn About Micro-Controller"],
+  "Electrical and Electronics Engineering": ["Learn About Micro-Controller"],
+  "Mechanical Engineering": ["Learn About Designs"],
+  "Civil Engineering":["Learn About Constructions"]
+}
+
 
 const staffNav = [
   { to: '/staff', label: 'Dashboard', icon: LayoutDashboard, end: true },
@@ -52,6 +67,7 @@ export default function Layout({ children }) {
   const { isLight, toggleTheme } = useTheme()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
+  const [placementOpen, setPlacementOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     const saved = localStorage.getItem('sidebarCollapsed');
     return saved === null ? true : saved === 'true';
@@ -78,10 +94,32 @@ export default function Layout({ children }) {
 
   const isAdminRoute = window.location.pathname.startsWith('/admin') && !!sessionStorage.getItem('adminToken')
 
+  const filteredStudentNav = studentNav.filter(item => {
+    const labelLower = item.label.toLowerCase();
+    const deptSpecificLabels = [
+      'learn about ai',
+      'learn about micro-controller',
+      'learn about designs',
+      'learn about constructions'
+    ];
+
+    if (!deptSpecificLabels.includes(labelLower)) {
+      return true;
+    }
+
+    const userDept = user?.department;
+    if (!userDept || !departmentComponentMap[userDept]) {
+      return true;
+    }
+
+    const allowedComponents = departmentComponentMap[userDept];
+    return allowedComponents.some(allowed => allowed.toLowerCase() === labelLower);
+  });
+
   const navItems =
     isAdminRoute ? adminNav :
     user?.role === 'staff' ? staffNav :
-    studentNav
+    filteredStudentNav
 
   // Resolve avatar URL — works in dev (Vite proxy for /uploads) and production
   const getAvatarUrl = (avatarPath) => {
@@ -218,6 +256,63 @@ export default function Layout({ children }) {
           )
         })}
       </nav>
+
+      {user?.role === 'student' && (user.department === 'Computer Science and Engineering' || user.department === 'Computer Science and Business Systems' || user.department === 'Electronics and Communication Engineering') && (
+        <div className="border-t border-ink-800 px-3 py-2 space-y-0.5">
+          <button
+            title={collapsed ? "Placement Preparation" : undefined}
+            onClick={() => {
+              if (collapsed) {
+                onToggle()
+                setPlacementOpen(true)
+              } else {
+                setPlacementOpen(!placementOpen)
+              }
+            }}
+            className={clsx(
+              'nav-link w-full text-left flex items-center justify-between',
+              window.location.pathname.startsWith('/student/placement') && 'active',
+              collapsed && 'justify-center px-0'
+            )}
+          >
+            <div className="flex items-center gap-3">
+              <Briefcase size={16} className="shrink-0 text-ink-400" />
+              {!collapsed && <span className="truncate">Placement Prep</span>}
+            </div>
+            {!collapsed && (
+              <ChevronDown 
+                size={14} 
+                className={clsx('shrink-0 text-ink-500 transition-transform duration-200', placementOpen && 'rotate-180')} 
+              />
+            )}
+          </button>
+          
+          {placementOpen && !collapsed && (
+            <div className="pl-6 space-y-0.5 animate-in slide-in-from-top-1 duration-150">
+              <button
+                onClick={() => { setOpen(false); navigate('/student/placement/on-campus'); }}
+                className={clsx(
+                  'nav-link w-full text-left text-xs py-1.5 px-3 flex items-center gap-2',
+                  window.location.pathname === '/student/placement/on-campus' ? 'active font-500 text-lime-300 bg-lime-400/5' : 'text-ink-400 hover:text-ink-200'
+                )}
+              >
+                <span className="w-1 h-1 rounded-full bg-lime-400"></span>
+                On-Campus
+              </button>
+              <button
+                onClick={() => { setOpen(false); navigate('/student/placement/off-campus'); }}
+                className={clsx(
+                  'nav-link w-full text-left text-xs py-1.5 px-3 flex items-center gap-2',
+                  window.location.pathname === '/student/placement/off-campus' ? 'active font-500 text-sky-300 bg-sky-400/5' : 'text-ink-400 hover:text-ink-200'
+                )}
+              >
+                <span className="w-1 h-1 rounded-full bg-sky-400"></span>
+                Off-Campus
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* User area removed from sidebar */}
     </aside>

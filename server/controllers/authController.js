@@ -101,7 +101,8 @@ exports.register = async (req, res) => {
         email: user.email,
         role: user.role,
         department: user.department || '',
-        avatar: user.avatar || null
+        avatar: user.avatar || null,
+        semester: user.semester || null
       }
     })
 
@@ -191,7 +192,8 @@ exports.login = async (req, res) => {
         email: user.email,
         role: user.role,
         department: user.department || '',
-        avatar: user.avatar || null
+        avatar: user.avatar || null,
+        semester: user.semester || null
       }
     })
 
@@ -283,7 +285,7 @@ exports.verifyPassword = async (req, res) => {
 // ─────────────────────────────────────────────
 exports.updateProfile = async (req, res) => {
   try {
-    const { name, password } = req.body
+    const { name, password, phone } = req.body
 
     const user = await User.findById(req.user._id)
     if (!user) {
@@ -299,6 +301,17 @@ exports.updateProfile = async (req, res) => {
         })
       }
       user.name = name
+    }
+
+    if (phone !== undefined) {
+      const trimmedPhone = phone.trim()
+      if (trimmedPhone && !/^\+?[0-9]{10,15}$/.test(trimmedPhone)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid phone number format. It must be 10 to 15 digits long, optionally starting with '+'."
+        })
+      }
+      user.phone = trimmedPhone || ''
     }
 
     if (password) {
@@ -384,7 +397,8 @@ exports.verifyStaffLoginOtp = async (req, res) => {
         email: user.email,
         role: user.role,
         department: user.department || '',
-        avatar: user.avatar || null
+        avatar: user.avatar || null,
+        semester: user.semester || null
       },
       message: "Staff login successful."
     })

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import api from '../../services/api'
+import { useAuth } from '../../context/AuthContext'
 import { BookOpen, Upload, Trash2, Video, Mic, File, Plus, X, Play, Eye, Download, Pause, ArrowLeft, Pencil } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
@@ -14,6 +15,7 @@ const typeConfig = {
 import MaterialViewer from '../../components/MaterialViewer'
 
 export default function StaffMaterials() {
+  const { user } = useAuth()
   const [materials, setMaterials] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -21,15 +23,23 @@ export default function StaffMaterials() {
   const [uploading, setUploading] = useState(false)
   const [progress, setProgress] = useState(0)
   const [filterDept, setFilterDept] = useState('')
+  const [filterSem, setFilterSem] = useState('')
+  const [filterCourse, setFilterCourse] = useState('')
   const [form, setForm] = useState({
     title: '',
-    description: '',
     type: 'notes',
     subject: '',
-    department: '',
+    department: user?.department || '',
     unit: '',
-    topic: ''
+    semester: '',
+    course: '',
   })
+
+  useEffect(() => {
+    if (user?.department) {
+      setForm(p => ({ ...p, department: user.department }))
+    }
+  }, [user])
   const [file, setFile] = useState(null)
   const [selectedMaterial, setSelectedMaterial] = useState(null)
   const fileRef = useRef()
@@ -51,13 +61,13 @@ export default function StaffMaterials() {
     // Validate required fields
     if (!editId) {
       // Upload mode: all fields required
-      if (!form.title || !form.subject || !form.department || !form.unit || !form.topic || !form.type) {
-        return toast.error('Please fill all required fields')
+      if (!form.title || !form.subject || !form.department || !form.unit || !form.type || !form.semester || !form.course) {
+        return toast.error('Please fill all required fields (including Semester and Course)')
       }
     } else {
       // Edit mode: only updateable fields required
-      if (!form.subject || !form.department || !form.topic || !form.type) {
-        return toast.error('Please fill subject, department, topic and type')
+      if (!form.subject || !form.department || !form.type || !form.semester || !form.course) {
+        return toast.error('Please fill subject, department, type, semester and course')
       }
     }
 
@@ -86,7 +96,7 @@ export default function StaffMaterials() {
         toast.success('Material uploaded!')
       }
 
-      setForm({ title: '', description: '', type: 'notes', subject: '', department: '', unit: '', topic: '' })
+      setForm({ title: '', type: 'notes', subject: '', department: user?.department || '', unit: '', semester: '', course: '' })
       setFile(null)
       setShowForm(false)
       setEditId(null)
@@ -103,12 +113,12 @@ export default function StaffMaterials() {
     setEditId(material._id)
     setForm({
       title: material.title || '',
-      description: material.description || '',
       type: material.type || 'notes',
       subject: material.subject || '',
       department: material.department || '',
       unit: material.unit || '',
-      topic: material.topic || ''
+      semester: material.semester || '',
+      course: material.course || ''
     })
     setShowForm(true)
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -126,19 +136,33 @@ export default function StaffMaterials() {
     }
   }
 
-  const filteredMaterials = filterDept 
-    ? materials.filter(m => m.department === filterDept) 
-    : materials;
+  const filteredMaterials = materials.filter(m => {
+    if (filterDept && m.department !== filterDept) return false
+    if (filterSem && m.semester !== Number(filterSem)) return false
+    if (filterCourse && !m.course?.toLowerCase().includes(filterCourse.toLowerCase())) return false
+    return true
+  })
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
       <Link to="/staff" className="inline-flex items-center gap-2 text-ink-400 hover:text-lime-300 transition-colors mb-2 text-sm font-500">
         <ArrowLeft size={16} /> Back to Dashboard
       </Link>
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
         <h1 className="page-title">Materials</h1>
-        <div className="flex items-center gap-3 w-full sm:w-auto">
+        <button onClick={() => {
+          setEditId(null)
+          setForm({ title: '', type: 'notes', subject: '', department: user?.department || '', unit: '', semester: '', course: '' })
+          setShowForm(s => !s)
+        }} className="btn-primary whitespace-nowrap w-full sm:w-auto">
+          {showForm ? <><X size={15} /> Cancel</> : <><Plus size={15} /> Upload</>}
+        </button>
+      </div>
+
+      {/* Filters */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div>
           <select 
-            className="input py-1.5 min-w-[200px]" 
+            className="input w-full" 
             value={filterDept} 
             onChange={e => setFilterDept(e.target.value)}
           >
@@ -147,13 +171,27 @@ export default function StaffMaterials() {
               <option key={dept} value={dept}>{dept}</option>
             ))}
           </select>
-          <button onClick={() => {
-            setEditId(null)
-            setForm({ title: '', description: '', type: 'notes', subject: '', department: '', unit: '', topic: '' })
-            setShowForm(s => !s)
-          }} className="btn-primary whitespace-nowrap">
-            {showForm ? <><X size={15} /> Cancel</> : <><Plus size={15} /> Upload</>}
-          </button>
+        </div>
+        <div>
+          <select 
+            className="input w-full" 
+            value={filterSem} 
+            onChange={e => setFilterSem(e.target.value)}
+          >
+            <option value="">All Semesters</option>
+            {[1, 2, 3, 4, 5, 6, 7, 8].map(sem => (
+              <option key={sem} value={sem}>Semester {sem}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <input
+            type="text"
+            className="input w-full"
+            placeholder="Search course..."
+            value={filterCourse}
+            onChange={e => setFilterCourse(e.target.value)}
+          />
         </div>
       </div>
 
@@ -203,17 +241,13 @@ export default function StaffMaterials() {
               </div>
               <div>
                 <label className="label">Department</label>
-                <select
-                  className="input"
-                  value={form.department}
-                  onChange={e => setForm(p => ({ ...p, department: e.target.value }))}
-                  required
-                >
-                  <option value="" disabled>Select Department</option>
-                  {Object.keys(DEPART_CHECKER).map(dept => (
-                    <option key={dept} value={dept}>{dept}</option>
-                  ))}
-                </select>
+                <input
+                  type="text"
+                  className="input bg-ink-900 border-ink-800 text-ink-400 cursor-not-allowed"
+                  value={form.department || user?.department || ''}
+                  disabled
+                  readOnly
+                />
               </div>
               {!editId && (
                 <div>
@@ -227,27 +261,33 @@ export default function StaffMaterials() {
                   />
                 </div>
               )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="label">Topic</label>
+                <label className="label">Semester</label>
+                <select
+                  className="input"
+                  value={form.semester}
+                  onChange={e => setForm(p => ({ ...p, semester: e.target.value }))}
+                  required
+                >
+                  <option value="" disabled>Select Semester</option>
+                  {[1, 2, 3, 4, 5, 6, 7, 8].map(sem => (
+                    <option key={sem} value={sem}>Semester {sem}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="label">Course Name / Code</label>
                 <input
                   className="input"
-                  placeholder="Topic"
-                  value={form.topic}
-                  onChange={e => setForm(p => ({ ...p, topic: e.target.value }))}
+                  placeholder="e.g. CS3001"
+                  value={form.course}
+                  onChange={e => setForm(p => ({ ...p, course: e.target.value }))}
                   required
                 />
               </div>
-            </div>
-
-            <div>
-              <label className="label">Description</label>
-              <textarea
-                className="input resize-none"
-                rows={2}
-                placeholder="Brief description…"
-                value={form.description}
-                onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
-              />
             </div>
 
             {!editId && (
@@ -323,7 +363,23 @@ export default function StaffMaterials() {
                         </div>
                         <div>
                           <p className="text-ink-200 font-500">{m.title}</p>
-                          {m.description && <p className="text-ink-600 text-xs line-clamp-1">{m.description}</p>}
+                          <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                            {m.semester && (
+                              <span className="text-[10px] bg-lime-400/10 text-lime-400 px-1.5 py-0.5 rounded font-500">
+                                Sem {m.semester}
+                              </span>
+                            )}
+                            {m.course && (
+                              <span className="text-[10px] bg-sky-400/10 text-sky-400 px-1.5 py-0.5 rounded font-500">
+                                {m.course}
+                              </span>
+                            )}
+                            {m.subject && (
+                              <span className="text-[10px] bg-ink-800 text-ink-400 px-1.5 py-0.5 rounded">
+                                {m.subject}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </td>

@@ -106,6 +106,10 @@ function DynamicTitle() {
 
 import Settings from './pages/settings/Settings'
 import EditProfile from './pages/settings/EditProfile'
+import MechEnggSyllabus from './pages/DeptContent/Mech'
+import CivilEnggTopics from './pages/DeptContent/Civil'
+import PlacementOnCampus from './pages/student/PlacementOnCampus'
+import PlacementOffCampus from './pages/student/PlacementOffCampus'
 
 function AppRoutes() {
   const { user, loading } = useAuth()
@@ -163,6 +167,10 @@ function AppRoutes() {
         <Route path="/student/chat" element={<ProtectedRoute role="student"><Layout><ChatPage /></Layout></ProtectedRoute>} />
         <Route path="/student/ai" element={<ProtectedRoute role="student"><Layout><Ai /></Layout></ProtectedRoute>} />
         <Route path="/student/eee" element={<ProtectedRoute role="student"><Layout><EEE /></Layout></ProtectedRoute>} />
+        <Route path="/student/mech" element={<ProtectedRoute role="student"><Layout><MechEnggSyllabus /></Layout></ProtectedRoute>} />
+        <Route path="/student/civil" element={<ProtectedRoute role="student"><Layout><CivilEnggTopics /></Layout></ProtectedRoute>} />
+        <Route path="/student/placement/on-campus" element={<ProtectedRoute role="student"><Layout><PlacementOnCampus /></Layout></ProtectedRoute>} />
+        <Route path="/student/placement/off-campus" element={<ProtectedRoute role="student"><Layout><PlacementOffCampus /></Layout></ProtectedRoute>} />
 
         {/* Staff routes */}
         <Route path="/staff" element={<ProtectedRoute role="staff"><Layout><StaffDashboard /></Layout></ProtectedRoute>} />
@@ -200,6 +208,7 @@ export default function App() {
           <Toaster
             position="top-right"
             toastOptions={{
+              duration: 4000,
               className: 'default-toaster',
               style: {
                 background: 'rgb(var(--ink-800))',

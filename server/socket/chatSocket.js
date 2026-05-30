@@ -16,8 +16,10 @@ const initSocket = (server) => {
     // ── User joins ───────────────────────────────
     socket.on('join', (userId) => {
       onlineUsers[userId] = socket.id
+      socket.join(`user:${userId}`)
       io.emit('onlineUsers', Object.keys(onlineUsers))
       console.log('Online Users:', Object.keys(onlineUsers))
+      console.log('User joined personal room:', `user:${userId}`)
     })
 
     // ── Room joins ───────────────────────────────
@@ -30,6 +32,11 @@ const initSocket = (server) => {
       if (data && data.department) {
         socket.join(data.department)
         console.log(`User joined department room: ${data.department}`)
+        if (data.semester) {
+          const semRoom = `${data.department}_Semester_${data.semester}`
+          socket.join(semRoom)
+          console.log(`User joined department-semester room: ${semRoom}`)
+        }
       }
     })
 

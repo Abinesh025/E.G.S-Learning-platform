@@ -17,13 +17,22 @@ import { Link } from 'react-router-dom'
 import { DEPART_CHECKER } from '../../utils/deptChecker'
 
 export default function StudentMaterials() {
-  const { token } = useAuth()
+  const { token, user } = useAuth()
   const [materials, setMaterials] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('all')
   const [departmentFilter, setDepartmentFilter] = useState('')
+  const [semesterFilter, setSemesterFilter] = useState(user?.semester || '')
+  const [courseFilter, setCourseFilter] = useState('')
   const [selectedMaterial, setSelectedMaterial] = useState(null)
+
+  // Auto-set semester filter once user loads
+  useEffect(() => {
+    if (user?.semester) {
+      setSemesterFilter(user.semester)
+    }
+  }, [user])
 
   // Initialize and cleanup Audio element
   useEffect(() => {
@@ -31,6 +40,8 @@ export default function StudentMaterials() {
       setLoading(true)
       const params = {}
       if (departmentFilter) params.department = departmentFilter
+      if (semesterFilter) params.semester = semesterFilter
+      if (courseFilter) params.course = courseFilter
       
       studentService.getMaterials(params)
         .then(res => setMaterials(res.data || []))
@@ -42,7 +53,7 @@ export default function StudentMaterials() {
     const handleDataChanged = (type) => { if (type === 'material') fetchItems() }
     socket.on('data_changed', handleDataChanged)
     return () => socket.off('data_changed', handleDataChanged)
-  }, [token, departmentFilter])
+  }, [token, departmentFilter, semesterFilter, courseFilter])
 
   const filtered = materials?.filter(m => {
     const matchSearch = m.title?.toLowerCase().includes(search.toLowerCase())
@@ -62,34 +73,60 @@ export default function StudentMaterials() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-500" />
-          <input
-            className="input pl-9"
-            placeholder="Search materials…"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
+      <div className="flex flex-col gap-4">
+        {/* Row 1: Search Inputs & Dropdowns */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="relative">
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-500" />
+            <input
+              className="input pl-9 w-full"
+              placeholder="Search materials…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+          </div>
+          <div>
+            <select 
+              className="input w-full"
+              value={departmentFilter}
+              onChange={e => setDepartmentFilter(e.target.value)}
+            >
+              <option value="">All Departments</option>
+              {Object.keys(DEPART_CHECKER).map(dept => (
+                <option key={dept} value={dept}>{dept}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <select 
+              className="input w-full"
+              value={semesterFilter}
+              onChange={e => setSemesterFilter(e.target.value)}
+            >
+              <option value="">All Semesters</option>
+              {[1, 2, 3, 4, 5, 6, 7, 8].map(sem => (
+                <option key={sem} value={sem}>Semester {sem}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <input
+              type="text"
+              className="input w-full"
+              placeholder="Search course name/code…"
+              value={courseFilter}
+              onChange={e => setCourseFilter(e.target.value)}
+            />
+          </div>
         </div>
-        <div className="w-full sm:w-48">
-          <select 
-            className="input w-full"
-            value={departmentFilter}
-            onChange={e => setDepartmentFilter(e.target.value)}
-          >
-            <option value="">All Departments</option>
-            {Object.keys(DEPART_CHECKER).map(dept => (
-              <option key={dept} value={dept}>{dept}</option>
-            ))}
-          </select>
-        </div>
+
+        {/* Row 2: Type Filters */}
         <div className="flex gap-2 flex-wrap">
           {['all', 'notes', 'video', 'voice', 'file'].map(f => (
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`px-3 py-2 rounded-xl text-sm font-500 border transition-all capitalize ${
+              className={`px-4 py-2 rounded-xl text-sm font-500 border transition-all capitalize ${
                 filter === f
                   ? 'bg-lime-300/10 border-lime-300 text-lime-300'
                   : 'border-ink-700 text-ink-400 hover:border-ink-500'
@@ -133,9 +170,25 @@ export default function StudentMaterials() {
                   <span className={cfg.color}>{cfg.label}</span>
                 </div>
                 <h3 className="text-ink-100 font-500 text-sm mb-1 line-clamp-2 group-hover:text-lime-300 transition-colors">{m.title}</h3>
-                {m.description && (
-                  <p className="text-ink-500 text-xs line-clamp-2 mb-3">{m.description}</p>
-                )}
+                
+                <div className="flex flex-wrap items-center gap-1.5 mb-4 mt-2">
+                  {m.semester && (
+                    <span className="text-[10px] bg-lime-400/10 text-lime-400 px-1.5 py-0.5 rounded font-500">
+                      Sem {m.semester}
+                    </span>
+                  )}
+                  {m.course && (
+                    <span className="text-[10px] bg-sky-400/10 text-sky-400 px-1.5 py-0.5 rounded font-500">
+                      {m.course}
+                    </span>
+                  )}
+                  {m.subject && (
+                    <span className="text-[10px] bg-ink-800 text-ink-400 px-1.5 py-0.5 rounded">
+                      {m.subject}
+                    </span>
+                  )}
+                </div>
+
                 <div className="flex items-center justify-between mt-auto pt-3 border-t border-ink-800">
                   <span className="text-ink-600 text-xs">
                     {m.uploadedBy?.name || 'Instructor'}

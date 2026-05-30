@@ -1,254 +1,254 @@
 import { useState, useEffect, useRef } from 'react'
 import { useTheme } from '../../context/ThemeContext'
-import iotImage from "../../assets/iot_workflow.png"
+import mechImage from "../../assets/mech_workflow.png"
 
-const MICRO_CONTROLLERS = {
-  arduino: {
-    name: 'Arduino (ATmega328P)',
-    company: 'Microchip Technology',
-    color: '#00979d',
-    lightBg: '#f0fbfc',
-    borderColor: 'border-[#00979d]',
-    textColor: 'text-[#00979d]',
-    bgColor: 'bg-[#00979d]',
-    tabActive: 'tab-arduino',
-    architecture: '8-bit AVR RISC Harvard Architecture',
-    tokenizer: 'AVR Instruction Set (130 instructions)',
-    contextWindow: '32 KB Flash Memory',
-    trainingData: '1024-byte EEPROM / 2 KB SRAM',
-    uniqueTrait: 'Deterministic single-cycle execution',
+const MECHANICAL_SYSTEMS = {
+  engine: {
+    name: 'Four-Stroke IC Engine Cycle',
+    company: 'Thermodynamics & IC Engines',
+    color: '#e28743',
+    lightBg: '#fdf7f2',
+    borderColor: 'border-[#e28743]',
+    textColor: 'text-[#e28743]',
+    bgColor: 'bg-[#e28743]',
+    tabActive: 'tab-engine',
+    architecture: 'Otto Cycle / Reciprocating Engine',
+    tokenizer: 'Air-Fuel Mixture Combustion Cycle',
+    contextWindow: 'Compression Ratio 10:1 - 12:1',
+    trainingData: 'Thermal efficiency ~30% - 35%',
+    uniqueTrait: 'Mechanical work output via gas expansion',
     steps: [
       {
         id: 1,
-        title: 'Power-On Reset (POR)',
-        icon: '⚡',
-        desc: 'When power is applied or reset pin goes low, internal voltage comparator starts. Program Counter (PC) is forced to 0x0000, initiating startup vectors.',
-        detail: 'AVR start up time is controlled by fuses. Typically takes ~64ms for power to stabilise before first opcode execution.',
-        time: 'O(1)',
-        space: 'O(1)',
-        timeNote: 'Constant hardware delay',
-        spaceNote: 'No RAM usage at reset',
-      },
-      {
-        id: 2,
-        title: 'Instruction Fetch',
+        title: 'Intake Stroke',
         icon: '📥',
-        desc: 'The Program Counter places flash address on the 16-bit program memory bus. 16-bit instruction word is fetched into the instruction register.',
-        detail: 'Hardware prefetching is not used; single-level pipelining means next instruction is fetched while current one executes.',
-        time: '1 Cycle',
-        space: '16-bit',
-        timeNote: 'One clock cycle',
-        spaceNote: 'Instruction register buffer',
-      },
-      {
-        id: 3,
-        title: 'Instruction Decode',
-        icon: '⚙️',
-        desc: 'Internal decoder logic maps 16-bit opcode to control lines. ALU paths, registers, and memory lines are selected for execution.',
-        detail: 'Most instructions are single-register or register-to-register. Decoding is fully hardwired for high efficiency.',
-        time: 'O(1)',
-        space: 'O(1)',
-        timeNote: 'Parallel gate propagation delay',
-        spaceNote: 'Combinational logic storage',
-      },
-      {
-        id: 4,
-        title: 'ALU Execution',
-        icon: '⊕',
-        desc: 'The 8-bit Arithmetic Logic Unit performs operation (ADD, SUB, AND, OR, XOR) on contents of General Purpose Registers.',
-        detail: 'ALU connects directly to all 32 general purpose registers, enabling single-cycle ALU execution.',
-        time: '1 Cycle',
-        space: '8-bit',
-        timeNote: 'Completed in a single clock cycle',
-        spaceNote: '8-bit ALU register storage',
-      },
-      {
-        id: 5,
-        title: 'SRAM Access',
-        icon: '💾',
-        desc: 'If instruction accesses data memory (LDS, STS, LDD, STD), the 8-bit data bus reads or writes data to the 2 KB SRAM space.',
-        detail: 'SRAM access takes an extra clock cycle compared to register access because of data bus limitations.',
-        time: '2 Cycles',
-        space: '8-bit',
-        timeNote: 'SRAM read/write latency',
-        spaceNote: 'Data bus width',
-      },
-      {
-        id: 6,
-        title: 'I/O & Register Writeback',
-        icon: '▶',
-        desc: 'Results are written back to the destination register or mapped I/O ports, toggling physical pins like PORTB/PORTD.',
-        detail: 'Direct port manipulation (e.g., PORTB |= 0x20) changes physical output pin voltage state within 1 cycle.',
-        time: '1 Cycle',
-        space: 'O(1)',
-        timeNote: 'Single cycle writeback',
-        spaceNote: 'Port register flip-flops',
-      },
-    ],
-  },
-  esp32: {
-    name: 'ESP32 (WROOM-32)',
-    company: 'Espressif Systems',
-    color: '#e7352b',
-    lightBg: '#fef1f0',
-    borderColor: 'border-[#e7352b]',
-    textColor: 'text-[#e7352b]',
-    bgColor: 'bg-[#e7352b]',
-    tabActive: 'tab-esp32',
-    architecture: 'Tensilica Xtensa Dual-Core 32-bit LX6',
-    tokenizer: 'Xtensa ISA with DSP extensions',
-    contextWindow: '4 MB External SPI Flash',
-    trainingData: '520 KB Internal SRAM / 8 KB RTC',
-    uniqueTrait: 'Integrated Wi-Fi & Bluetooth baseband',
-    steps: [
-      {
-        id: 1,
-        title: 'ROM Bootloader',
-        icon: '⬡',
-        desc: 'On power up, PRO_CPU begins executing ROM code. It configures default clock speeds, SPI flash communication, and validates the partition table.',
-        detail: 'Verifies flash integrity by calculating SHA256 checksums of the bootloader header before loading apps.',
-        time: 'O(n)',
-        space: 'O(1)',
-        timeNote: 'Linear with binary size n',
-        spaceNote: 'ROM memory space only',
+        desc: 'Inlet valve opens while exhaust valve remains closed. Piston sweeps down from Top Dead Centre (TDC) to Bottom Dead Centre (BDC), creating a vacuum that draws in fuel-air charge.',
+        detail: 'In modern engines, variable valve timing (VVT) controls the exact timing to optimize volumetric efficiency at different RPMs.',
+        time: '180° Crank',
+        space: 'V_max',
+        timeNote: 'Duration of crankshaft angle',
+        spaceNote: 'Maximum cylinder volume',
       },
       {
         id: 2,
-        title: 'Second-Stage Boot',
-        icon: '↔',
-        desc: 'Loads bootloader from flash into internal IRAM. Configures MMU flash cache and initialises the RTC and external RAM (PSRAM) if present.',
-        detail: 'Mounts virtual flash memory maps so code can be executed directly from external flash using the cache controller.',
-        time: 'O(n)',
-        space: 'O(m)',
-        timeNote: 'Linear in memory copy block size',
-        spaceNote: 'IRAM allocation buffer m',
+        title: 'Compression Stroke',
+        icon: '⚙️',
+        desc: 'Both intake and exhaust valves close. Piston moves upwards from BDC to TDC, compressing the fuel-air charge to high pressure and temperature.',
+        detail: 'Work is done on the gas. Compression ratio determines the efficiency and must be limited to prevent pre-ignition (knocking).',
+        time: '180° Crank',
+        space: 'V_min',
+        timeNote: 'Duration of crankshaft angle',
+        spaceNote: 'Clearance volume space',
       },
       {
         id: 3,
-        title: 'FreeRTOS Scheduler Start',
-        icon: '◎',
-        desc: 'Initialises FreeRTOS. Spawns the main task and pins the background radio control loops to Core 0 while Core 1 handles user application logic.',
-        detail: 'Preemptive scheduler ticks at 1000Hz (1ms), using task control blocks (TCBs) to perform context switches.',
-        time: 'O(1)',
-        space: 'O(k)',
-        timeNote: 'Constant scheduler ticks',
-        spaceNote: 'Memory allocated for L tasks',
+        title: 'Power Stroke (Combustion)',
+        icon: '🔥',
+        desc: 'Spark plug ignites compressed mixture near TDC. Rapid chemical reaction produces high-pressure, high-temp combustion gases forcing piston down.',
+        detail: 'The expanding gas does work on the piston, converting chemical energy directly into mechanical reciprocating work.',
+        time: '180° Crank',
+        space: 'W_out',
+        timeNote: 'Expansion stroke duration',
+        spaceNote: 'Output work energy produced',
       },
       {
         id: 4,
-        title: 'RF Stack & LwIP Init',
-        icon: '📶',
-        desc: 'Power is applied to the internal RF synthesizer. The Wi-Fi driver allocates hardware DMA buffers and initialises the LwIP TCP/IP stack.',
-        detail: 'Maintains background RF calibration routines to adjust for temperature drift, operating on Wi-Fi/BT co-existence protocols.',
-        time: 'O(1)',
+        title: 'Exhaust Stroke',
+        icon: '📤',
+        desc: 'Exhaust valve opens. Piston sweeps up from BDC to TDC, expelling burned combustion gases from the cylinder into the exhaust manifold.',
+        detail: 'Scavenging efficiency is critical: exhaust design must facilitate complete evacuation of product gases.',
+        time: '180° Crank',
+        space: 'V_clearance',
+        timeNote: 'Duration of crankshaft angle',
+        spaceNote: 'Clearance volume space',
+      },
+      {
+        id: 5,
+        title: 'Crankshaft Conversion',
+        icon: '🔄',
+        desc: 'Reciprocating motion of the piston is transferred via the connecting rod to the crankshaft, transforming it into rotational motion.',
+        detail: 'Flywheel stores kinetic energy during power stroke to carry the crankshaft through the other three non-power strokes.',
+        time: 'Continuous',
+        space: 'T_torque',
+        timeNote: 'Angular momentum transition',
+        spaceNote: 'Torque generated on crankshaft',
+      },
+      {
+        id: 6,
+        title: 'Thermal Dissipation',
+        icon: '🌡️',
+        desc: 'Excess thermal energy is absorbed by the coolant jacket (water/glycol) or cooling fins to maintain structural integrity of the cylinder walls.',
+        detail: 'Around 30% of energy is rejected to coolant, 35% to exhaust gases, and only 35% converted to mechanical power.',
+        time: 'O(1) continuous',
+        space: 'Q_reject',
+        timeNote: 'Continuous thermal conduction',
+        spaceNote: 'Rejected heat load capacity',
+      },
+    ],
+  },
+  cfd: {
+    name: 'CFD Aerodynamics Simulation',
+    company: 'Fluid Mechanics & Computation',
+    color: '#1f77b4',
+    lightBg: '#f0f7fb',
+    borderColor: 'border-[#1f77b4]',
+    textColor: 'text-[#1f77b4]',
+    bgColor: 'bg-[#1f77b4]',
+    tabActive: 'tab-cfd',
+    architecture: 'Navier-Stokes Equations Solver (FVM)',
+    tokenizer: 'Discretized Mesh grid (Hexa/Polyhedral)',
+    contextWindow: 'Millions of cell elements',
+    trainingData: 'K-epsilon / K-omega SST turbulence models',
+    uniqueTrait: 'Iterative mass & momentum conservation',
+    steps: [
+      {
+        id: 1,
+        title: 'Geometry & Domain Setup',
+        icon: '⬡',
+        desc: 'CAD model is imported, cleaned up, and surrounded by a virtual fluid domain representing wind tunnel boundaries.',
+        detail: 'Defines the inlet, outlet, and wall boundaries. Gaps and intersections are repaired to prevent mesh leakage.',
+        time: 'O(n)',
+        space: 'O(v)',
+        timeNote: 'Linear in geometric feature count n',
+        spaceNote: 'Volume domain mesh bounds v',
+      },
+      {
+        id: 2,
+        title: 'Mesh Discretization',
+        icon: '↔',
+        desc: 'Fluid domain is split into small cells (hexagonal, tetrahedral, or polyhedral) where flow equations will be solved.',
+        detail: 'Prism layers are placed near solid walls to capture boundary layer velocity gradients.',
+        time: 'O(e)',
+        space: 'O(e)',
+        timeNote: 'Highly dependent on cell count e',
+        spaceNote: 'Grid coordinates cache',
+      },
+      {
+        id: 3,
+        title: 'Boundary Conditions',
+        icon: '◎',
+        desc: 'Inlet velocity vectors, outlet gauge pressure, wall roughness, and initial turbulence values are assigned.',
+        detail: 'Implements mathematical constraints on cell faces at the edges of the computational domain.',
+        time: 'O(b)',
         space: 'O(b)',
-        timeNote: 'Asynchronous stack start',
-        spaceNote: 'RX/TX DMA rings allocation',
-      },
-      {
-        id: 5,
-        title: 'App Task Loop',
-        icon: '★',
-        desc: 'User code inside loopTask runs on Core 1. Background interrupts handle network packets, UART messages, and ADC readings.',
-        detail: 'Can utilise hardware acceleration for cryptographic operations (AES, SHA, RSA) to speed up communication.',
-        time: 'O(1)',
-        space: 'O(s)',
-        timeNote: 'Per-task event loop execution',
-        spaceNote: 'Task stack allocation buffer s',
-      },
-      {
-        id: 6,
-        title: 'Power Management & Sleep',
-        icon: '▶',
-        desc: 'ESP32 monitors CPU load and enters Light Sleep or Deep Sleep (10µA draw) when idle, retaining state in RTC memory.',
-        detail: 'Deep Sleep shuts down main cores, flash, and Wi-Fi, keeping only the ULP (Ultra-Low Power) co-processor active.',
-        time: 'O(1)',
-        space: 'O(rtc)',
-        timeNote: 'Instantaneous mode switch',
-        spaceNote: '8 KB RTC fast/slow memory space',
-      },
-    ],
-  },
-  rp2040: {
-    name: 'Raspberry Pi RP2040',
-    company: 'Raspberry Pi Ltd',
-    color: '#c51a4a',
-    lightBg: '#fef1f4',
-    borderColor: 'border-[#c51a4a]',
-    textColor: 'text-[#c51a4a]',
-    bgColor: 'bg-[#c51a4a]',
-    tabActive: 'tab-rp2040',
-    architecture: 'Dual ARM Cortex-M0+ cores',
-    tokenizer: 'ARMv6-M Thumb Instruction Set',
-    contextWindow: 'Up to 16 MB External Flash',
-    trainingData: '264 KB Multi-bank SRAM / PIO block',
-    uniqueTrait: 'Programmable I/O (PIO) state machines',
-    steps: [
-      {
-        id: 1,
-        title: 'BootROM Selection',
-        icon: '⬡',
-        desc: 'Hardware checks BOOTSEL pin. If pulled low, it boots from external flash; otherwise, it presents a USB Mass Storage device for drag-and-drop programming.',
-        detail: 'ROM contains highly optimised routines for USB MSC, double-precision floating point math, and flash writing.',
-        time: 'O(1)',
-        space: 'O(1)',
-        timeNote: 'Immediate hardware check',
-        spaceNote: 'Uses ROM code exclusively',
-      },
-      {
-        id: 2,
-        title: 'Dual Core Boot',
-        icon: '↔',
-        desc: 'Core 0 starts execution from flash via XIP cache. Core 1 is held in a sleep state (WFE) waiting for entry commands from Core 0.',
-        detail: 'Core 0 configures vector tables, system clocks, and initialises the memory striping layout across 6 SRAM banks.',
-        time: 'O(1)',
-        space: 'O(1)',
-        timeNote: 'Hardware startup vector',
-        spaceNote: 'Boot vectors space',
-      },
-      {
-        id: 3,
-        title: 'Inter-Core Mailbox Setup',
-        icon: '◎',
-        desc: 'Core 0 communicates with Core 1 using hardware Mailbox FIFOs. Core 0 pushes the launch address to wake up Core 1.',
-        detail: 'FIFOs are 8 entries deep and generate interrupts when written to, enabling efficient inter-core synchronisation.',
-        time: 'O(1)',
-        space: 'O(1)',
-        timeNote: 'FIFO read/write latency',
-        spaceNote: '8-entry FIFO hardware space',
+        timeNote: 'Calculated at boundary faces b',
+        spaceNote: 'Boundary values array',
       },
       {
         id: 4,
-        title: 'PIO State Machine Load',
-        icon: '⚙️',
-        desc: 'Core 0 loads custom assembly instructions into the Programmable I/O (PIO) blocks, enabling hardware-level execution of protocols.',
-        detail: 'PIO blocks run independently of the main CPUs, handling bit-banging protocols (I2S, WS2812, VGA) with cycle-accurate timing.',
-        time: 'O(1)',
-        space: 'O(p)',
-        timeNote: 'Immediate instruction load',
-        spaceNote: '32-instruction memory per block',
+        title: 'Equation Solver (Navier-Stokes)',
+        icon: '⊕',
+        desc: 'Finite Volume Method (FVM) solves conservation of mass, momentum, and energy across all grid cells iteratively.',
+        detail: 'Couples pressure and velocity using algorithms like SIMPLE or PISO. Turbulence models resolve eddy viscosity.',
+        time: 'O(i · e)',
+        space: 'O(e)',
+        timeNote: 'Iterative passes i across elements e',
+        spaceNote: 'Cell variable matrix',
       },
       {
         id: 5,
-        title: 'Direct Memory Access (DMA)',
+        title: 'Convergence Verification',
         icon: '★',
-        desc: 'DMA channels are configured to transfer data between peripherals (ADC, SPI, PIO) and SRAM without involving the CPU.',
-        detail: 'Ring buffers and scatter-gather list transfers allow continuous data logging at high speeds.',
-        time: '1 Cycle',
-        space: 'O(d)',
-        timeNote: 'Zero-CPU overhead transfer',
-        spaceNote: 'DMA configuration registers d',
+        desc: 'Residual values representing error in mass and momentum are tracked until they fall below a designated threshold (e.g. 10^-5).',
+        detail: 'Monitor points track lift and drag coefficients to verify they have reached steady-state values.',
+        time: 'O(i)',
+        space: 'O(i)',
+        timeNote: 'Calculated per iteration i',
+        spaceNote: 'Historical residuals log',
       },
       {
         id: 6,
-        title: 'Dual-Core Parallel Run',
+        title: 'Post-Processing Plots',
         icon: '▶',
-        desc: 'Both cores execute tasks simultaneously, sharing SRAM with no contention due to bus striping and crossbar interconnects.',
-        detail: 'Hardware spinlocks ensure thread safety when modifying shared peripherals or memory regions.',
-        time: 'O(1)',
+        desc: 'Calculated flow variables are visualised as velocity streamlines, pressure contours, and drag/lift coefficient values.',
+        detail: 'Helps identify regions of flow separation, pressure gradients, and wake vortices behind aerodynamic bodies.',
+        time: 'O(e)',
+        space: 'O(e)',
+        timeNote: 'Rendering elements complexity',
+        spaceNote: 'Render buffer requirements',
+      },
+    ],
+  },
+  robotics: {
+    name: 'Manipulator Kinematics & Control',
+    company: 'Robotics & Multibody Dynamics',
+    color: '#2ca02c',
+    lightBg: '#f1fbf1',
+    borderColor: 'border-[#2ca02c]',
+    textColor: 'text-[#2ca02c]',
+    bgColor: 'bg-[#2ca02c]',
+    tabActive: 'tab-robotics',
+    architecture: 'Denavit-Hartenberg (DH) Multibody Linkage',
+    tokenizer: 'Joint Vectors & Link Parameters',
+    contextWindow: '6 Degrees of Freedom (DoF) or more',
+    trainingData: 'Euler-Lagrange equations / PID feedback loops',
+    uniqueTrait: 'Spatial translation via coordinate transformations',
+    steps: [
+      {
+        id: 1,
+        title: 'DH Parameter Assignment',
+        icon: '⬡',
+        desc: 'Coordinate frames are assigned to each joint. Link length (a), link twist (α), link offset (d), and joint angle (θ) are defined.',
+        detail: 'Creates the geometric model representing the kinematic configuration of the robot arm.',
+        time: 'O(d_of)',
+        space: 'O(d_of)',
+        timeNote: 'Linear in degrees of freedom',
+        spaceNote: 'Joint parameters array',
+      },
+      {
+        id: 2,
+        title: 'Joint Encoder Feedback',
+        icon: '↔',
+        desc: 'Optical encoders or resolvers read current angular positions of joint motors in real-time, sending them to the controller.',
+        detail: 'Digital counter cards convert pulse trains into float radian values, applying gear ratios.',
+        time: 'O(d_of)',
+        space: 'O(d_of)',
+        timeNote: 'Read latency per joint encoder',
+        spaceNote: 'Encoder registers storage',
+      },
+      {
+        id: 3,
+        title: 'Forward Kinematics',
+        icon: '◎',
+        desc: 'Joint coordinates are substituted into homogenous transformation matrices, which are multiplied to find the end-effector position.',
+        detail: 'Transformation: T_0^n = T_0^1 * T_1^2 * ... * T_{n-1}^n. Computes position (x, y, z) and orientation in cartesian space.',
+        time: 'O(d_of)',
         space: 'O(1)',
-        timeNote: 'Parallel code execution',
-        spaceNote: 'Lock registers space',
+        timeNote: 'Matrix multiplication chain',
+        spaceNote: 'Fixed transformation matrix',
+      },
+      {
+        id: 4,
+        title: 'Inverse Kinematics',
+        icon: '⚙️',
+        desc: 'Given a target end-effector coordinate, analytical or numerical equations solve the required joint angles to reach it.',
+        detail: 'Analytical methods are fast but configuration dependent. Numerical methods use Jacobian inversion (J^-1) iteratively.',
+        time: 'O(i · d_of³)',
+        space: 'O(d_of²)',
+        timeNote: 'Numerical matrix inversion time',
+        spaceNote: 'Jacobian matrix storage',
+      },
+      {
+        id: 5,
+        title: 'Trajectory Generation',
+        icon: '★',
+        desc: 'Calculates smooth transition profiles for joints, using cubic or quintic splines to limit acceleration changes (jerk).',
+        detail: 'Generates joint angle, velocity, and acceleration values for each millisecond interval of the path.',
+        time: 'O(t)',
+        space: 'O(t)',
+        timeNote: 'Proportional to path time steps t',
+        spaceNote: 'Setpoints buffer array',
+      },
+      {
+        id: 6,
+        title: 'PID Controller Command',
+        icon: '▶',
+        desc: 'Computes current error: setpoint - actual. Proportional, Integral, and Derivative gains apply motor currents to reach target angles.',
+        detail: 'Servo amplifier drives current to PWM amplifiers at 20kHz, minimising positioning error.',
+        time: 'O(d_of)',
+        space: 'O(d_of)',
+        timeNote: 'Executed inside high-speed ISR',
+        spaceNote: 'PID loop gains registers',
       },
     ],
   }
@@ -327,7 +327,7 @@ function StepCard({ step, index, color, lightBg }) {
                 style={{ background: isLight ? '#f9fafb' : 'rgba(255, 255, 255, 0.02)', border: isLight ? '1px solid #e5e7eb' : '1px solid rgba(255, 255, 255, 0.08)' }}
               >
                 <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
-                  Time
+                  Crank / Duration
                 </span>
                 <span className="complexity-badge" style={{ color: color }}>
                   {step.time}
@@ -339,7 +339,7 @@ function StepCard({ step, index, color, lightBg }) {
                 style={{ background: '#f9fafb', border: '1px solid #e5e7eb' }}
               >
                 <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
-                  Space
+                  Domain / Volume
                 </span>
                 <span className="complexity-badge" style={{ color: color }}>
                   {step.space}
@@ -357,14 +357,14 @@ function StepCard({ step, index, color, lightBg }) {
                   className="text-[11px] font-semibold uppercase tracking-wider mb-1.5"
                   style={{ color }}
                 >
-                  Deep Dive
+                  Technical Details
                 </p>
                 <p className={`text-sm ${isLight ? 'text-gray-700' : 'text-ink-200'} leading-relaxed`}>{step.detail}</p>
               </div>
 
               <div className={`rounded-xl p-3 ${isLight ? 'bg-gray-50' : 'bg-ink-950'}`}>
                 <p className={`text-[11px] font-semibold uppercase tracking-wider ${isLight ? 'text-gray-500' : 'text-ink-400'} mb-1.5`}>
-                  Latency
+                  Duration Complexity
                 </p>
                 <p className="complexity-badge text-base block mb-1" style={{ color }}>
                   {step.time}
@@ -374,7 +374,7 @@ function StepCard({ step, index, color, lightBg }) {
 
               <div className="rounded-xl p-3 bg-gray-50">
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 mb-1.5">
-                  Hardware Buffer
+                  Control Space Boundary
                 </p>
                 <p className="complexity-badge text-base block mb-1" style={{ color }}>
                   {step.space}
@@ -391,17 +391,17 @@ function StepCard({ step, index, color, lightBg }) {
 
 function ComplexityTable({ model }) {
   const { isLight } = useTheme();
-  const { steps, color } = MICRO_CONTROLLERS[model]
+  const { steps, color } = MECHANICAL_SYSTEMS[model]
 
   return (
     <div className={`overflow-x-auto rounded-2xl border ${isLight ? 'border-gray-100' : 'border-ink-800'} shadow-sm`}>
       <table className="w-full text-sm">
         <thead>
-          <tr style={{ background: `${MICRO_CONTROLLERS[model].color}10` }}>
+          <tr style={{ background: `${MECHANICAL_SYSTEMS[model].color}10` }}>
             <th className={`text-left px-4 py-3 font-semibold ${isLight ? 'text-gray-700' : 'text-ink-200'} font-body w-8`}>#</th>
-            <th className={`text-left px-4 py-3 font-semibold ${isLight ? 'text-gray-700' : 'text-ink-200'} font-body`}>Step</th>
-            <th className="text-left px-4 py-3 font-semibold text-gray-700 font-body">Time</th>
-            <th className="text-left px-4 py-3 font-semibold text-gray-700 font-body">Space</th>
+            <th className={`text-left px-4 py-3 font-semibold ${isLight ? 'text-gray-700' : 'text-ink-200'} font-body`}>Stage</th>
+            <th className="text-left px-4 py-3 font-semibold text-gray-700 font-body">Duration</th>
+            <th className="text-left px-4 py-3 font-semibold text-gray-700 font-body">Volume Space</th>
           </tr>
         </thead>
         <tbody>
@@ -429,8 +429,8 @@ function ComplexityTable({ model }) {
 
 function PipelineDiagram({ model }) {
   const { isLight } = useTheme();
-  const m = MICRO_CONTROLLERS[model]
-  const icons = ['⚡', '📥', '⚙️', '⊕', '💾', '▶']
+  const m = MECHANICAL_SYSTEMS[model]
+  const icons = ['📥', '⚙️', '🔥', '📤', '🔄', '🌡️']
 
   return (
     <div
@@ -438,7 +438,7 @@ function PipelineDiagram({ model }) {
       style={{ background: m.lightBg }}
     >
       <p className={`text-xs font-semibold uppercase tracking-widest ${isLight ? 'text-gray-400' : 'text-ink-500'} mb-4`}>
-        Execution Pipeline
+        Cycle / Process Sequence
       </p>
 
       <div className="flex items-center gap-1 flex-wrap">
@@ -479,21 +479,21 @@ function PipelineDiagram({ model }) {
 
 function ModelInfoCard({ model }) {
   const { isLight } = useTheme();
-  const m = MICRO_CONTROLLERS[model]
+  const m = MECHANICAL_SYSTEMS[model]
 
   const rows = [
-    { label: 'Core Architecture', value: m.architecture },
-    { label: 'Instruction Set', value: m.tokenizer },
-    { label: 'Flash Capacity', value: m.contextWindow },
-    { label: 'SRAM & Memory', value: m.trainingData },
-    { label: 'Unique Feature', value: m.uniqueTrait },
+    { label: 'Engineering Domain', value: m.architecture },
+    { label: 'Governing Principle', value: m.tokenizer },
+    { label: 'Operating Bounds', value: m.contextWindow },
+    { label: 'Efficiency & Load', value: m.trainingData },
+    { label: 'Key Characteristic', value: m.uniqueTrait },
   ]
 
   return (
     <div className={`rounded-2xl border ${isLight ? 'border-gray-100' : 'border-ink-800'} overflow-hidden shadow-sm`}>
       <div className="px-5 py-4" style={{ background: m.lightBg }}>
         <p className={`text-xs font-semibold uppercase tracking-widest ${isLight ? 'text-gray-400' : 'text-ink-500'} mb-2`}>
-          Hardware Specs
+          System Specifications
         </p>
         <p className="font-display font-bold text-2xl" style={{ color: m.color }}>
           {m.name}
@@ -515,15 +515,15 @@ function ModelInfoCard({ model }) {
   )
 }
 
-export default function EEE() {
+export default function MechEnggSyllabus() {
   const { isLight } = useTheme();
-  const [activeModel, setActiveModel] = useState('arduino')
-  const m = MICRO_CONTROLLERS[activeModel]
+  const [activeModel, setActiveModel] = useState('engine')
+  const m = MECHANICAL_SYSTEMS[activeModel]
 
   const tabs = [
-    { key: 'arduino', label: 'Arduino (AVR)', tabClass: 'tab-gpt' },
-    { key: 'esp32', label: 'ESP32 (Xtensa)', tabClass: 'tab-claude' },
-    { key: 'rp2040', label: 'RP2040 (Cortex)', tabClass: 'tab-deepseek' },
+    { key: 'engine', label: 'Four-Stroke Cycle', tabClass: 'tab-gpt' },
+    { key: 'cfd', label: 'CFD Simulation', tabClass: 'tab-claude' },
+    { key: 'robotics', label: 'Joint Kinematics', tabClass: 'tab-deepseek' },
   ]
 
   return (
@@ -542,32 +542,32 @@ export default function EEE() {
 
         <div className="relative max-w-5xl mx-auto px-4 sm:px-6 py-10 sm:py-16 text-center">
           <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full border ${isLight ? 'border-gray-200 text-gray-500' : 'border-ink-800 text-ink-400'} text-xs mb-6`}>
-            <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-pulse" />
-            Hardware & Microcontroller Architecture Deep Dive
+            <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
+            Mechanical Systems, Fluid Dynamics & Robotics Analysis
           </div>
 
           <h1 className={`font-body font-black text-3xl sm:text-5xl lg:text-6xl tracking-wide ${isLight ? 'text-gray-900' : 'text-ink-50'} leading-[1.1] mb-4`}>
-            How Micro-Controllers
+            How Mechanical Systems
             <br />
             <span
               className="inline-block"
               style={{
-                background: `linear-gradient(90deg, ${MICRO_CONTROLLERS.arduino.color}, ${MICRO_CONTROLLERS.esp32.color}, ${MICRO_CONTROLLERS.rp2040.color})`,
+                background: `linear-gradient(90deg, ${MECHANICAL_SYSTEMS.engine.color}, ${MECHANICAL_SYSTEMS.cfd.color}, ${MECHANICAL_SYSTEMS.robotics.color})`,
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
               }}
             >
-              Execute Code in Real-Time
+              Transfer Work & Energy
             </span>
           </h1>
 
           <p className={`${isLight ? 'text-gray-500' : 'text-ink-400'} text-base sm:text-lg max-w-xl mx-auto leading-relaxed`}>
-            A step-by-step breakdown of execution pipelines powering AVR, Xtensa,
-            and ARM Cortex chips — with hardware latency at every stage.
+            A step-by-step breakdown of thermodynamics cycles, CFD solvers, and robotics joint kinematics
+            — detailing governing laws and control loop boundary states.
           </p>
 
           <div className="flex justify-center gap-2 sm:gap-3 mt-6 sm:mt-8 flex-wrap">
-            {Object.values(MICRO_CONTROLLERS).map((model) => (
+            {Object.values(MECHANICAL_SYSTEMS).map((model) => (
               <div
                 key={model.name}
                 className="flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium"
@@ -590,13 +590,13 @@ export default function EEE() {
           <div className="flex overflow-x-auto scrollbar-none">
             {tabs.map((tab) => {
               const isActive = activeModel === tab.key
-              const model = MICRO_CONTROLLERS[tab.key]
+              const model = MECHANICAL_SYSTEMS[tab.key]
 
               return (
                 <button
                   key={tab.key}
                   onClick={() => setActiveModel(tab.key)}
-                  className={`relative flex-shrink-0 px-4 sm:px-6 py-3 sm:py-4 text-sm font-semibold transition-colors duration-200 ${isActive ? '' : (isLight ? 'text-gray-400 hover:text-gray-600' : 'text-ink-500 hover:text-ink-300')}  ${isActive ? `${tab.tabClass} tab-active` : ''}`}
+                  className={`relative flex-shrink-0 px-4 sm:px-6 py-3 sm:py-4 text-sm font-semibold transition-colors duration-200 ${isActive ? '' : (isLight ? 'text-gray-400 hover:text-gray-600' : 'text-ink-500 hover:text-ink-300')} ${isActive ? `${tab.tabClass} tab-active` : ''}`}
                   style={{ color: isActive ? model.color : undefined }}
                 >
                   {tab.label}
@@ -618,10 +618,10 @@ export default function EEE() {
           <div className="lg:col-span-2 space-y-4">
             <div className="mb-6">
               <h2 className={`font-display font-bold text-2xl ${isLight ? 'text-gray-900' : 'text-ink-50'} mb-1`}>
-                6-Stage Hardware Pipeline
+                6-Stage System Execution
               </h2>
               <p className="text-sm text-gray-500">
-                Click any stage to expand technical registers & timing constraints.
+                Click any stage to expand governing formulas and mechanical constraints.
               </p>
             </div>
 
@@ -654,13 +654,13 @@ export default function EEE() {
 
               <div className="space-y-1.5">
                 {[
-                  ['n', 'Binary program length'],
-                  ['m', 'RAM allocation size'],
-                  ['k', 'Number of running tasks'],
-                  ['L', 'FreeRTOS task queue limit'],
-                  ['s', 'Assigned task stack size'],
-                  ['p', 'PIO code instruction limit'],
-                  ['d', 'DMA control register channels'],
+                  ['n', 'Geometric feature count / CAD items'],
+                  ['v', 'Fluid domain boundaries volume limit'],
+                  ['e', 'Mesh element cells count (Millions)'],
+                  ['i', 'Solver iteration cycles'],
+                  ['b', 'Boundary conditions constraint faces'],
+                  ['d_of', 'Degrees of freedom of manipulator'],
+                  ['t', 'Discrete trajectory time steps'],
                 ].map(([sym, desc]) => (
                   <div key={sym} className="flex items-baseline gap-2">
                     <code className="complexity-badge text-[11px]" style={{ color: m.color }}>
@@ -676,11 +676,11 @@ export default function EEE() {
 
         <section className="mt-10 sm:mt-14">
           <div className={`rounded-2xl border ${isLight ? 'border-gray-100' : 'border-ink-800'} ${isLight ? 'bg-gray-50' : 'bg-ink-900'} p-4 sm:p-6 shadow-sm overflow-hidden`}>
-            <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-4">IoT Hardware Processing Workflow</p>
+            <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-4">Mechanical Engineering System Flowchart</p>
             <div className="flex justify-center">
               <img
-                src={iotImage}
-                alt="IoT workflow"
+                src={mechImage}
+                alt="Mech workflow"
                 className="w-full max-h-[400px] sm:max-h-[500px] object-contain mx-auto rounded-xl"
               />
             </div>
@@ -693,7 +693,7 @@ export default function EEE() {
               Side-by-Side Comparison
             </h2>
             <p className={`${isLight ? 'text-gray-500' : 'text-ink-400'} text-sm`}>
-              Key hardware and architecture details across all microcontrollers
+              Key operational parameters across thermodynamics, fluid dynamics, and robotics
             </p>
           </div>
 
@@ -702,7 +702,7 @@ export default function EEE() {
               <thead className={`${isLight ? 'bg-gray-50' : 'bg-ink-900'} border-b ${isLight ? 'border-gray-100' : 'border-ink-800'}`}>
                 <tr>
                   <th className={`text-left px-5 py-4 font-semibold ${isLight ? 'text-gray-600' : 'text-ink-400'}`}>Property</th>
-                  {Object.values(MICRO_CONTROLLERS).map((item) => (
+                  {Object.values(MECHANICAL_SYSTEMS).map((item) => (
                     <th
                       key={item.name}
                       className="text-left px-5 py-4 font-semibold"
@@ -716,14 +716,13 @@ export default function EEE() {
 
               <tbody>
                 {[
-                  { label: 'Architecture', keys: ['architecture'] },
-                  { label: 'Instruction Set', keys: ['tokenizer'] },
-                  { label: 'Internal Cache', values: ['None', '32 KB Instruction, 16 KB Data', '16 KB Instruction Direct Cache'] },
-                  { label: 'Direct Port Access', values: ['Supported (1 Cycle)', 'Supported (Latch delay)', 'Supported (SIO bus)'] },
-                  { label: 'Execution Mode', values: ['Single-threaded', 'Dual-core preemptive thread', 'Dual-core execution'] },
-                  { label: 'Hardware Interlocks', values: ['None', 'Spinlocks / Mutexes', 'Hardware Spinlocks'] },
-                  { label: 'External Memory Support', values: ['None (Internal Only)', 'Up to 16 MB External Flash', 'Up to 16 MB QSPI Flash'] },
-                  { label: 'Peripherals', values: ['UART, SPI, I2C, ADC, PWM', 'UART, SPI, I2C, ADC, DAC, capacitive touch, Wi-Fi/BT', 'UART, SPI, I2C, ADC, PWM, PIO State Machines'] },
+                  { label: 'Engineering Domain', keys: ['architecture'] },
+                  { label: 'Governing Equations', keys: ['tokenizer'] },
+                  { label: 'Primary Inputs', values: ['Fuel, Ambient Air, Spark', 'Fluid Properties, Boundary Vel/Press', 'Target Coordinates, DH parameters'] },
+                  { label: 'Primary Outputs', values: ['Shaft Torque, Exhaust Heat', 'Lift/Drag force coefficients', 'Joint Angles, Servo Currents'] },
+                  { label: 'Mathematical Focus', values: ['Thermodynamic energy conservation', 'Partial differential equations solving', 'Vector rotations & homogeneous matrices'] },
+                  { label: 'Common Software', values: ['MATLAB, GT-SUITE, AVL Boost', 'ANSYS Fluent, OpenFOAM, Star-CCM+', 'ROS, SOLIDWORKS, CoppeliaSim'] },
+                  { label: 'Hardware Interface', values: ['Pistons, Connecting rods, Crankshaft', 'Wind tunnel sensors, pitot tubes', 'Joint encoders, servo drives'] },
                   { label: 'Unique Trait', keys: ['uniqueTrait'] },
                 ].map((row, i) => (
                   <tr key={row.label} className={i % 2 === 0 ? (isLight ? 'bg-white' : 'bg-ink-900') : (isLight ? 'bg-gray-50/50' : 'bg-ink-950/50')}>
@@ -731,7 +730,7 @@ export default function EEE() {
                       {row.label}
                     </td>
 
-                    {Object.entries(MICRO_CONTROLLERS).map(([key, model], j) => (
+                    {Object.entries(MECHANICAL_SYSTEMS).map(([key, model], j) => (
                       <td key={key} className={`px-5 py-3 ${isLight ? 'text-gray-600' : 'text-ink-300'} text-xs leading-snug`}>
                         {row.values ? row.values[j] : row.keys ? model[row.keys[0]] : '—'}
                       </td>

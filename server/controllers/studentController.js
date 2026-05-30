@@ -45,12 +45,14 @@ exports.updateStudentProfile = async (req, res) => {
 //  Get All Study Materials (Filter supported)
 exports.getAllMaterials = async (req, res) => {
   try {
-    const { subject, topic, department } = req.query
+    const { subject, department, semester, course } = req.query
+    const studentDept = req.user.department || department
 
     let filter = {}
+    if (studentDept) filter.department = studentDept
     if (subject) filter.subject = subject
-    if (topic) filter.topic = topic
-    if (department) filter.department = department
+    if (semester) filter.semester = Number(semester)
+    if (course) filter.course = { $regex: course, $options: 'i' }
 
     const materials = await Material.find(filter)
       .populate('uploadedBy', 'name department')

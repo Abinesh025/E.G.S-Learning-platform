@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useTheme } from '../../context/ThemeContext'
 import egs from '../../assets/egs.png'
-import { Moon, Sun, Menu, Settings, MoreVertical, X, PanelLeftOpen, LogOut, Pencil, User, Bell, BookOpen, Check, TrashIcon, Palette, Info } from 'lucide-react'
+import { Moon, Sun, Menu, Settings, MoreVertical, X, PanelLeftOpen, Pencil, User, Bell, BookOpen, Check, TrashIcon, Palette, Info, LogOut } from 'lucide-react'
 import api from '../../services/api'
 import { getSocket } from '../../services/socket'
 import toast from 'react-hot-toast'
@@ -28,7 +28,7 @@ export default function Navbar({ onMenuClick, onEditProfile, onLogout, onExitAdm
 
     // Fetch notifications
     const fetchNotifications = async () => {
-        if (!user || user.role !== 'student') return;
+        if (!user || (user.role !== 'student' && user.role !== 'staff')) return;
         try {
             const { data } = await api.get('/api/notifications');
             if (data.success) {
@@ -43,28 +43,37 @@ export default function Navbar({ onMenuClick, onEditProfile, onLogout, onExitAdm
 
     // Socket & initial fetch
     useEffect(() => {
-        if (user && user.role === 'student') {
+        if (user && (user.role === 'student' || user.role === 'staff')) {
             fetchNotifications();
             
             const token = localStorage.getItem('token');
             const socket = getSocket(token);
             
-            socket.emit('joinDepartmentRoom', { department: user.department });
+            socket.emit('join', user._id);
+            socket.emit('joinDepartmentRoom', { department: user.department, semester: user.semester });
             
-            socket.on('newMaterialNotification', (newNotif) => {
-                toast.success(newNotif.message, { icon: '📚' });
-                setNotifications(prev => [newNotif, ...prev]);
+            socket.on('new_notification', (newNotif) => {
+                toast.success(newNotif.message, { icon: '🔔' });
+                const dbNotif = {
+                    _id: newNotif.id,
+                    type: newNotif.type,
+                    title: newNotif.title,
+                    message: newNotif.message,
+                    createdAt: newNotif.createdAt,
+                    isRead: false
+                };
+                setNotifications(prev => [dbNotif, ...prev]);
             });
             
             return () => {
-                socket.off('newMaterialNotification');
+                socket.off('new_notification');
             }
         }
     }, [user]);
 
     const markAsRead = async (id) => {
         try {
-            await api.put(`/api/notifications/${id}/read`);
+            await api.patch(`/api/notifications/${id}/read`);
             setNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
         } catch (error) {
             console.error('Failed to mark as read', error);
@@ -170,7 +179,7 @@ export default function Navbar({ onMenuClick, onEditProfile, onLogout, onExitAdm
                     {user || isAdminRoute ? (
                         <div className="relative flex items-center gap-3" ref={dropdownRef}>
                             {/* Notification Button */}
-                            {user?.role === 'student' && (
+                            {(user?.role === 'student' || user?.role === 'staff') && (
                                 <div className="relative" ref={notificationRef}>
                                     <button
                                         onClick={() => setShowNotifications(!showNotifications)}
@@ -207,49 +216,71 @@ export default function Navbar({ onMenuClick, onEditProfile, onLogout, onExitAdm
                                                 </div>
                                             ) : (
                                                 <div className="space-y-1">
-                                                    {notifications.map(notification => (
-                                                        <div 
-                                                            key={notification._id} 
-                                                            className={clsx(
-                                                                "px-4 py-3 hover:bg-ink-800 transition-colors cursor-pointer",
-                                                                !notification.isRead && "bg-ink-800/50"
-                                                            )}
-                                                            onClick={() => {
-                                                                if (!notification.isRead) markAsRead(notification._id);
-                                                            }}
-                                                        >
-                                                            <div className="flex gap-3">
-                                                                <div className="shrink-0 mt-1">
-                                                                    <div className="w-8 h-8 rounded-full bg-lime-400/10 flex items-center justify-center text-lime-400">
-                                                                        <BookOpen size={16} />
-                                                                    </div>
-                                                                </div>
-                                                                <div className="flex-1 min-w-0">
-                                                                    <p className="text-sm font-500 text-ink-100">{notification.title}</p>
-                                                                    <p className="text-xs text-ink-300 mt-0.5 line-clamp-2">{notification.message}</p>
-                                                                    <p className="text-[10px] text-ink-500 mt-1">
-                                                                        {new Date(notification.createdAt).toLocaleDateString()}
-                                                                    </p>
-                                                                </div>
-                                                                 {DeleteNotification && (
-                                                                     <button 
-                                                                         onClick={(e) => {
-                                                                             e.stopPropagation();
-                                                                             deleteNotification(notification._id);
-                                                                         }} 
-                                                                         className="text-xs text-lime-400 hover:text-lime-300 flex items-center gap-1 shrink-0"
-                                                                     >
-                                                                         <TrashIcon size={14} />Delete
-                                                                     </button>
-                                                                 )}
-                                                                {!notification.isRead && (
-                                                                    <div className="shrink-0">
-                                                                        <div className="w-2 h-2 bg-lime-400 rounded-full mt-2"></div>
-                                                                    </div>
+                                                    {notifications.map(notification => {
+                                                        let IconComponent = BookOpen;
+                                                        let colorClass = 'text-lime-400 bg-lime-400/10';
+
+                                                        if (notification.type === 'test_upload') {
+                                                            IconComponent = Bell;
+                                                            colorClass = 'text-amber-400 bg-amber-400/10';
+                                                        } else if (notification.type === 'test_submission') {
+                                                            IconComponent = Check;
+                                                            colorClass = 'text-sky-400 bg-sky-400/10';
+                                                        }
+
+                                                        return (
+                                                            <div 
+                                                                key={notification._id} 
+                                                                className={clsx(
+                                                                    "px-4 py-3 hover:bg-ink-800 transition-colors cursor-pointer",
+                                                                    !notification.isRead && "bg-ink-800/50"
                                                                 )}
+                                                                onClick={() => {
+                                                                    if (!notification.isRead) markAsRead(notification._id);
+                                                                    setShowNotifications(false);
+                                                                    
+                                                                    if (notification.type === 'material_upload') {
+                                                                        navigate('/student/materials');
+                                                                    } else if (notification.type === 'test_upload') {
+                                                                        navigate('/student/tests');
+                                                                    } else if (notification.type === 'test_submission') {
+                                                                        navigate('/staff/results');
+                                                                    }
+                                                                }}
+                                                            >
+                                                                <div className="flex gap-3">
+                                                                    <div className="shrink-0 mt-1">
+                                                                        <div className={clsx("w-8 h-8 rounded-full flex items-center justify-center", colorClass)}>
+                                                                            <IconComponent size={16} />
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <p className="text-sm font-500 text-ink-100">{notification.title}</p>
+                                                                        <p className="text-xs text-ink-300 mt-0.5 line-clamp-2">{notification.message}</p>
+                                                                        <p className="text-[10px] text-ink-500 mt-1">
+                                                                            {new Date(notification.createdAt).toLocaleDateString()}
+                                                                        </p>
+                                                                    </div>
+                                                                    {DeleteNotification && (
+                                                                        <button 
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                deleteNotification(notification._id);
+                                                                            }} 
+                                                                            className="text-xs text-lime-400 hover:text-lime-300 flex items-center gap-1 shrink-0"
+                                                                        >
+                                                                            <TrashIcon size={14} />Delete
+                                                                        </button>
+                                                                    )}
+                                                                    {!notification.isRead && (
+                                                                        <div className="shrink-0">
+                                                                            <div className="w-2 h-2 bg-lime-400 rounded-full mt-2"></div>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                    ))}
+                                                        )
+                                                    })}
                                                 </div>
                                             )}
                                         </div>
@@ -314,16 +345,21 @@ export default function Navbar({ onMenuClick, onEditProfile, onLogout, onExitAdm
                                             <Info size={18} />
                                             <span>About Platform</span>
                                         </button>
+                                        <button 
+                                            onClick={() => {
+                                                setSettingsDropdownOpen(false);
+                                                if (isAdminRoute && onExitAdmin) {
+                                                    onExitAdmin()
+                                                } else if (onLogout) {
+                                                    onLogout()
+                                                }
+                                            }}
+                                            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-[15px] font-medium text-red-400 hover:text-red-300 hover:bg-[#2A2A2A] transition-colors w-full border-t border-ink-800/50 mt-1 pt-2"
+                                        >
+                                            <LogOut size={18} />
+                                            <span>Logout</span>
+                                        </button>
                                         
-                                        <div className="pt-2 mt-1 border-t border-ink-800">
-                                            <button 
-                                                onClick={() => { setSettingsDropdownOpen(false); isAdminRoute ? onExitAdmin() : onLogout() }}
-                                                className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-[15px] font-medium text-[#FF6B6B] hover:bg-red-500/10 transition-colors w-full"
-                                            >
-                                                <LogOut size={18} />
-                                                <span>Logout</span>
-                                            </button>
-                                        </div>
                                     </div>
                                 )}
                             </div>
@@ -348,17 +384,6 @@ export default function Navbar({ onMenuClick, onEditProfile, onLogout, onExitAdm
                                             <span>Edit Profile</span>
                                         </button>
                                     )}
-                                    
-                                    <button 
-                                        onClick={() => {
-                                            isAdminRoute ? onExitAdmin() : onLogout()
-                                            setDropdownOpen(false)
-                                        }}
-                                        className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-400 hover:bg-red-400/10 transition-colors"
-                                    >
-                                        <LogOut size={16} />
-                                        <span>{isAdminRoute ? 'Exit Admin' : 'Logout'}</span>
-                                    </button>
                                 </div>
                             )}
                         </div>

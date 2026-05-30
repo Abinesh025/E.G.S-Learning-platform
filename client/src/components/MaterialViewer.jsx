@@ -426,9 +426,6 @@ export default function MaterialViewer({ material, onClose }) {
               {/* ── Audio / Voice note player ── */}
               {isAudio && (
                 <div className="space-y-4">
-                  {material.description && (
-                    <p className="text-ink-400 text-sm">{material.description}</p>
-                  )}
                   <div className="bg-ink-950 border border-ink-800 rounded-full p-2 flex items-center gap-3">
                     <button
                       onClick={togglePlay}
