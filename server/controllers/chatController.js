@@ -1,49 +1,40 @@
-const Message = require('../models/Message')
+const messageRepository = require('../repositories/messageRepository')
 
 // ─────────────────────────────────────────────
 // SEND MESSAGE (TEXT / FILE / VOICE)
 // ─────────────────────────────────────────────
 exports.sendMessage = async (req, res) => {
   try {
-    const { receiverId, messageType, text } = req.body
+    const { receiverId, messageType, text, message } = req.body
 
     if (!receiverId || !messageType) {
       return res.status(400).json({
         success: false,
-        message: "Receiver and message type required"
+        message: 'Receiver and message type required',
       })
     }
 
-    let fileUrl = null
-
-    // If file or voice uploaded
+    let fileUrl = ''
     if (req.file) {
       fileUrl = req.file.path
     }
 
-    const message = await Message.create({
-      sender: req.user._id,
-      receiver: receiverId,
-      text: messageType === "text" ? text : null,
-      fileUrl: fileUrl,
-      messageType, // text | image | file | voice
-      timestamp: new Date()
+    const createdMessage = await messageRepository.createMessage({
+      senderId: req.user._id,
+      receiverId: Number(receiverId),
+      message: text || message || '',
+      messageType,
+      fileUrl,
     })
-
-    const populatedMessage = await message.populate([
-      { path: "sender", select: "name email role" },
-      { path: "receiver", select: "name email role" }
-    ])
 
     res.status(201).json({
       success: true,
-      data: populatedMessage
+      data: createdMessage,
     })
-
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message,
     })
   }
 }
@@ -58,30 +49,21 @@ exports.getChatHistory = async (req, res) => {
     if (!userId) {
       return res.status(400).json({
         success: false,
-        message: "User ID required"
+        message: 'User ID required',
       })
     }
 
-    const messages = await Message.find({
-      $or: [
-        { sender: req.user._id, receiver: userId },
-        { sender: userId, receiver: req.user._id }
-      ]
-    })
-      .populate("sender", "name email role avatar")
-      .populate("receiver", "name email role avatar")
-      .sort({ createdAt: 1 }) // better than timestamp if schema uses timestamps
+    const messages = await messageRepository.getDirectMessages(req.user._id, Number(userId))
 
     res.status(200).json({
       success: true,
       count: messages.length,
-      data: messages
+      data: messages,
     })
-
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message,
     })
   }
 }
@@ -94,15 +76,12 @@ exports.uploadVoice = async (req, res) => {
     if (!req.file) {
       return res.status(400).json({
         success: false,
-        message: "No audio file uploaded"
+        message: 'No audio file uploaded',
       })
     }
 
-    // Convert disk path (uploads/voice/xxx.webm) to a proper URL path (/uploads/voice/xxx.webm)
-    // If Cloudinary is used, req.file.path is already an https:// URL
     let audioUrl = req.file.path
     if (audioUrl && !audioUrl.startsWith('http')) {
-      // Normalize Windows backslashes and ensure leading slash
       audioUrl = '/' + audioUrl.replace(/\\/g, '/')
       if (!audioUrl.startsWith('/uploads')) {
         audioUrl = '/uploads' + audioUrl
@@ -111,14 +90,13 @@ exports.uploadVoice = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: "Voice uploaded successfully",
-      audioUrl
+      message: 'Voice uploaded successfully',
+      audioUrl,
     })
-
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message,
     })
   }
 }
@@ -133,32 +111,29 @@ exports.getRoomHistory = async (req, res) => {
     if (!roomId) {
       return res.status(400).json({
         success: false,
-        message: "Room ID required"
+        message: 'Room ID required',
       })
     }
 
-    const messages = await Message.find({ room: roomId })
-      .populate("sender", "name email role department avatar")
-      .sort({ createdAt: 1 })
+    const messages = await messageRepository.getRoomMessages(roomId)
 
     res.status(200).json({
       success: true,
       count: messages.length,
-      data: messages.map(m => ({
+      data: messages.map((m) => ({
         _id: m._id,
         content: m.message,
         messageType: m.messageType,
         audioUrl: m.audioUrl,
         fileUrl: m.fileUrl,
         sender: m.sender,
-        createdAt: m.createdAt
-      }))
+        createdAt: m.createdAt,
+      })),
     })
-
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message,
     })
   }
 }

@@ -43,12 +43,13 @@ export default function StudentDashboard() {
       {/* Quick links */}
       <div className="animate-fade-up animate-delay-200">
         <h2 className="section-title mb-4">Quick Access</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
           {[
             { to: '/student/materials', icon: BookOpen, label: 'Browse Materials', desc: 'Notes, videos & files', color: 'lime' },
             { to: '/student/tests', icon: FileText, label: 'Take a Test', desc: 'Pending assessments', color: 'sky' },
             { to: '/student/results', icon: BarChart3, label: 'View Results', desc: 'Track your progress', color: 'amber' },
             { to: '/student/chat', icon: MessageSquare, label: 'Chat', desc: 'Talk to instructors', color: 'purple' },
+            { to: '/student/resume', icon: FileText, label: 'Resume Templates', desc: 'Explore professional resume templates', color: 'lime' },
           ].map(({ to, icon: Icon, label, desc, color }) => (
             <Link key={to} to={to} className="card p-4 hover:border-lime-300/30 transition-all group">
               <div className={`w-9 h-9 rounded-xl mb-3 flex items-center justify-center ${

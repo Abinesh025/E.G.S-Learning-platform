@@ -27,6 +27,7 @@ const studentNav = [
   { to: '/student/tests', label: 'Tests', icon: FileText },
   { to: '/student/results', label: 'My Results', icon: BarChart3 },
   { to: '/student/chat', label: 'Chat', icon: MessageSquare },
+  
   { to: '/student/ai', label: 'Learn About Ai', icon: SparkleIcon},
   { to: '/student/eee', label: 'Learn About Micro-Controller', icon: SparkleIcon},
   { to: '/student/mech', label: 'Learn About Designs', icon: SparkleIcon},

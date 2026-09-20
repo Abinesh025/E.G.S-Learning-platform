@@ -1,51 +1,47 @@
-const Test = require('../models/Test')
-const Result = require('../models/Result')
-const User = require('../models/User')
-const TestSubmission = require('../models/TestSubmission')
+const testRepository = require('../repositories/testRepository')
+const submissionRepository = require('../repositories/submissionRepository')
+const userRepository = require('../repositories/userRepository')
 const createNotifications = require('../utils/createNotification')
 const sendSms = require('../utils/sendSms')
 
-//  Create Test (Staff Only)
+// ─────────────────────────────────────────────
+// CREATE TEST (Staff / Admin Only)
+// ─────────────────────────────────────────────
 exports.createTest = async (req, res) => {
   try {
-    // Verify logged-in user role is staff
-    if (req.user.role !== 'staff') {
+    if (req.user.role !== 'staff' && req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Only staff can create tests' })
     }
 
     const { title, subject, duration, questions } = req.body
 
-    // Get staff department from req.user.department
     const department = req.user.department
     if (!department) {
       return res.status(400).json({ message: 'Staff department is required' })
     }
 
-    // ❌ Validation
     if (!title || !subject || !duration || !questions || questions.length === 0) {
       return res.status(400).json({ message: 'All fields are required' })
     }
 
-    // ❌ Ensure valid question structure
     for (let q of questions) {
       if (!q.question || !q.options || q.options.length < 2 || q.correctAnswer === undefined) {
         return res.status(400).json({ message: 'Invalid question format' })
       }
     }
 
-    const test = await Test.create({
+    const test = await testRepository.createTestWithQuestions({
       title,
       subject,
       department,
-      duration,
+      duration: Number(duration),
+      createdBy: req.user._id,
       questions,
-      createdBy: req.user._id
     })
 
-    // Find students where role='student' and department equals staff department
-    const students = await User.find({ role: 'student', department })
+    // Find students in department
+    const students = await userRepository.getAllUsers({ role: 'student', department })
 
-    // Create notifications for them
     const message = `New test uploaded by ${req.user.name || 'Staff'}: ${title}`
     await createNotifications({
       senderId: req.user._id,
@@ -55,38 +51,39 @@ exports.createTest = async (req, res) => {
       type: 'test_upload',
       title: 'New Test Uploaded',
       message,
-      relatedId: test._id,
-      relatedModel: 'Test'
+      testId: test._id,
+      relatedModel: 'Test',
     })
 
     res.status(201).json({
       message: 'Test created successfully',
-      test
+      test,
     })
-
   } catch (error) {
     res.status(500).json({ message: error.message })
   }
 }
 
-//  Get All Tests (Student View)
+// ─────────────────────────────────────────────
+// GET ALL TESTS (Student / Staff View)
+// ─────────────────────────────────────────────
 exports.getTests = async (req, res) => {
   try {
-    const tests = await Test.find()
-      .select('-questions.correctAnswer')
-      .sort({ createdAt: -1 })
-
+    const department = req.user.role === 'student' ? req.user.department : undefined
+    const tests = await testRepository.getTests({ department })
     res.json(tests)
   } catch (error) {
     res.status(500).json({ message: error.message })
   }
 }
 
-//  Get Single Test
+// ─────────────────────────────────────────────
+// GET SINGLE TEST
+// ─────────────────────────────────────────────
 exports.getTestById = async (req, res) => {
   try {
-    const test = await Test.findById(req.params.id)
-      .select('-questions.correctAnswer')
+    const isStaff = req.user.role === 'staff' || req.user.role === 'admin'
+    const test = await testRepository.getTestById(req.params.id, isStaff)
 
     if (!test) return res.status(404).json({ message: 'Test not found' })
 
@@ -96,47 +93,55 @@ exports.getTestById = async (req, res) => {
   }
 }
 
-//  Submit Test (🔥 FIXED)
+// ─────────────────────────────────────────────
+// SUBMIT TEST
+// ─────────────────────────────────────────────
 exports.submitTest = async (req, res) => {
   try {
-    // Verify logged-in user role is student
     if (req.user.role !== 'student') {
       return res.status(403).json({ message: 'Only students can submit tests' })
     }
 
     const { answers } = req.body
-    const testId = req.params.id
+    const testId = Number(req.params.id)
 
-    const test = await Test.findById(testId)
+    const test = await testRepository.getTestById(testId, true)
     if (!test) return res.status(404).json({ message: 'Test not found' })
 
-    // ❌ Prevent multiple submissions
-    const existing = await Result.findOne({
-      student: req.user._id,
-      test: testId
-    })
-
+    // Prevent duplicate attempts
+    const existing = await submissionRepository.findExistingResult(req.user._id, testId)
     if (existing) {
       return res.status(400).json({ message: 'You already submitted this test' })
     }
 
     let score = 0
+    const studentAnswerMappings = []
 
     test.questions.forEach((q, index) => {
-      if (answers[index] === q.correctAnswer) {
+      const selectedOptionIdx = answers ? answers[index] : null
+      if (selectedOptionIdx !== null && selectedOptionIdx !== undefined && selectedOptionIdx === q.correctAnswer) {
         score++
       }
+
+      let selectedOptionId = null
+      if (selectedOptionIdx !== null && selectedOptionIdx !== undefined && q.rawOptions) {
+        const matchingOpt = q.rawOptions[selectedOptionIdx]
+        if (matchingOpt) {
+          selectedOptionId = matchingOpt.optionId
+        }
+      }
+
+      studentAnswerMappings.push({
+        questionId: q.QuestionId || q._id,
+        selectedOptionId,
+      })
     })
 
-    const result = await Result.create({
-      student: req.user._id,
-      test: testId,
-      answers,
-      score,
-      totalMarks: test.questions.length
-    })
+    const totalQuestions = test.questions.length
+    const totalMarks = totalQuestions
+    const percentage = totalMarks > 0 ? (score / totalMarks) * 100 : 0
 
-    // Send SMS to student phone if registered
+    // Send SMS to student phone if available
     let smsStatus = 'not_sent'
     let smsSentAt = null
 
@@ -146,44 +151,43 @@ exports.submitTest = async (req, res) => {
         const studentName = req.user.name || 'Student'
         const testTitle = test.title || 'Test'
         const department = req.user.department || 'General'
-        const message = `Dear ${studentName}, your test '${testTitle}' has been submitted successfully. Department: ${department}. Thank you.`
-        
+        const smsMessage = `Dear ${studentName}, your test '${testTitle}' has been submitted successfully. Department: ${department}. Score: ${score}/${totalQuestions}. Thank you.`
+
         try {
-          const smsResult = await sendSms(req.user.phone, message)
-          if (smsResult.success) {
+          const smsResult = await sendSms(req.user.phone, smsMessage)
+          if (smsResult && smsResult.success) {
             smsStatus = 'sent'
             smsSentAt = new Date()
           } else {
             smsStatus = 'failed'
           }
         } catch (smsErr) {
-          console.error('[SMS ERROR] SMS dispatch crashed:', smsErr.message)
+          console.error('[SMS ERROR] SMS dispatch failed:', smsErr.message)
           smsStatus = 'failed'
         }
       } else {
-        console.warn(`[SMS WARNING] Phone number format is invalid: ${req.user.phone}`)
         smsStatus = 'failed'
       }
     }
 
-    // Save test submission
-    const submission = await TestSubmission.create({
-      student: req.user._id,
-      test: testId,
-      answers,
+    const { result, submission } = await submissionRepository.createSubmissionAndResult({
+      studentId: req.user._id,
+      testId,
       score,
-      totalQuestions: test.questions.length,
+      totalMarks,
+      percentage,
+      totalQuestions,
       smsStatus,
-      smsSentAt
+      smsSentAt,
+      studentAnswerMappings,
     })
 
-    // Find staff using test.createdBy
+    // Notify staff who created the test
     let warning = null
-    const staff = await User.findById(test.createdBy)
+    const staff = await userRepository.findUserById(test.createdBy)
     if (!staff) {
-      warning = "Corresponding staff not found for notification, but submission saved."
+      warning = 'Corresponding staff not found for notification, but submission saved.'
     } else {
-      // Create notification for staff
       const studentName = req.user.name || 'Student'
       await createNotifications({
         senderId: req.user._id,
@@ -193,49 +197,50 @@ exports.submitTest = async (req, res) => {
         type: 'test_submission',
         title: 'New Test Submission',
         message: `${studentName} submitted the test: ${test.title}`,
-        relatedId: submission._id,
-        relatedModel: 'TestSubmission'
+        submissionId: submission._id,
+        relatedModel: 'TestSubmission',
       })
     }
 
     res.json({
       message: 'Test submitted successfully',
       score,
-      total: test.questions.length,
+      total: totalQuestions,
       result,
       submission,
-      warning
+      warning,
     })
-
   } catch (error) {
     res.status(500).json({ message: error.message })
   }
 }
 
-//  Get Student Results
+// ─────────────────────────────────────────────
+// GET STUDENT RESULTS
+// ─────────────────────────────────────────────
 exports.getStudentResults = async (req, res) => {
   try {
-    const results = await Result.find({ student: req.user._id })
-      .populate('test', 'title subject')
-      .sort({ createdAt: -1 })
-
+    const results = await submissionRepository.getResultsByStudent(req.user._id)
     res.json(results)
   } catch (error) {
     res.status(500).json({ message: error.message })
   }
 }
 
-//  Delete Test (Staff Only)
+// ─────────────────────────────────────────────
+// DELETE TEST (Staff / Admin Only)
+// ─────────────────────────────────────────────
 exports.deleteTest = async (req, res) => {
   try {
-    const test = await Test.findById(req.params.id)
+    const testId = Number(req.params.id)
+    const test = await testRepository.getTestById(testId)
     if (!test) return res.status(404).json({ message: 'Test not found' })
 
-    if (test.createdBy.toString() !== req.user._id.toString()) {
+    if (test.createdBy !== req.user._id && req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Not authorized' })
     }
 
-    await test.deleteOne()
+    await testRepository.deleteTest(testId)
 
     res.json({ message: 'Test deleted successfully' })
   } catch (error) {

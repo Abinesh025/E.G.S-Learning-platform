@@ -1,62 +1,62 @@
-const User = require('../models/User')
+const userRepository = require('../repositories/userRepository')
+const materialRepository = require('../repositories/materialRepository')
+const testRepository = require('../repositories/testRepository')
+const submissionRepository = require('../repositories/submissionRepository')
 const { validateName } = require('../utils/nameValidator')
-const Material = require('../models/Material')
-const Test = require('../models/Test')
-const Result = require('../models/Result')
 
-//  Get Student Profile
+// Get Student Profile
 exports.getStudentProfile = async (req, res) => {
   try {
-    const student = await User.findById(req.user._id).select('-password')
+    const student = await userRepository.findUserById(req.user._id)
     if (!student) return res.status(404).json({ message: 'Student not found' })
 
-    res.json(student)
+    const { Password, password, ...safeStudent } = student
+    res.json(safeStudent)
   } catch (error) {
     res.status(500).json({ message: error.message })
   }
 }
 
-//  Update Student Profile
+// Update Student Profile
 exports.updateStudentProfile = async (req, res) => {
   try {
     const { name, department, avatar } = req.body
 
-    const student = await User.findById(req.user._id)
+    const student = await userRepository.findUserById(req.user._id)
     if (!student) return res.status(404).json({ message: 'Student not found' })
 
+    const updates = {}
     if (name) {
       const nameValidation = validateName(name)
       if (!nameValidation.valid) {
         return res.status(400).json({ success: false, message: nameValidation.message })
       }
-      student.name = name
+      updates.name = name
     }
-    if (department) student.department = department
-    if (avatar) student.avatar = avatar
+    if (department) updates.department = department
+    if (avatar) updates.avatar = avatar
 
-    await student.save()
+    const updatedStudent = await userRepository.updateUser(req.user._id, updates)
+    const { Password, password, ...safeStudent } = updatedStudent
 
-    res.json({ message: 'Profile updated', student })
+    res.json({ message: 'Profile updated', student: safeStudent })
   } catch (error) {
     res.status(500).json({ message: error.message })
   }
 }
 
-//  Get All Study Materials (Filter supported)
+// Get All Study Materials (Filter supported)
 exports.getAllMaterials = async (req, res) => {
   try {
     const { subject, department, semester, course } = req.query
     const studentDept = req.user.department || department
 
-    let filter = {}
-    if (studentDept) filter.department = studentDept
-    if (subject) filter.subject = subject
-    if (semester) filter.semester = Number(semester)
-    if (course) filter.course = { $regex: course, $options: 'i' }
-
-    const materials = await Material.find(filter)
-      .populate('uploadedBy', 'name department')
-      .sort({ createdAt: -1 })
+    const materials = await materialRepository.getMaterials({
+      subject,
+      department: studentDept,
+      semester,
+      course,
+    })
 
     res.json(materials)
   } catch (error) {
@@ -64,10 +64,10 @@ exports.getAllMaterials = async (req, res) => {
   }
 }
 
-//  Get Single Material
+// Get Single Material
 exports.getMaterialById = async (req, res) => {
   try {
-    const material = await Material.findById(req.params.id)
+    const material = await materialRepository.getMaterialById(req.params.id)
     if (!material) return res.status(404).json({ message: 'Material not found' })
 
     res.json(material)
@@ -76,37 +76,23 @@ exports.getMaterialById = async (req, res) => {
   }
 }
 
-//  Get Available Tests
+// Get Available Tests
 exports.getAvailableTests = async (req, res) => {
   try {
     const { department } = req.query
     const studentDept = department || req.user.department
 
-    const filter = {}
-    if (studentDept) {
-      // Find tests with matching department or empty department (global)
-      filter.$or = [
-        { department: studentDept },
-        { department: { $in: [null, ''] } }
-      ]
-    }
-
-    const tests = await Test.find(filter)
-      .select('title subject department duration createdAt')
-      .sort({ createdAt: -1 })
-
+    const tests = await testRepository.getTests({ department: studentDept })
     res.json(tests)
   } catch (error) {
     res.status(500).json({ message: error.message })
   }
 }
 
-//  Get Test Details (hide answers)
+// Get Test Details (hide answers)
 exports.getTestDetails = async (req, res) => {
   try {
-    const test = await Test.findById(req.params.id)
-      .select('-questions.correctAnswer')
-
+    const test = await testRepository.getTestById(req.params.id, false)
     if (!test) return res.status(404).json({ message: 'Test not found' })
 
     res.json(test)
@@ -115,49 +101,16 @@ exports.getTestDetails = async (req, res) => {
   }
 }
 
-//  Submit Test (🔥 IMPORTANT – YOU MISSED THIS)
+// Submit Test
 exports.submitTest = async (req, res) => {
-  try {
-    const { answers } = req.body
-    const testId = req.params.id
-
-    const test = await Test.findById(testId)
-    if (!test) return res.status(404).json({ message: 'Test not found' })
-
-    let score = 0
-
-    test.questions.forEach((q, index) => {
-      if (answers[index] === q.correctAnswer) {
-        score++
-      }
-    })
-
-    const result = await Result.create({
-      student: req.user._id,
-      test: testId,
-      score,
-      totalQuestions: test.questions.length
-    })
-
-    res.json({
-      message: 'Test submitted successfully',
-      score,
-      total: test.questions.length,
-      result
-    })
-
-  } catch (error) {
-    res.status(500).json({ message: error.message })
-  }
+  const { submitTest } = require('./testController')
+  return submitTest(req, res)
 }
 
-//  Get My Results
+// Get My Results
 exports.getMyResults = async (req, res) => {
   try {
-    const results = await Result.find({ student: req.user._id })
-      .populate('test', 'title subject')
-      .sort({ createdAt: -1 })
-
+    const results = await submissionRepository.getResultsByStudent(req.user._id)
     res.json(results)
   } catch (error) {
     res.status(500).json({ message: error.message })

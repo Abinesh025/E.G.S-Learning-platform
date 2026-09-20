@@ -1,17 +1,20 @@
 import { useAuth } from '../../context/AuthContext'
-import { ArrowLeft, BookOpen, Code, FileText, CheckCircle, BrainCircuit, UserCheck, Terminal, HardDrive } from 'lucide-react'
+import { ArrowLeft, BookOpen, Code, FileText, CheckCircle, BrainCircuit, UserCheck, Terminal, HardDrive, ExternalLink, ChevronRight, Code2 } from 'lucide-react'
 import { Link } from 'react-router-dom'
-
+import { quantitativeTopics } from '../../utils/quantsData'
+import {logicalReasoningTopics} from "../../utils/logicalData"
 export default function PlacementOnCampus() {
   const { user } = useAuth()
+
+
   
   const isCse = user?.department === 'Computer Science and Engineering'
   const isEce = user?.department === 'Electronics and Communication Engineering'
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6 animate-fade-up">
-      <Link to="/student" className="inline-flex items-center gap-2 text-ink-400 hover:text-lime-300 transition-colors mb-2 text-sm font-500">
-        <ArrowLeft size={16} /> Back to Dashboard
+    <div className="p-6 max-w-none w-full space-y-6 animate-fade-up">
+      <Link to="/student/placement/on-campus" className="inline-flex items-center gap-2 text-ink-400 hover:text-lime-300 transition-colors mb-2 text-sm font-500">
+        <ArrowLeft size={16} /> Back to On-Campus Rounds
       </Link>
       
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-ink-800 pb-4">
@@ -24,38 +27,84 @@ export default function PlacementOnCampus() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         {/* Left 2 Cols: Preparation Material */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-6 ">
           
           {/* Section 1: Aptitude & Logical Reasoning */}
           <div className="card p-6 space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-lime-400/10 rounded-xl flex items-center justify-center text-lime-400">
+            <div className="flex items-center  gap-3 ">
+              <div className=" w-10 h-10 bg-lime-400/10 rounded-xl flex items-center justify-center text-lime-400">
                 <BrainCircuit size={20} />
               </div>
               <h2 className="text-lg font-bold text-ink-50">1. Quantitative Aptitude & Reasoning</h2>
             </div>
             <p className="text-sm text-ink-400">Essential non-technical topics frequently tested in first-round elimination rounds.</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-ink-800/40 p-4 rounded-xl border border-ink-800">
-                <h3 className="text-sm font-semibold text-lime-300 mb-2">Quantitative Aptitude</h3>
-                <ul className="text-xs text-ink-300 space-y-1.5 list-disc pl-4">
-                  <li><strong>Averages & Percentages:</strong> Profit & Loss, Simple & Compound Interest.</li>
-                  <li><strong>Time & Work / Speed:</strong> Pipes & Cisterns, Train problems, Relative speed.</li>
-                  <li><strong>Numbers:</strong> LCM & HCF, Number systems, Progressions (AP/GP).</li>
-                  <li><strong>Permutations & Probability:</strong> Basic arrangements and card-rolling games.</li>
-                </ul>
-              </div>
-              <div className="bg-ink-800/40 p-4 rounded-xl border border-ink-800">
-                <h3 className="text-sm font-semibold text-sky-300 mb-2">Logical Reasoning</h3>
-                <ul className="text-xs text-ink-300 space-y-1.5 list-disc pl-4">
-                  <li><strong>Syllogisms:</strong> Statement-conclusion deductive logic.</li>
-                  <li><strong>Data Interpretation:</strong> Bar charts, pie charts, and data sufficiency tables.</li>
-                  <li><strong>Series & Puzzles:</strong> Blood relations, directions, grid seating arrangements.</li>
-                  <li><strong>Coding-Decoding:</strong> Alphabetical shifts and pattern mapping.</li>
-                </ul>
-              </div>
+              <div className="col-span-full w-full bg-ink-800/40 p-6 rounded-xl border border-ink-800">
+              <h3 className="text-sm font-semibold text-lime-300 mb-4">
+            Quantitative Aptitude
+            </h3>
+
+            <div className="space-y-4">
+              {quantitativeTopics.map((item, index) => (
+                <div key={index} className="border-b border-ink-700 pb-3 last:border-none">
+                  <h4 className="text-sm font-semibold text-white">
+                    {item.title}
+                  </h4>
+
+                  <p className="text-xs text-ink-300 mt-1">
+                    <span className="font-medium text-lime-300">Topics:</span>{" "}
+                    {item.topics.join(", ")}
+                  </p>
+
+                  <div className="mt-2">
+                    <p className="text-xs font-medium text-cyan-300 mb-1">
+                      Important Formulas
+                    </p>
+
+                    <ul className="list-disc pl-5 text-xs text-ink-300 space-y-1">
+                      {item.formulas.map((formula, formulaIndex) => (
+                        <li key={formulaIndex}>{formula}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+                            <div className="col-span-full w-full bg-ink-800/40 p-6 rounded-xl border border-ink-800">
+              <h3 className="text-sm font-semibold text-lime-300 mb-4">
+            Logical Reasoning
+            </h3>
+
+            <div className="space-y-4">
+              {logicalReasoningTopics.map((item, index) => (
+                <div key={index} className="border-b border-ink-700 pb-3 last:border-none">
+                  <h4 className="text-sm font-semibold text-white">
+                    {item.title}
+                  </h4>
+
+                  <p className="text-xs text-ink-300 mt-1">
+                    <span className="font-medium text-lime-300">Topics:</span>{" "}
+                    {item.topics.join(", ")}
+                  </p>
+
+                  <div className="mt-2">
+                    <p className="text-xs font-medium text-cyan-300 mb-1">
+                      Important Formulas
+                    </p>
+
+                    <ul className="list-disc pl-5 text-xs text-ink-300 space-y-1">
+                      {item.formulas.map((formula, formulaIndex) => (
+                        <li key={formulaIndex}>{formula}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
             </div>
           </div>
 
@@ -71,11 +120,40 @@ export default function PlacementOnCampus() {
               <p className="text-sm text-ink-400">Core Computer Science technical concepts and programming round strategies.</p>
               
               <div className="space-y-3">
+                {/* Featured DSA Array Module Card */}
+                <div className="bg-gradient-to-r from-lime-400/10 via-ink-900 to-ink-950 p-4 rounded-xl border border-lime-400/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="tag-lime text-[10px] uppercase font-bold px-2 py-0.5">Placement Ready</span>
+                      <h4 className="text-sm font-bold text-white flex items-center gap-1.5">
+                        <Code2 size={16} className="text-lime-400" />
+                        DSA Array Module & Coding Bank
+                      </h4>
+                    </div>
+                    <p className="text-xs text-ink-300">
+                      Theory, memory address formulas, 12 DSA patterns, and 40 curated Easy/Medium/Hard coding questions.
+                    </p>
+                  </div>
+                  <Link
+                    to="/student/placement/coding-rounds"
+                    className="btn-primary text-xs py-2 px-3.5 shrink-0 inline-flex items-center gap-1.5 justify-center"
+                  >
+                    <span>Open Module</span>
+                    <ChevronRight size={14} />
+                  </Link>
+                </div>
+
                 <div className="bg-ink-800/40 p-4 rounded-xl border border-ink-800">
                   <h3 className="text-sm font-semibold text-indigo-300 mb-2">Programming & Data Structures</h3>
                   <p className="text-xs text-ink-300 mb-3">Focus on languages like C++, Java, or Python. Study these core structures:</p>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-center text-xs">
-                    <div className="bg-ink-950 p-2 rounded border border-ink-800 text-ink-300">Arrays & Strings</div>
+                    <Link
+                      to="/student/placement/coding-rounds"
+                      className="bg-lime-400/10 hover:bg-lime-400/20 p-2 rounded border border-lime-400/30 text-lime-300 font-medium transition-colors flex items-center justify-center gap-1"
+                    >
+                      <span>Arrays (40 Qs)</span>
+                      <ExternalLink size={11} />
+                    </Link>
                     <div className="bg-ink-950 p-2 rounded border border-ink-800 text-ink-300">Linked Lists</div>
                     <div className="bg-ink-950 p-2 rounded border border-ink-800 text-ink-300">Stacks & Queues</div>
                     <div className="bg-ink-950 p-2 rounded border border-ink-800 text-ink-300">Trees & Graphs</div>
@@ -142,56 +220,97 @@ export default function PlacementOnCampus() {
 
         </div>
 
-        {/* Right 1 Col: Resume & HR guidelines */}
+        {/* Right 1 Col: Aptitude Platforms */}
         <div className="space-y-6">
-          {/* Card: Resume Prep */}
           <div className="card p-6 space-y-4">
-            <div className="flex items-center gap-3 text-amber-400">
-              <FileText size={20} />
-              <h2 className="text-lg font-bold text-ink-50">Resume Tips</h2>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-lime-400/10 rounded-xl flex items-center justify-center text-lime-400">
+                <BookOpen size={20} />
+              </div>
+              <h2 className="text-lg font-bold text-ink-50">Aptitude Platforms</h2>
             </div>
-            <ul className="space-y-3 text-xs text-ink-300">
-              <li className="flex gap-2">
-                <CheckCircle size={15} className="text-lime-400 shrink-0 mt-0.5" />
-                <span>Keep it strictly to <strong>1 page</strong> with clean, professional layouts (no colored stars/skill bars).</span>
-              </li>
-              <li className="flex gap-2">
-                <CheckCircle size={15} className="text-lime-400 shrink-0 mt-0.5" />
-                <span>Use the **XYZ Formula** for projects: *"Accomplished [X], as measured by [Y], by doing [Z]"*.</span>
-              </li>
-              <li className="flex gap-2">
-                <CheckCircle size={15} className="text-lime-400 shrink-0 mt-0.5" />
-                <span>List your core department programming language (C/C++, Java, Embedded C) and database skills.</span>
-              </li>
-              <li className="flex gap-2">
-                <CheckCircle size={15} className="text-lime-400 shrink-0 mt-0.5" />
-                <span>Ensure your GitHub repository and LinkedIn links are clickable and active.</span>
-              </li>
-            </ul>
-          </div>
-
-          {/* Card: HR Interview Prep */}
-          <div className="card p-6 space-y-4">
-            <div className="flex items-center gap-3 text-sky-400">
-              <UserCheck size={20} />
-              <h2 className="text-lg font-bold text-ink-50">HR Interview</h2>
-            </div>
-            <div className="space-y-3 text-xs text-ink-300">
-              <div className="bg-ink-950 p-3 rounded border border-ink-800">
-                <strong className="text-ink-200">"Tell me about yourself."</strong>
-                <p className="text-[11px] text-ink-400 mt-1">Prepare a 60-second summary: background ➔ major achievements ➔ technical projects ➔ reason for applying to this company.</p>
-              </div>
-              <div className="bg-ink-950 p-3 rounded border border-ink-800">
-                <strong className="text-ink-200">"Why E.G.S?"</strong>
-                <p className="text-[11px] text-ink-400 mt-1">Be ready to explain how your student projects, coursework, and coding tests align with the company's domains.</p>
-              </div>
-              <div className="bg-ink-950 p-3 rounded border border-ink-800">
-                <strong className="text-ink-200">STAR Method</strong>
-                <p className="text-[11px] text-ink-400 mt-1">Answer behavioral questions (conflicts, teamwork) using **S**ituation, **T**ask, **A**ction, and **R**esult.</p>
-              </div>
+            <p className="text-xs text-ink-400">Top online platforms to practice and prepare for aptitude tests.</p>
+            
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-ink-800 text-ink-400">
+                    <th className="py-2.5 font-semibold">Platform</th>
+                    <th className="py-2.5 font-semibold text-right">Website</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-ink-800/50">
+                  <tr className="hover:bg-ink-800/30 transition-colors">
+                    <td className="py-3 font-medium text-ink-100">IndiaBIX</td>
+                    <td className="py-3 text-right">
+                      <a 
+                        href="https://www.indiabix.com" 
+                        target="_blank" 
+                        rel="noreferrer" 
+                        className="inline-flex items-center gap-1 text-lime-300 hover:text-lime-400 hover:underline transition-all"
+                      >
+                        Visit IndiaBIX <ExternalLink size={12} />
+                      </a>
+                    </td>
+                  </tr>
+                  <tr className="hover:bg-ink-800/30 transition-colors">
+                    <td className="py-3 font-medium text-ink-100">PrepInsta</td>
+                    <td className="py-3 text-right">
+                      <a 
+                        href="https://prepinsta.com" 
+                        target="_blank" 
+                        rel="noreferrer" 
+                        className="inline-flex items-center gap-1 text-lime-300 hover:text-lime-400 hover:underline transition-all"
+                      >
+                        Visit PrepInsta <ExternalLink size={12} />
+                      </a>
+                    </td>
+                  </tr>
+                  <tr className="hover:bg-ink-800/30 transition-colors">
+                    <td className="py-3 font-medium text-ink-100">GeeksforGeeks Aptitude</td>
+                    <td className="py-3 text-right">
+                      <a 
+                        href="https://www.geeksforgeeks.org/aptitude-questions-and-answers/" 
+                        target="_blank" 
+                        rel="noreferrer" 
+                        className="inline-flex items-center gap-1 text-lime-300 hover:text-lime-400 hover:underline transition-all"
+                      >
+                        Visit GeeksforGeeks Aptitude <ExternalLink size={12} />
+                      </a>
+                    </td>
+                  </tr>
+                  <tr className="hover:bg-ink-800/30 transition-colors">
+                    <td className="py-3 font-medium text-ink-100">Testbook</td>
+                    <td className="py-3 text-right">
+                      <a 
+                        href="https://testbook.com" 
+                        target="_blank" 
+                        rel="noreferrer" 
+                        className="inline-flex items-center gap-1 text-lime-300 hover:text-lime-400 hover:underline transition-all"
+                      >
+                        Visit Testbook <ExternalLink size={12} />
+                      </a>
+                    </td>
+                  </tr>
+                  <tr className="hover:bg-ink-800/30 transition-colors">
+                    <td className="py-3 font-medium text-ink-100">Practice Aptitude Tests</td>
+                    <td className="py-3 text-right">
+                      <a 
+                        href="https://www.practiceaptitudetests.com" 
+                        target="_blank" 
+                        rel="noreferrer" 
+                        className="inline-flex items-center gap-1 text-lime-300 hover:text-lime-400 hover:underline transition-all"
+                      >
+                        Visit Practice Aptitude Tests <ExternalLink size={12} />
+                      </a>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
+
       </div>
     </div>
   )

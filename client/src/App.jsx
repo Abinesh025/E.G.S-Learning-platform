@@ -11,6 +11,7 @@ import StudentMaterials from './pages/student/StudentMaterials'
 import StudentTests from './pages/student/StudentTests'
 import StudentResults from './pages/student/StudentResults'
 import ChatPage from './pages/student/ChatPage'
+import Resume from './pages/student/Resume'
 import StaffDashboard from './pages/staff/StaffDashboard'
 import StaffMaterials from './pages/staff/StaffMaterials'
 import StaffTests from './pages/staff/StaffTests'
@@ -90,6 +91,11 @@ const routeTitles = {
   '/admin/materials': 'Materials Management',
   '/admin/tests': 'Tests Management',
   '/admin/results': 'Results Management',
+  '/student/placement/on-campus': 'On-Campus Placement Rounds',
+  '/student/placement/aptitude-test': 'Online Aptitude Test',
+  '/student/placement/registration': 'Registration Round Guide',
+  '/student/placement/coding-rounds': 'Coding Rounds & DSA Preparation',
+  '/student/resume': 'Resume Templates',
 }
 
 function DynamicTitle() {
@@ -110,6 +116,9 @@ import MechEnggSyllabus from './pages/DeptContent/Mech'
 import CivilEnggTopics from './pages/DeptContent/Civil'
 import PlacementOnCampus from './pages/student/PlacementOnCampus'
 import PlacementOffCampus from './pages/student/PlacementOffCampus'
+import Rounds from './pages/student/Rounds'
+import RegisterRounds from './pages/student/RegisterRounds'
+import CodingRounds from './pages/student/CodingRounds'
 
 function AppRoutes() {
   const { user, loading } = useAuth()
@@ -169,8 +178,12 @@ function AppRoutes() {
         <Route path="/student/eee" element={<ProtectedRoute role="student"><Layout><EEE /></Layout></ProtectedRoute>} />
         <Route path="/student/mech" element={<ProtectedRoute role="student"><Layout><MechEnggSyllabus /></Layout></ProtectedRoute>} />
         <Route path="/student/civil" element={<ProtectedRoute role="student"><Layout><CivilEnggTopics /></Layout></ProtectedRoute>} />
-        <Route path="/student/placement/on-campus" element={<ProtectedRoute role="student"><Layout><PlacementOnCampus /></Layout></ProtectedRoute>} />
+        <Route path="/student/placement/on-campus" element={<ProtectedRoute role="student"><Layout><Rounds /></Layout></ProtectedRoute>} />
         <Route path="/student/placement/off-campus" element={<ProtectedRoute role="student"><Layout><PlacementOffCampus /></Layout></ProtectedRoute>} />
+        <Route path="/student/placement/aptitude-test" element={<ProtectedRoute role="student"><Layout><PlacementOnCampus /></Layout></ProtectedRoute>} />
+        <Route path="/student/placement/registration" element={<ProtectedRoute role="student"><Layout><RegisterRounds /></Layout></ProtectedRoute>} />
+        <Route path="/student/placement/coding-rounds" element={<ProtectedRoute role="student"><Layout><CodingRounds /></Layout></ProtectedRoute>} />
+        <Route path="/student/resume" element={<ProtectedRoute role="student"><Layout><Resume /></Layout></ProtectedRoute>} />
 
         {/* Staff routes */}
         <Route path="/staff" element={<ProtectedRoute role="staff"><Layout><StaffDashboard /></Layout></ProtectedRoute>} />

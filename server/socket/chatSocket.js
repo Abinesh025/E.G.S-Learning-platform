@@ -1,4 +1,4 @@
-const Message = require('../models/Message')
+const messageRepository = require('../repositories/messageRepository')
 const { Server } = require('socket.io')
 
 let onlineUsers = {}
@@ -6,7 +6,7 @@ let ioInstance = null
 
 const initSocket = (server) => {
   const io = new Server(server, {
-    cors: { origin: "*", methods: ["GET", "POST", "PUT", "DELETE"] }
+    cors: { origin: '*', methods: ['GET', 'POST', 'PUT', 'DELETE'] },
   })
   ioInstance = io
 
@@ -27,7 +27,7 @@ const initSocket = (server) => {
       socket.join(room)
       console.log('User joined room:', room)
     })
-    
+
     socket.on('joinDepartmentRoom', (data) => {
       if (data && data.department) {
         socket.join(data.department)
@@ -51,20 +51,25 @@ const initSocket = (server) => {
         const { sender, receiver, room, content, message, messageType = 'text', audioUrl = '', fileUrl = '' } = data
         const messageText = content || message || ''
 
-        const newMessage = await Message.create({
-          sender, receiver, room, message: messageText, messageType, audioUrl, fileUrl
+        const newMessage = await messageRepository.createMessage({
+          senderId: Number(sender),
+          receiverId: receiver ? Number(receiver) : null,
+          room: room || '',
+          message: messageText,
+          messageType,
+          audioUrl,
+          fileUrl,
         })
 
         if (room) {
-          const populated = await newMessage.populate('sender', 'name email role department avatar')
           io.to(room).emit('message', {
-            _id: populated._id,
-            content: populated.message,
-            messageType: populated.messageType,
-            audioUrl: populated.audioUrl,
-            fileUrl: populated.fileUrl,
-            sender: populated.sender,
-            createdAt: populated.createdAt
+            _id: newMessage._id,
+            content: newMessage.message,
+            messageType: newMessage.messageType,
+            audioUrl: newMessage.audioUrl,
+            fileUrl: newMessage.fileUrl,
+            sender: newMessage.sender,
+            createdAt: newMessage.createdAt,
           })
         } else {
           // 1-on-1 Chat

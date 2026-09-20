@@ -15,5 +15,18 @@
   "engines": {
     "node": ">=18.0.0",
     "npm": ">=9.0.0"
-  }
+  },
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Abinesh025/E.G.S-Learning-Platform.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Abinesh025/E.G.S-Learning-Platform/issues"
+  },
+  "homepage": "https://github.com/Abinesh025/E.G.S-Learning-Platform#readme"
 }

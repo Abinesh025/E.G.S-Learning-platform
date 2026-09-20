@@ -22,7 +22,7 @@ api.interceptors.request.use(config => {
   return config
 }, error => Promise.reject(error))
 
-// ✅ Response interceptor to handle 401
+//  Response interceptor to handle 401
 api.interceptors.response.use(
   res => res,
   err => {
