@@ -16,6 +16,20 @@ const getConnString = (database) => {
   return conn
 }
 
+const INITIAL_DEPARTMENTS = [
+  { name: 'Computer Science and Engineering', code: 'CSE', prefix: 'CSR' },
+  { name: 'Computer Science and Business Systems', code: 'CSBS', prefix: 'BSR' },
+  { name: 'Artificial Intelligence and Data Science', code: 'AIDS', prefix: 'ADR' },
+  { name: 'Information Technology', code: 'IT', prefix: 'ITR' },
+  { name: 'Biomedical Engineering', code: 'BME', prefix: 'BMR' },
+  { name: 'Civil Engineering', code: 'CIVIL', prefix: 'CER' },
+  { name: 'Electronics and Communication Engineering', code: 'ECE', prefix: 'ECR' },
+  { name: 'Electrical and Electronics Engineering', code: 'EEE', prefix: 'EER' },
+  { name: 'Mechanical Engineering', code: 'MECH', prefix: 'MER' },
+  { name: 'Master of Business Administration', code: 'MBA', prefix: 'MBAR' },
+  { name: 'Master of Computer Applications', code: 'MCA', prefix: 'MCAR' }
+]
+
 async function initDatabase() {
   console.log('🔄 Starting Microsoft SQL Server Schema Initialization via msnodesqlv8...')
   console.log(`📡 Connecting to server: ${server} using [${odbcDriver}]`)
@@ -45,7 +59,27 @@ async function initDatabase() {
 
     // DDL script executing each table creation block safely
     const ddlStatements = [
-      // 1. Users Table
+      // 1. Departments Table
+      `
+      IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Departments')
+      BEGIN
+        CREATE TABLE Departments (
+            DepartmentId INT IDENTITY(1,1) NOT NULL,
+            DepartmentName NVARCHAR(100) NOT NULL,
+            DepartmentCode VARCHAR(10) NOT NULL,
+            PrefixCode VARCHAR(10) NOT NULL,
+            CreatedAt DATETIME2 NOT NULL CONSTRAINT DF_Departments_CreatedAt DEFAULT SYSUTCDATETIME(),
+            UpdatedAt DATETIME2 NOT NULL CONSTRAINT DF_Departments_UpdatedAt DEFAULT SYSUTCDATETIME(),
+
+            CONSTRAINT PK_Departments PRIMARY KEY CLUSTERED (DepartmentId),
+            CONSTRAINT UQ_Departments_Name UNIQUE (DepartmentName),
+            CONSTRAINT UQ_Departments_Code UNIQUE (DepartmentCode)
+        );
+        PRINT 'Table Departments created.';
+      END
+      `,
+
+      // 2. Users Table (Core user credentials & common account identity)
       `
       IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Users')
       BEGIN
@@ -53,14 +87,10 @@ async function initDatabase() {
             UserId INT IDENTITY(1,1) NOT NULL,
             Name NVARCHAR(100) NOT NULL,
             Email NVARCHAR(255) NOT NULL,
-            Regnum NVARCHAR(50) NULL,
             Password NVARCHAR(255) NOT NULL,
             Role VARCHAR(10) NOT NULL,
             Avatar NVARCHAR(500) NOT NULL CONSTRAINT DF_Users_Avatar DEFAULT '',
-            Department NVARCHAR(100) NOT NULL CONSTRAINT DF_Users_Department DEFAULT '',
             Phone NVARCHAR(20) NOT NULL CONSTRAINT DF_Users_Phone DEFAULT '',
-            Batch NVARCHAR(20) NOT NULL CONSTRAINT DF_Users_Batch DEFAULT '',
-            Semester TINYINT NULL,
             IsActive BIT NOT NULL CONSTRAINT DF_Users_IsActive DEFAULT 1,
             OtpHash NVARCHAR(255) NULL,
             OtpExpiresAt DATETIME2 NULL,
@@ -72,25 +102,101 @@ async function initDatabase() {
             CONSTRAINT PK_Users PRIMARY KEY CLUSTERED (UserId),
             CONSTRAINT UQ_Users_Email UNIQUE (Email),
             CONSTRAINT CK_Users_Role CHECK (Role IN ('student', 'staff', 'admin')),
-            CONSTRAINT CK_Users_Semester CHECK (Semester IS NULL OR Semester BETWEEN 1 AND 8),
             CONSTRAINT CK_Users_OtpPurpose CHECK (OtpPurpose IS NULL OR OtpPurpose IN ('staff_login', 'password_change'))
         );
         PRINT 'Table Users created.';
       END
       `,
 
-      // Filtered Index on Users.Regnum
+      // 3. Students Table (Dedicated student entities with unique ID prefix & department link)
       `
-      IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'UQ_Users_Regnum' AND object_id = OBJECT_ID('Users'))
+      IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Students')
       BEGIN
-        CREATE UNIQUE NONCLUSTERED INDEX UQ_Users_Regnum
-        ON Users (Regnum)
-        WHERE Regnum IS NOT NULL AND Regnum <> '';
-        PRINT 'Filtered Index UQ_Users_Regnum created.';
+        CREATE TABLE Students (
+            StudentId INT IDENTITY(1,1) NOT NULL,
+            UserId INT NOT NULL,
+            DepartmentId INT NOT NULL,
+            Regnum NVARCHAR(50) NOT NULL,
+            StudentUniqueId NVARCHAR(50) NOT NULL,
+            Batch NVARCHAR(20) NOT NULL CONSTRAINT DF_Students_Batch DEFAULT '',
+            Semester TINYINT NULL,
+            CreatedAt DATETIME2 NOT NULL CONSTRAINT DF_Students_CreatedAt DEFAULT SYSUTCDATETIME(),
+            UpdatedAt DATETIME2 NOT NULL CONSTRAINT DF_Students_UpdatedAt DEFAULT SYSUTCDATETIME(),
+
+            CONSTRAINT PK_Students PRIMARY KEY CLUSTERED (StudentId),
+            CONSTRAINT FK_Students_Users FOREIGN KEY (UserId)
+                REFERENCES Users (UserId) ON DELETE CASCADE ON UPDATE CASCADE,
+            CONSTRAINT FK_Students_Departments FOREIGN KEY (DepartmentId)
+                REFERENCES Departments (DepartmentId) ON DELETE NO ACTION ON UPDATE CASCADE,
+            CONSTRAINT UQ_Students_UserId UNIQUE (UserId),
+            CONSTRAINT UQ_Students_Regnum UNIQUE (Regnum),
+            CONSTRAINT UQ_Students_StudentUniqueId UNIQUE (StudentUniqueId),
+            CONSTRAINT CK_Students_Semester CHECK (Semester IS NULL OR Semester BETWEEN 1 AND 8)
+        );
+        PRINT 'Table Students created.';
       END
       `,
 
-      // 2. Materials Table
+      `
+      IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_Students_DepartmentId' AND object_id = OBJECT_ID('Students'))
+      BEGIN
+        CREATE NONCLUSTERED INDEX IX_Students_DepartmentId ON Students (DepartmentId);
+      END
+      `,
+
+      // 4. Staff Table (Dedicated staff entities)
+      `
+      IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Staff')
+      BEGIN
+        CREATE TABLE Staff (
+            StaffId INT IDENTITY(1,1) NOT NULL,
+            UserId INT NOT NULL,
+            DepartmentId INT NULL,
+            Regnum NVARCHAR(50) NOT NULL,
+            Designation NVARCHAR(100) NOT NULL CONSTRAINT DF_Staff_Designation DEFAULT 'Staff',
+            CreatedAt DATETIME2 NOT NULL CONSTRAINT DF_Staff_CreatedAt DEFAULT SYSUTCDATETIME(),
+            UpdatedAt DATETIME2 NOT NULL CONSTRAINT DF_Staff_UpdatedAt DEFAULT SYSUTCDATETIME(),
+
+            CONSTRAINT PK_Staff PRIMARY KEY CLUSTERED (StaffId),
+            CONSTRAINT FK_Staff_Users FOREIGN KEY (UserId)
+                REFERENCES Users (UserId) ON DELETE CASCADE ON UPDATE CASCADE,
+            CONSTRAINT FK_Staff_Departments FOREIGN KEY (DepartmentId)
+                REFERENCES Departments (DepartmentId) ON DELETE NO ACTION ON UPDATE CASCADE,
+            CONSTRAINT UQ_Staff_UserId UNIQUE (UserId),
+            CONSTRAINT UQ_Staff_Regnum UNIQUE (Regnum)
+        );
+        PRINT 'Table Staff created.';
+      END
+      `,
+
+      `
+      IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_Staff_DepartmentId' AND object_id = OBJECT_ID('Staff'))
+      BEGIN
+        CREATE NONCLUSTERED INDEX IX_Staff_DepartmentId ON Staff (DepartmentId);
+      END
+      `,
+
+      // 5. Admins Table (Dedicated admin entities)
+      `
+      IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Admins')
+      BEGIN
+        CREATE TABLE Admins (
+            AdminId INT IDENTITY(1,1) NOT NULL,
+            UserId INT NOT NULL,
+            AdminLevel NVARCHAR(50) NOT NULL CONSTRAINT DF_Admins_AdminLevel DEFAULT 'superadmin',
+            CreatedAt DATETIME2 NOT NULL CONSTRAINT DF_Admins_CreatedAt DEFAULT SYSUTCDATETIME(),
+            UpdatedAt DATETIME2 NOT NULL CONSTRAINT DF_Admins_UpdatedAt DEFAULT SYSUTCDATETIME(),
+
+            CONSTRAINT PK_Admins PRIMARY KEY CLUSTERED (AdminId),
+            CONSTRAINT FK_Admins_Users FOREIGN KEY (UserId)
+                REFERENCES Users (UserId) ON DELETE CASCADE ON UPDATE CASCADE,
+            CONSTRAINT UQ_Admins_UserId UNIQUE (UserId)
+        );
+        PRINT 'Table Admins created.';
+      END
+      `,
+
+      // 6. Materials Table
       `
       IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Materials')
       BEGIN
@@ -134,7 +240,7 @@ async function initDatabase() {
       END
       `,
 
-      // 3. Tests Table
+      // 7. Tests Table
       `
       IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Tests')
       BEGIN
@@ -165,7 +271,7 @@ async function initDatabase() {
       END
       `,
 
-      // 4. TestQuestions Table
+      // 8. TestQuestions Table
       `
       IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'TestQuestions')
       BEGIN
@@ -185,7 +291,7 @@ async function initDatabase() {
       END
       `,
 
-      // 5. QuestionOptions Table
+      // 9. QuestionOptions Table
       `
       IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'QuestionOptions')
       BEGIN
@@ -205,7 +311,7 @@ async function initDatabase() {
       END
       `,
 
-      // 6. TestSubmissions Table
+      // 10. TestSubmissions Table
       `
       IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'TestSubmissions')
       BEGIN
@@ -231,7 +337,7 @@ async function initDatabase() {
       END
       `,
 
-      // 7. Results Table
+      // 11. Results Table
       `
       IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Results')
       BEGIN
@@ -257,7 +363,7 @@ async function initDatabase() {
       END
       `,
 
-      // 8. StudentAnswers Table
+      // 12. StudentAnswers Table
       `
       IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'StudentAnswers')
       BEGIN
@@ -281,7 +387,7 @@ async function initDatabase() {
       END
       `,
 
-      // 9. Messages Table
+      // 13. Messages Table
       `
       IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Messages')
       BEGIN
@@ -310,7 +416,7 @@ async function initDatabase() {
       END
       `,
 
-      // 10. Notifications Table
+      // 14. Notifications Table
       `
       IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Notifications')
       BEGIN
@@ -360,18 +466,36 @@ async function initDatabase() {
       await dbPool.request().query(ddl)
     }
 
+    // Seed departments
+    for (const dept of INITIAL_DEPARTMENTS) {
+      await dbPool.request()
+        .input('name', sql.NVarChar(100), dept.name)
+        .input('code', sql.VarChar(10), dept.code)
+        .input('prefix', sql.VarChar(10), dept.prefix)
+        .query(`
+          IF NOT EXISTS (SELECT 1 FROM Departments WHERE DepartmentName = @name)
+          BEGIN
+            INSERT INTO Departments (DepartmentName, DepartmentCode, PrefixCode)
+            VALUES (@name, @code, @prefix);
+          END
+        `)
+    }
+    console.log('✅ Departments successfully initialized and verified')
+
     console.log('🎉 Microsoft SQL Server database & schema successfully verified and initialized!')
     await dbPool.close()
-    process.exit(0)
+    return true
   } catch (err) {
     console.error('❌ Schema initialization error:', err.message)
     if (masterPool) await masterPool.close()
-    process.exit(1)
+    throw err
   }
 }
 
 if (require.main === module) {
   initDatabase()
+    .then(() => process.exit(0))
+    .catch(() => process.exit(1))
 }
 
 module.exports = initDatabase

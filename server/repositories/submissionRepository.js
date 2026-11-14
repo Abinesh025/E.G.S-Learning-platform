@@ -12,9 +12,12 @@ const formatResult = (row) => {
           id: row.StudentId,
           name: row.StudentName,
           email: row.StudentEmail,
-          regnum: row.StudentRegnum,
-          department: row.StudentDept,
-          batch: row.StudentBatch,
+          regnum: row.StudentRegnum || '',
+          studentUniqueId: row.StudentUniqueId || '',
+          uniqueId: row.StudentUniqueId || '',
+          studentCode: row.StudentUniqueId || '',
+          department: row.StudentDept || '',
+          batch: row.StudentBatch || '',
         }
       : row.StudentId,
     test: row.TestId
@@ -161,14 +164,17 @@ exports.getResultsByTest = async (testId) => {
         r.*,
         u.Name AS StudentName,
         u.Email AS StudentEmail,
-        u.Regnum AS StudentRegnum,
-        u.Department AS StudentDept,
-        u.Batch AS StudentBatch,
+        COALESCE(s.Regnum, u.Regnum, '') AS StudentRegnum,
+        COALESCE(s.StudentUniqueId, '') AS StudentUniqueId,
+        COALESCE(d.DepartmentName, u.Department, '') AS StudentDept,
+        COALESCE(s.Batch, u.Batch, '') AS StudentBatch,
         t.Title AS TestTitle,
         t.Subject AS TestSubject,
         t.Department AS TestDept
       FROM Results r
       INNER JOIN Users u ON r.StudentId = u.UserId
+      LEFT JOIN Students s ON u.UserId = s.UserId
+      LEFT JOIN Departments d ON s.DepartmentId = d.DepartmentId
       INNER JOIN Tests t ON r.TestId = t.TestId
       WHERE r.TestId = @TestId
       ORDER BY r.Score DESC
@@ -182,12 +188,12 @@ exports.getAllResults = async ({ department, search } = {}) => {
   const conditions = []
 
   if (department) {
-    request.input('Department', sql.NVarChar(100), department)
-    conditions.push('(u.Department = @Department OR t.Department = @Department)')
+    request.input('Department', sql.NVarChar(100), department.trim())
+    conditions.push('(d.DepartmentName = @Department OR u.Department = @Department OR t.Department = @Department)')
   }
   if (search) {
-    request.input('Search', sql.NVarChar(100), `%${search}%`)
-    conditions.push('(u.Name LIKE @Search OR u.Regnum LIKE @Search OR t.Title LIKE @Search)')
+    request.input('Search', sql.NVarChar(100), `%${search.trim()}%`)
+    conditions.push('(u.Name LIKE @Search OR s.Regnum LIKE @Search OR s.StudentUniqueId LIKE @Search OR u.Regnum LIKE @Search OR t.Title LIKE @Search)')
   }
 
   const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''
@@ -197,14 +203,17 @@ exports.getAllResults = async ({ department, search } = {}) => {
       r.*,
       u.Name AS StudentName,
       u.Email AS StudentEmail,
-      u.Regnum AS StudentRegnum,
-      u.Department AS StudentDept,
-      u.Batch AS StudentBatch,
+      COALESCE(s.Regnum, u.Regnum, '') AS StudentRegnum,
+      COALESCE(s.StudentUniqueId, '') AS StudentUniqueId,
+      COALESCE(d.DepartmentName, u.Department, '') AS StudentDept,
+      COALESCE(s.Batch, u.Batch, '') AS StudentBatch,
       t.Title AS TestTitle,
       t.Subject AS TestSubject,
       t.Department AS TestDept
     FROM Results r
     INNER JOIN Users u ON r.StudentId = u.UserId
+    LEFT JOIN Students s ON u.UserId = s.UserId
+    LEFT JOIN Departments d ON s.DepartmentId = d.DepartmentId
     INNER JOIN Tests t ON r.TestId = t.TestId
     ${whereClause}
     ORDER BY r.CreatedAt DESC

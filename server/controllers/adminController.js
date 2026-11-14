@@ -17,8 +17,8 @@ exports.getDashboardStats = async (req, res) => {
     const pool = await getPool()
     const q = await pool.request().query(`
       SELECT 
-        (SELECT COUNT(*) FROM Users WHERE Role = 'staff') AS totalStaff,
-        (SELECT COUNT(*) FROM Users WHERE Role = 'student') AS totalStudents,
+        (SELECT COUNT(*) FROM Staff) AS totalStaff,
+        (SELECT COUNT(*) FROM Students) AS totalStudents,
         (SELECT COUNT(*) FROM Materials) AS totalMaterials,
         (SELECT COUNT(*) FROM Tests) AS totalTests,
         (SELECT COUNT(*) FROM Results) AS totalResults

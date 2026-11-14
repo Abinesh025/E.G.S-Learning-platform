@@ -91,7 +91,14 @@ export default function AdminResults() {
                   const passed = r.score >= (r.test?.passingMarks || 0)
                   return (
                     <tr key={r._id} className="border-t border-ink-800 hover:bg-ink-800/40">
-                      <td className="px-5 py-3 text-ink-100 font-medium max-w-[120px] truncate">{r.student?.name || '—'}</td>
+                      <td className="px-5 py-3 text-ink-100 font-medium max-w-[150px]">
+                        <p className="truncate">{r.student?.name || '—'}</p>
+                        {(r.student?.studentUniqueId || r.student?.uniqueId || r.student?.regnum) && (
+                          <p className="text-xs text-sky-400/90 font-mono">
+                            {r.student?.studentUniqueId || r.student?.uniqueId || r.student?.regnum}
+                          </p>
+                        )}
+                      </td>
                       <td className="px-5 py-3 hidden sm:table-cell">
                         {r.student?.department
                           ? <span className="px-2 py-0.5 rounded-md bg-violet-400/10 text-violet-300 border border-violet-400/20 text-xs">{r.student.department}</span>

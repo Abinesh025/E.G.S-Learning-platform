@@ -100,8 +100,14 @@ exports.register = async (req, res) => {
         email: user.Email || user.email,
         role: user.Role || user.role,
         department: user.Department || user.department || '',
+        departmentId: user.DepartmentId || user.departmentId || null,
+        regnum: user.Regnum || user.regnum || '',
+        studentUniqueId: user.StudentUniqueId || user.studentUniqueId || '',
+        uniqueId: user.StudentUniqueId || user.studentUniqueId || '',
+        studentCode: user.StudentUniqueId || user.studentUniqueId || '',
         avatar: user.Avatar || user.avatar || null,
         semester: user.Semester || user.semester || null,
+        batch: user.Batch || user.batch || '',
       },
     })
   } catch (error) {
@@ -196,8 +202,14 @@ exports.login = async (req, res) => {
         email: user.Email || user.email,
         role: userRole,
         department: user.Department || user.department || '',
+        departmentId: user.DepartmentId || user.departmentId || null,
+        regnum: user.Regnum || user.regnum || '',
+        studentUniqueId: user.StudentUniqueId || user.studentUniqueId || '',
+        uniqueId: user.StudentUniqueId || user.studentUniqueId || '',
+        studentCode: user.StudentUniqueId || user.studentUniqueId || '',
         avatar: user.Avatar || user.avatar || null,
         semester: user.Semester || user.semester || null,
+        batch: user.Batch || user.batch || '',
       },
     })
   } catch (error) {
@@ -402,6 +414,8 @@ exports.verifyStaffLoginOtp = async (req, res) => {
         email: user.Email || user.email,
         role: userRole,
         department: user.Department || user.department || '',
+        departmentId: user.DepartmentId || user.departmentId || null,
+        regnum: user.Regnum || user.regnum || '',
         avatar: user.Avatar || user.avatar || null,
         semester: user.Semester || user.semester || null,
       },

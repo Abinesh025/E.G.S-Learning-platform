@@ -84,7 +84,9 @@ export default function AdminStudents() {
 
   const filtered = students.filter(s =>
     (s.name.toLowerCase().includes(search.toLowerCase()) ||
-    s.email.toLowerCase().includes(search.toLowerCase())) &&
+    s.email.toLowerCase().includes(search.toLowerCase()) ||
+    (s.regnum && s.regnum.toLowerCase().includes(search.toLowerCase())) ||
+    ((s.studentUniqueId || s.uniqueId) && (s.studentUniqueId || s.uniqueId).toLowerCase().includes(search.toLowerCase()))) &&
     (departmentFilter === '' || s.department === departmentFilter)
   )
 
@@ -121,7 +123,8 @@ export default function AdminStudents() {
               <tr>
                 <th className="px-5 py-3 text-left">Name</th>
                 <th className="px-5 py-3 text-left">Department</th>
-                 <th className="px-5 py-3 text-left">Reg Num</th>
+                <th className="px-5 py-3 text-left">Unique ID</th>
+                <th className="px-5 py-3 text-left">Reg Num</th>
                 <th className="px-5 py-3 text-left">Batch</th>
                 <th className="px-5 py-3 text-left">Status</th>
                 <th className="px-5 py-3 text-left sticky right-0 bg-ink-900 border-l border-ink-800 z-10 shadow-[-4px_0_10px_-4px_rgba(0,0,0,0.5)]">Actions</th>
@@ -135,6 +138,13 @@ export default function AdminStudents() {
                     <p className="text-ink-500 text-xs">{s.email}</p>
                   </td>
                   <td className="px-5 py-3 text-ink-300">{s.department || '—'}</td>
+                  <td className="px-5 py-3 text-ink-300 font-mono text-xs">
+                    {s.studentUniqueId || s.uniqueId ? (
+                      <span className="px-2 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20 font-semibold tracking-wider">
+                        {s.studentUniqueId || s.uniqueId}
+                      </span>
+                    ) : '—'}
+                  </td>
                   <td className="px-5 py-3 text-ink-300">{s.regnum || '—'}</td>
                   <td className="px-5 py-3 text-ink-300">{s.batch || '—'}</td>
                   <td className="px-5 py-3">
@@ -151,7 +161,7 @@ export default function AdminStudents() {
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={5} className="px-5 py-8 text-center text-ink-500">No students found</td></tr>
+                <tr><td colSpan={7} className="px-5 py-8 text-center text-ink-500">No students found</td></tr>
               )}
             </tbody>
           </table>
