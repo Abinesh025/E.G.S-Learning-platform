@@ -56,10 +56,10 @@ export default function ProfileDetails() {
               <p className="font-semibold text-lg text-ink-50">{user.department}</p>
             </div>
           )}
-          {(user.studentUniqueId || user.uniqueId || user.studentCode) && (
+          {(user.studentId || user.studentUniqueId || user.uniqueId || user.studentCode) && (
             <div className="space-y-1">
-              <p className="text-sm font-medium text-ink-400">Student Unique ID</p>
-              <p className="font-semibold text-lg text-sky-400 font-mono tracking-wider">{user.studentUniqueId || user.uniqueId || user.studentCode}</p>
+              <p className="text-sm font-medium text-ink-400">Student ID</p>
+              <p className="font-semibold text-lg text-sky-400 font-mono tracking-wider">{user.studentId || user.studentUniqueId || user.uniqueId || user.studentCode}</p>
             </div>
           )}
           {(user.registerNumber || user.regnum) && (

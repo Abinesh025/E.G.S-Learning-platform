@@ -1,22 +1,26 @@
 import api from '../../services/api'
 import { getSocket } from '../../services/socket'
 import { useAuth } from '../../context/AuthContext'
-import { Pencil, Trash2, Plus } from 'lucide-react'
+import { Pencil, Trash2, Plus, FileSpreadsheet } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useEffect, useState } from 'react'
 import { DEPART_CHECKER } from '../../utils/deptChecker'
+import BulkStudentUploadModal from '../../components/admin/BulkStudentUploadModal'
+import { ACADEMIC_YEARS_ARRAY, STATUS, MIGRATED_STATUS } from '../../common'
 
-const empty = { name: '', email: '', phone: '',regnum:"", batch: '', department: '', password: '' }
+const empty = { name: '', email: '', phone: '', regnum: '', batch: '', department: '', year: 'First Year', password: '', isActive: STATUS.ACTIVE }
 
 export default function AdminStudents() {
   const { token } = useAuth()
   const [students, setStudents] = useState([])
   const [loading, setLoading]   = useState(true)
   const [showModal, setShowModal] = useState(false)
+  const [showBulkModal, setShowBulkModal] = useState(false)
   const [editing, setEditing]   = useState(null)
   const [form, setForm]         = useState(empty)
   const [search, setSearch]     = useState('')
   const [departmentFilter, setDepartmentFilter] = useState('')
+  const [yearFilter, setYearFilter] = useState('')
     
   const fetch = () => {
     setLoading(true)
@@ -35,7 +39,7 @@ export default function AdminStudents() {
   }, [token])
 
   const openAdd  = () => { setEditing(null); setForm(empty); setShowModal(true) }
-  const openEdit = s  => { setEditing(s._id); setForm({ name: s.name, email: s.email,regnum :s.regnum, phone: s.phone || '', batch: s.batch || '', department: s.department || '', password: '' }); setShowModal(true) }
+  const openEdit = s  => { setEditing(s._id); setForm({ name: s.name, email: s.email, regnum: s.regnum, phone: s.phone || '', batch: s.batch || '', department: s.department || '', year: s.yearName || 'First Year', password: '', isActive: Number(s.isActive) === 1 ? 1 : 0 }); setShowModal(true) }
 
   const handleSave = async () => {
     try {
@@ -86,17 +90,28 @@ export default function AdminStudents() {
     (s.name.toLowerCase().includes(search.toLowerCase()) ||
     s.email.toLowerCase().includes(search.toLowerCase()) ||
     (s.regnum && s.regnum.toLowerCase().includes(search.toLowerCase())) ||
-    ((s.studentUniqueId || s.uniqueId) && (s.studentUniqueId || s.uniqueId).toLowerCase().includes(search.toLowerCase()))) &&
-    (departmentFilter === '' || s.department === departmentFilter)
+    ((s.studentId || s.studentRefId || s.studentUniqueId || s.uniqueId) && (s.studentId || s.studentRefId || s.studentUniqueId || s.uniqueId).toLowerCase().includes(search.toLowerCase()))) &&
+    (departmentFilter === '' || s.department === departmentFilter) &&
+    (yearFilter === '' || s.yearName === yearFilter || s.yearCode === yearFilter)
   )
+
+  const ACADEMIC_YEARS = ACADEMIC_YEARS_ARRAY.map(yr => yr.value)
 
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-semibold text-ink-100">Students</h1>
-        <button onClick={openAdd} className="btn-primary flex items-center gap-2 text-sm">
-          <Plus size={15} /> Add Student
-        </button>
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={() => setShowBulkModal(true)}
+            className="btn-secondary flex items-center gap-2 text-sm py-2 px-3.5"
+          >
+            <FileSpreadsheet size={16} /> Bulk Upload (Excel)
+          </button>
+          <button onClick={openAdd} className="btn-primary flex items-center gap-2 text-sm py-2 px-3.5">
+            <Plus size={16} /> Add Student
+          </button>
+        </div>
       </div>
 
       <div className="bg-ink-900 border border-ink-800 rounded-xl overflow-hidden">
@@ -112,6 +127,16 @@ export default function AdminStudents() {
               <option key={dept} value={dept}>{dept}</option>
             ))}
           </select>
+          <select 
+            className="input w-full sm:w-40 text-sm"
+            value={yearFilter}
+            onChange={e => setYearFilter(e.target.value)}
+          >
+            <option value="">All Years</option>
+            {ACADEMIC_YEARS.map(yr => (
+              <option key={yr} value={yr}>{yr}</option>
+            ))}
+          </select>
         </div>
 
         {loading ? (
@@ -123,10 +148,12 @@ export default function AdminStudents() {
               <tr>
                 <th className="px-5 py-3 text-left">Name</th>
                 <th className="px-5 py-3 text-left">Department</th>
-                <th className="px-5 py-3 text-left">Unique ID</th>
+                <th className="px-5 py-3 text-left">Student ID</th>
                 <th className="px-5 py-3 text-left">Reg Num</th>
+                <th className="px-5 py-3 text-left">Year</th>
                 <th className="px-5 py-3 text-left">Batch</th>
-                <th className="px-5 py-3 text-left">Status</th>
+                <th className="px-5 py-3 text-left">IsActive</th>
+                <th className="px-5 py-3 text-left">IsMigrated</th>
                 <th className="px-5 py-3 text-left sticky right-0 bg-ink-900 border-l border-ink-800 z-10 shadow-[-4px_0_10px_-4px_rgba(0,0,0,0.5)]">Actions</th>
               </tr>
             </thead>
@@ -139,17 +166,29 @@ export default function AdminStudents() {
                   </td>
                   <td className="px-5 py-3 text-ink-300">{s.department || '—'}</td>
                   <td className="px-5 py-3 text-ink-300 font-mono text-xs">
-                    {s.studentUniqueId || s.uniqueId ? (
+                    {s.studentId || s.studentRefId || s.studentUniqueId || s.uniqueId ? (
                       <span className="px-2 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20 font-semibold tracking-wider">
-                        {s.studentUniqueId || s.uniqueId}
+                        {s.studentId || s.studentRefId || s.studentUniqueId || s.uniqueId}
                       </span>
                     ) : '—'}
                   </td>
                   <td className="px-5 py-3 text-ink-300">{s.regnum || '—'}</td>
+                  <td className="px-5 py-3 text-ink-300 font-medium">
+                    <span className="px-2 py-0.5 rounded bg-lime-400/10 text-lime-400 border border-lime-400/20 text-xs font-semibold">
+                      {s.yearName || s.yearCode || 'First Year'}
+                    </span>
+                  </td>
                   <td className="px-5 py-3 text-ink-300">{s.batch || '—'}</td>
                   <td className="px-5 py-3">
-                    <span className={`badge text-xs ${s.isActive !== false ? 'tag-lime' : 'tag-red'}`}>
-                      {s.isActive !== false ? 'Active' : 'Inactive'}
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-semibold ${Number(s.isActive) === 1 ? 'bg-lime-400/10 text-lime-400 border border-lime-400/20' : 'bg-red-400/10 text-red-400 border border-red-400/20'}`} title={Number(s.isActive) === 1 ? 'Active (1)' : 'Inactive (0)'}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${Number(s.isActive) === 1 ? 'bg-lime-400' : 'bg-red-400'}`}></span>
+                      {Number(s.isActive) === 1 ? '1' : '0'}
+                    </span>
+                  </td>
+                  <td className="px-5 py-3">
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-semibold ${Number(s.isMigrated) === 1 ? 'bg-purple-400/10 text-purple-400 border border-purple-400/20' : 'bg-ink-800 text-ink-400 border border-ink-700'}`} title={Number(s.isMigrated) === 1 ? 'Migrated (1)' : 'Not Migrated (0)'}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${Number(s.isMigrated) === 1 ? 'bg-purple-400' : 'bg-ink-500'}`}></span>
+                      {Number(s.isMigrated) === 1 ? '1' : '0'}
                     </span>
                   </td>
                   <td className="px-5 py-3 sticky right-0 bg-ink-900 border-l border-ink-800 z-10 shadow-[-4px_0_10px_-4px_rgba(0,0,0,0.5)]">
@@ -161,7 +200,7 @@ export default function AdminStudents() {
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={7} className="px-5 py-8 text-center text-ink-500">No students found</td></tr>
+                <tr><td colSpan={9} className="px-5 py-8 text-center text-ink-500">No students found</td></tr>
               )}
             </tbody>
           </table>
@@ -171,7 +210,7 @@ export default function AdminStudents() {
 
       {showModal && (
         <div className="fixed inset-0 bg-ink-950/80 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-ink-900 border border-ink-800 rounded-2xl p-6 w-full max-w-sm mx-4">
+          <div className="bg-ink-900 border border-ink-800 rounded-2xl p-6 w-full max-w-sm mx-4 max-h-[90vh] overflow-y-auto">
             <h2 className="text-ink-100 font-semibold mb-4">{editing ? 'Edit Student' : 'Add Student'}</h2>
             <div className="space-y-3">
               {[['name','Name'],['email','Email'],['phone','Phone'],['regnum','RegNum'],['batch','Batch']].map(([field, label]) => (
@@ -181,6 +220,14 @@ export default function AdminStudents() {
                 </div>
               ))}
               <div>
+                <label className="text-ink-500 text-xs mb-1 block">Year</label>
+                <select className="input w-full text-sm" value={form.year} onChange={e => setForm({ ...form, year: e.target.value })}>
+                  {ACADEMIC_YEARS.map(yr => (
+                    <option key={yr} value={yr}>{yr}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
                 <label className="text-ink-500 text-xs mb-1 block">Department</label>
                 <select className="input w-full text-sm" value={form.department} onChange={e => setForm({ ...form, department: e.target.value })}>
                   <option value="" disabled>Select Department</option>
@@ -189,6 +236,19 @@ export default function AdminStudents() {
                   ))}
                 </select>
               </div>
+              {editing && (
+                <div>
+                  <label className="text-ink-500 text-xs mb-1 block">Status (IsActive)</label>
+                  <select
+                    className="input w-full text-sm"
+                    value={form.isActive}
+                    onChange={e => setForm({ ...form, isActive: Number(e.target.value) })}
+                  >
+                    <option value={STATUS.ACTIVE}>Active ({STATUS.ACTIVE})</option>
+                    <option value={STATUS.INACTIVE}>Inactive ({STATUS.INACTIVE})</option>
+                  </select>
+                </div>
+              )}
               {!editing && (
                 <div>
                   <label className="text-ink-500 text-xs mb-1 block">Password</label>
@@ -210,6 +270,13 @@ export default function AdminStudents() {
           </div>
         </div>
       )}
+
+      {/* Bulk Upload Modal */}
+      <BulkStudentUploadModal
+        isOpen={showBulkModal}
+        onClose={() => setShowBulkModal(false)}
+        onSuccess={fetch}
+      />
     </div>
   )
 }

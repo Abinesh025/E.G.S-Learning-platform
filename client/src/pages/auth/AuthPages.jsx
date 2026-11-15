@@ -68,8 +68,11 @@ export function LoginPage() {
         toast.success('OTP sent to your email')
       } else {
         const user = data.user
+        if (data.adminToken) {
+          sessionStorage.setItem('adminToken', data.adminToken)
+        }
         toast.success(`Welcome back, ${user.name}!`)
-        navigate(user.role === 'staff' ? '/staff' : '/student')
+        navigate(user.role === 'admin' ? '/admin' : user.role === 'staff' ? '/staff' : '/student')
       }
     } catch (err) {
       toast.error(err.message || 'Login failed')
@@ -172,7 +175,7 @@ export function LoginPage() {
 export function RegisterPage() {
   const { register } = useAuth()
   const navigate = useNavigate()
-  const [form, setForm] = useState({ name: '', email: '', password: '', regnum: '', role: 'student', department: '' })
+  const [form, setForm] = useState({ name: '', email: '', password: '', regnum: '', role: 'student', department: '', year: 'First Year' })
   const [loading, setLoading] = useState(false)
   const [show, setShow] = useState(false)
 
@@ -288,6 +291,25 @@ export function RegisterPage() {
             ))}
           </select>
         </div>
+
+        {/* Year of Study selector for Students */}
+        {form.role === 'student' && (
+          <div>
+            <label className="label">Year of Study</label>
+            <select
+              className="input appearance-none bg-no-repeat bg-[right_1rem_center]"
+              style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`, backgroundSize: '1.25rem' }}
+              value={form.year || 'First Year'}
+              onChange={e => setForm(p => ({ ...p, year: e.target.value }))}
+              required
+            >
+              <option value="First Year">First Year (1st Year)</option>
+              <option value="Second Year">Second Year (2nd Year)</option>
+              <option value="Third Year">Third Year (3rd Year)</option>
+              <option value="Final Year">Final Year (Last Year)</option>
+            </select>
+          </div>
+        )}
         {/* Registration Number with live feedback */}
         <div >
           <label className="label">Registration Number</label>

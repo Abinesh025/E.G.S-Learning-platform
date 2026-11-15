@@ -14,6 +14,7 @@ const chatRoutes = require('./routes/chatRoutes')
 const adminRoutes = require('./routes/adminRoutes')
 const notificationRoutes = require('./routes/notificationRoutes')
 const departmentRoutes = require('./routes/departmentRoutes')
+const yearRoutes = require('./routes/yearRoutes')
 
 const app = express()
 
@@ -48,6 +49,7 @@ app.use('/api/chat', chatRoutes)
 app.use('/api/admin', adminRoutes)
 app.use('/api/notifications', notificationRoutes)
 app.use('/api/departments', departmentRoutes)
+app.use('/api/years', yearRoutes)
 
 // ❤️ Root
 app.get('/', (req, res) => {
