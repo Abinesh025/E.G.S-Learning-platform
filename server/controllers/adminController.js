@@ -2,12 +2,14 @@ const userRepository = require('../repositories/userRepository')
 const materialRepository = require('../repositories/materialRepository')
 const testRepository = require('../repositories/testRepository')
 const submissionRepository = require('../repositories/submissionRepository')
+const bulkStudentService = require('../services/bulkStudentService')
 const { getPool } = require('../config/db')
 const bcrypt = require('bcryptjs')
 const { getIo } = require('../socket/chatSocket')
 const { validateRegNum } = require('../utils/regNumValidator')
 const { validateName } = require('../utils/nameValidator')
 const { validatePassword } = require('../utils/passwordValidator')
+const { ROLES } = require('../common')
 
 // ─────────────────────────────────────────────
 // DASHBOARD STATS
@@ -89,7 +91,7 @@ exports.createStaff = async (req, res) => {
       phone,
       department,
       regnum: regnum ? regnum.trim().toUpperCase() : '',
-      role: 'staff',
+      role: ROLES.STAFF,
     })
 
     const { Password, password: p, ...data } = staff
@@ -202,7 +204,7 @@ exports.deleteStaff = async (req, res) => {
 // ─────────────────────────────────────────────
 exports.getAllStudents = async (req, res) => {
   try {
-    const students = await userRepository.getAllUsers({ role: 'student' })
+    const students = await userRepository.getAllUsers({ role: ROLES.STUDENT })
     res.status(200).json({
       success: true,
       count: students.length,
@@ -241,6 +243,9 @@ exports.updateStudent = async (req, res) => {
     if (batch !== undefined) updateData.batch = batch
     if (department !== undefined) updateData.department = department
     if (typeof isActive !== 'undefined') updateData.isActive = isActive
+    if (req.body.yearId !== undefined) updateData.yearId = req.body.yearId
+    if (req.body.year !== undefined) updateData.year = req.body.year
+    if (req.body.semester !== undefined) updateData.semester = req.body.semester
 
     if (regnum) {
       const regValidation = validateRegNum(regnum, 'student')
@@ -262,7 +267,7 @@ exports.updateStudent = async (req, res) => {
       updateData.password = await bcrypt.hash(password, 10)
     }
 
-    const student = await userRepository.updateUser(Number(req.params.id), updateData)
+    const student = await userRepository.updateUser(req.params.id, updateData)
     if (!student) {
       return res.status(404).json({ success: false, message: 'Student not found' })
     }
@@ -284,7 +289,7 @@ exports.updateStudent = async (req, res) => {
 // ─────────────────────────────────────────────
 exports.deleteStudent = async (req, res) => {
   try {
-    const deleted = await userRepository.deleteUser(Number(req.params.id))
+    const deleted = await userRepository.deleteUser(req.params.id)
     if (!deleted) {
       return res.status(404).json({ success: false, message: 'Student not found' })
     }
@@ -306,7 +311,7 @@ exports.deleteStudent = async (req, res) => {
 // ─────────────────────────────────────────────
 exports.getAllStaff = async (req, res) => {
   try {
-    const staff = await userRepository.getAllUsers({ role: 'staff' })
+    const staff = await userRepository.getAllUsers({ role: ROLES.STAFF })
     res.status(200).json({ success: true, count: staff.length, data: staff })
   } catch (error) {
     res.status(500).json({ success: false, message: error.message })
@@ -318,7 +323,7 @@ exports.getAllStaff = async (req, res) => {
 // ─────────────────────────────────────────────
 exports.createStudent = async (req, res) => {
   try {
-    const { name, email, password, phone, batch, regnum, department } = req.body
+    const { name, email, password, phone, batch, regnum, department, yearId, year, semester } = req.body
     if (!name || !email || !password) {
       return res.status(400).json({ success: false, message: 'Required fields missing' })
     }
@@ -357,7 +362,10 @@ exports.createStudent = async (req, res) => {
       batch,
       regnum: regnum ? regnum.trim().toUpperCase() : '',
       department,
-      role: 'student',
+      yearId,
+      year,
+      semester,
+      role: ROLES.STUDENT,
     })
 
     const { Password, password: p, ...data } = student
@@ -520,5 +528,114 @@ exports.deleteResult = async (req, res) => {
     res.status(200).json({ success: true, message: 'Result deleted' })
   } catch (error) {
     res.status(500).json({ success: false, message: error.message })
+  }
+}
+
+// ─────────────────────────────────────────────
+// BULK STUDENT IMPORT (EXCEL)
+// ─────────────────────────────────────────────
+
+/**
+ * Validates uploaded Excel file without inserting records
+ */
+exports.validateBulkStudents = async (req, res) => {
+  try {
+    if (!req.file || !req.file.buffer) {
+      return res.status(400).json({
+        success: false,
+        message: 'No file uploaded. Please upload a valid .xlsx, .xls, or .csv file.',
+      })
+    }
+
+    const validationResult = await bulkStudentService.validateStudentExcelBuffer(req.file.buffer)
+
+    res.status(200).json({
+      success: true,
+      data: validationResult,
+    })
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    })
+  }
+}
+
+/**
+ * Inserts bulk students from uploaded file or pre-validated list
+ */
+exports.uploadBulkStudents = async (req, res) => {
+  try {
+    let validStudents = []
+
+    if (req.file && req.file.buffer) {
+      const validation = await bulkStudentService.validateStudentExcelBuffer(req.file.buffer)
+      const skipErrors = req.body.skipErrors === 'true' || req.body.skipErrors === true
+
+      if (!validation.valid && !skipErrors) {
+        return res.status(400).json({
+          success: false,
+          message: `File contains ${validation.errorCount} error(s). Please review errors or enable skip invalid rows.`,
+          data: validation,
+        })
+      }
+
+      validStudents = validation.validStudents
+    } else if (Array.isArray(req.body.students)) {
+      validStudents = req.body.students
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: 'No file or valid student data provided',
+      })
+    }
+
+    if (validStudents.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No valid students available to import',
+      })
+    }
+
+    const result = await bulkStudentService.insertBulkStudents(validStudents)
+
+    const io = getIo()
+    if (io) io.emit('data_changed', 'student')
+
+    res.status(201).json({
+      success: true,
+      message: `Successfully imported ${result.insertedCount} student(s) into database.`,
+      count: result.insertedCount,
+      data: result.students,
+    })
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    })
+  }
+}
+
+/**
+ * Downloads sample Excel template for bulk student upload
+ */
+exports.downloadStudentTemplate = (req, res) => {
+  try {
+    const buffer = bulkStudentService.generateSampleExcelTemplate()
+
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename="students_bulk_upload_template.xlsx"'
+    )
+    res.send(buffer)
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to generate template',
+    })
   }
 }

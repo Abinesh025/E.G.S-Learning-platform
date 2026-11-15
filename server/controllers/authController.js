@@ -7,13 +7,15 @@ const { validatePassword } = require('../utils/passwordValidator')
 const { generateOtp, hashOtp } = require('../utils/generateOtp')
 const sendEmail = require('../utils/sendEmail')
 const jwt = require('jsonwebtoken')
+const roleRepository = require('../repositories/roleRepository')
+const { ROLES, HTTP_STATUS, MESSAGES } = require('../common')
 
 // ─────────────────────────────────────────────
 // REGISTER
 // ─────────────────────────────────────────────
 exports.register = async (req, res) => {
   try {
-    const { name, email, password, role, regnum, department } = req.body
+    const { name, email, password, role, regnum, department, yearId, year, phone, batch, semester } = req.body
 
     // Name validation
     const nameValidation = validateName(name)
@@ -32,11 +34,11 @@ exports.register = async (req, res) => {
       })
     }
 
-    // Role restriction
-    const allowedRoles = ['student', 'staff']
-    const userRole = role || 'student'
-    if (!allowedRoles.includes(userRole)) {
-      return res.status(400).json({
+    // Role restriction against DB Roles table
+    const userRole = (role || ROLES.STUDENT).toLowerCase()
+    const isRoleInDb = await roleRepository.isValidRole(userRole)
+    if (!isRoleInDb || userRole === ROLES.ADMIN) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
         success: false,
         message: 'Invalid role',
       })
@@ -87,6 +89,11 @@ exports.register = async (req, res) => {
       regnum: normalizedRegnum,
       role: userRole,
       department,
+      yearId,
+      year,
+      phone: phone || '',
+      batch: batch || '',
+      semester: semester ? Number(semester) : null,
     })
 
     const token = generateToken(user._id, user.Role || user.role)
@@ -103,8 +110,13 @@ exports.register = async (req, res) => {
         departmentId: user.DepartmentId || user.departmentId || null,
         regnum: user.Regnum || user.regnum || '',
         studentUniqueId: user.StudentUniqueId || user.studentUniqueId || '',
+        studentRefId: user.StudentRefId || user.studentRefId || user.StudentUniqueId || '',
         uniqueId: user.StudentUniqueId || user.studentUniqueId || '',
         studentCode: user.StudentUniqueId || user.studentUniqueId || '',
+        yearId: user.YearId || user.yearId || null,
+        yearName: user.YearName || user.yearName || '',
+        yearCode: user.YearCode || user.yearCode || '',
+        yearNumber: user.YearNumber || user.yearNumber || null,
         avatar: user.Avatar || user.avatar || null,
         semester: user.Semester || user.semester || null,
         batch: user.Batch || user.batch || '',
@@ -153,7 +165,7 @@ exports.login = async (req, res) => {
     const userRole = user.Role || user.role
 
     // Handle Staff OTP Login
-    if (userRole === 'staff') {
+    if (userRole === ROLES.STAFF) {
       const otp = generateOtp()
       const hashedOtp = hashOtp(otp)
       const otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000) // 5 minutes
@@ -191,11 +203,20 @@ exports.login = async (req, res) => {
 
     // Normal Login (Student or Admin)
     const token = generateToken(user._id, userRole)
+    let adminToken = null
+    if (userRole === ROLES.ADMIN) {
+      adminToken = jwt.sign(
+        { type: 'admin-access', grantedAt: Date.now(), userId: user._id, role: ROLES.ADMIN },
+        process.env.JWT_SECRET,
+        { expiresIn: '10m' }
+      )
+    }
 
     res.status(200).json({
       success: true,
       requiresOtp: false,
       token,
+      adminToken,
       user: {
         _id: user._id,
         name: user.Name || user.name,
@@ -205,8 +226,13 @@ exports.login = async (req, res) => {
         departmentId: user.DepartmentId || user.departmentId || null,
         regnum: user.Regnum || user.regnum || '',
         studentUniqueId: user.StudentUniqueId || user.studentUniqueId || '',
+        studentRefId: user.StudentRefId || user.studentRefId || user.StudentUniqueId || '',
         uniqueId: user.StudentUniqueId || user.studentUniqueId || '',
         studentCode: user.StudentUniqueId || user.studentUniqueId || '',
+        yearId: user.YearId || user.yearId || null,
+        yearName: user.YearName || user.yearName || '',
+        yearCode: user.YearCode || user.yearCode || '',
+        yearNumber: user.YearNumber || user.yearNumber || null,
         avatar: user.Avatar || user.avatar || null,
         semester: user.Semester || user.semester || null,
         batch: user.Batch || user.batch || '',
@@ -374,7 +400,7 @@ exports.verifyStaffLoginOtp = async (req, res) => {
     }
 
     const user = await userRepository.findUserByEmail(email)
-    if (!user || (user.Role !== 'staff' && user.role !== 'staff')) {
+    if (!user || (user.Role !== ROLES.STAFF && user.role !== ROLES.STAFF)) {
       return res.status(400).json({ success: false, message: 'Invalid request' })
     }
 

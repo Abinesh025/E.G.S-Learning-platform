@@ -8,7 +8,7 @@ const trustServerCertificate = process.env.DB_TRUST_SERVER_CERTIFICATE !== 'fals
 // Construct ODBC connection string for msnodesqlv8
 let connectionString = `Driver={${odbcDriver}};Server=${server};Database=${database};TrustServerCertificate=${trustServerCertificate};`
 
-if (process.env.DB_USER && process.env.DB_PASSWORD) {
+if (process.env.DB_USER && process.env.DB_PASSWORD && process.env.DB_PASSWORD !== 'your_sql_password_here') {
   connectionString += `Uid=${process.env.DB_USER};Pwd=${process.env.DB_PASSWORD};`
 } else {
   connectionString += `Trusted_Connection=yes;`

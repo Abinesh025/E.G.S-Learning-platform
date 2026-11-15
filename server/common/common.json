@@ -1,0 +1,108 @@
+{
+  "ROLES": {
+    "ADMIN": "admin",
+    "STAFF": "staff",
+    "STUDENT": "student"
+  },
+  "ROLES_ARRAY": [
+    { "key": "ADMIN", "value": "admin", "label": "Admin", "id": 1 },
+    { "key": "STAFF", "value": "staff", "label": "Staff", "id": 2 },
+    { "key": "STUDENT", "value": "student", "label": "Student", "id": 3 }
+  ],
+  "ROLE_NAMES": {
+    "ADMIN": "Admin",
+    "STAFF": "Staff",
+    "STUDENT": "Student"
+  },
+  "ROLE_IDS": {
+    "ADMIN": 1,
+    "STAFF": 2,
+    "STUDENT": 3
+  },
+  "ACADEMIC_YEARS": {
+    "FIRST_YEAR": "First Year",
+    "SECOND_YEAR": "Second Year",
+    "THIRD_YEAR": "Third Year",
+    "FINAL_YEAR": "Final Year"
+  },
+  "ACADEMIC_YEARS_ARRAY": [
+    { "key": "FIRST_YEAR", "value": "First Year", "yearNumber": 1, "yearCode": "YR1" },
+    { "key": "SECOND_YEAR", "value": "Second Year", "yearNumber": 2, "yearCode": "YR2" },
+    { "key": "THIRD_YEAR", "value": "Third Year", "yearNumber": 3, "yearCode": "YR3" },
+    { "key": "FINAL_YEAR", "value": "Final Year", "yearNumber": 4, "yearCode": "YR4" }
+  ],
+  "STATUS": {
+    "ACTIVE": 1,
+    "INACTIVE": 0
+  },
+  "STATUS_ARRAY": [
+    { "key": "ACTIVE", "value": 1, "label": "Active" },
+    { "key": "INACTIVE", "value": 0, "label": "Inactive" }
+  ],
+  "MIGRATED_STATUS": {
+    "MIGRATED": 1,
+    "NOT_MIGRATED": 0
+  },
+  "MIGRATED_STATUS_ARRAY": [
+    { "key": "MIGRATED", "value": 1, "label": "Migrated" },
+    { "key": "NOT_MIGRATED", "value": 0, "label": "Not Migrated" }
+  ],
+  "SEMESTERS": [1, 2, 3, 4, 5, 6, 7, 8],
+  "SEMESTERS_ARRAY": [
+    { "key": "SEM_1", "value": 1, "label": "Semester 1" },
+    { "key": "SEM_2", "value": 2, "label": "Semester 2" },
+    { "key": "SEM_3", "value": 3, "label": "Semester 3" },
+    { "key": "SEM_4", "value": 4, "label": "Semester 4" },
+    { "key": "SEM_5", "value": 5, "label": "Semester 5" },
+    { "key": "SEM_6", "value": 6, "label": "Semester 6" },
+    { "key": "SEM_7", "value": 7, "label": "Semester 7" },
+    { "key": "SEM_8", "value": 8, "label": "Semester 8" }
+  ],
+  "DEPARTMENTS": {
+    "AIDS": "Artificial Intelligence and Data Science",
+    "BME": "Biomedical Engineering",
+    "CIVIL": "Civil Engineering",
+    "CSBS": "Computer Science and Business Systems",
+    "CSE": "Computer Science and Engineering",
+    "ECE": "Electronics and Communication Engineering",
+    "EEE": "Electrical and Electronics Engineering",
+    "IT": "Information Technology",
+    "MBA": "Master of Business Administration",
+    "MCA": "Master of Computer Applications",
+    "MECH": "Mechanical Engineering"
+  },
+  "DEPARTMENTS_ARRAY": [
+    { "key": "AIDS", "value": "Artificial Intelligence and Data Science", "code": "AIDS", "prefix": "ADR" },
+    { "key": "BME", "value": "Biomedical Engineering", "code": "BME", "prefix": "BMR" },
+    { "key": "CIVIL", "value": "Civil Engineering", "code": "CIVIL", "prefix": "CER" },
+    { "key": "CSBS", "value": "Computer Science and Business Systems", "code": "CSBS", "prefix": "BSR" },
+    { "key": "CSE", "value": "Computer Science and Engineering", "code": "CSE", "prefix": "CSR" },
+    { "key": "ECE", "value": "Electronics and Communication Engineering", "code": "ECE", "prefix": "ECR" },
+    { "key": "EEE", "value": "Electrical and Electronics Engineering", "code": "EEE", "prefix": "EER" },
+    { "key": "IT", "value": "Information Technology", "code": "IT", "prefix": "ITR" },
+    { "key": "MBA", "value": "Master of Business Administration", "code": "MBA", "prefix": "MBR" },
+    { "key": "MCA", "value": "Master of Computer Applications", "code": "MCA", "prefix": "MCR" },
+    { "key": "MECH", "value": "Mechanical Engineering", "code": "MECH", "prefix": "MER" }
+  ],
+  "HTTP_STATUS": {
+    "OK": 200,
+    "CREATED": 201,
+    "BAD_REQUEST": 400,
+    "UNAUTHORIZED": 401,
+    "FORBIDDEN": 403,
+    "NOT_FOUND": 404,
+    "CONFLICT": 409,
+    "INTERNAL_SERVER_ERROR": 500
+  },
+  "MESSAGES": {
+    "NOT_AUTHENTICATED": "Not authenticated",
+    "TOKEN_REQUIRED": "Not authorized, no token",
+    "TOKEN_FAILED": "Token failed or expired",
+    "USER_NOT_FOUND": "User not found",
+    "ACCESS_DENIED": "Access denied. Role not allowed",
+    "ADMIN_TOKEN_REQUIRED": "Admin access token required",
+    "ADMIN_SESSION_EXPIRED": "Admin session expired. Please re-enter password.",
+    "INVALID_ADMIN_TOKEN": "Invalid admin token",
+    "ROLE_NOT_FOUND_IN_DB": "Role not recognized by database role table"
+  }
+}
