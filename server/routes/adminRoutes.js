@@ -1,7 +1,14 @@
 const express = require("express");
 const router = express.Router();
+const multer = require("multer");
 const { verifyAdminToken } = require("../middleware/adminTokenMiddleware");
 const { uploadMaterial } = require("../config/cloudinary");
+
+// Multer memory storage for Excel files
+const uploadExcel = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+});
 
 const {
   // Dashboard
@@ -18,6 +25,9 @@ const {
   createStudent,
   updateStudent,
   deleteStudent,
+  validateBulkStudents,
+  uploadBulkStudents,
+  downloadStudentTemplate,
 
   // Materials
   getAllMaterials,
@@ -51,6 +61,9 @@ router.put("/staff/:id", updateStaff);
 router.delete("/staff/:id", deleteStaff);
 
 /* ── Students ── */
+router.get("/students/sample-template", downloadStudentTemplate);
+router.post("/students/bulk-validate", uploadExcel.single("file"), validateBulkStudents);
+router.post("/students/bulk-upload", uploadExcel.single("file"), uploadBulkStudents);
 router.get("/students", getAllStudents);
 router.post("/students", createStudent);
 router.put("/students/:id", updateStudent);
