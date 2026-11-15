@@ -1,0 +1,22 @@
+import common from './common.json';
+
+export const {
+  ROLES,
+  ROLES_ARRAY,
+  ROLE_NAMES,
+  ROLE_IDS,
+  ACADEMIC_YEARS,
+  ACADEMIC_YEARS_ARRAY,
+  STATUS,
+  STATUS_ARRAY,
+  MIGRATED_STATUS,
+  MIGRATED_STATUS_ARRAY,
+  SEMESTERS,
+  SEMESTERS_ARRAY,
+  DEPARTMENTS,
+  DEPARTMENTS_ARRAY,
+  HTTP_STATUS,
+  MESSAGES,
+} = common;
+
+export default common;

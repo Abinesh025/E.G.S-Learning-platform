@@ -36,9 +36,9 @@ function ProtectedRoute({ children, role }) {
 
   if (loading) return <LoadingScreen />
 
-  // Admin Security - Requires JWT token from session storage
+  // Admin Security - Requires JWT token from session storage or admin user
   if (role === 'admin') {
-    const hasAdminToken = !!sessionStorage.getItem('adminToken')
+    const hasAdminToken = !!sessionStorage.getItem('adminToken') || user?.role === 'admin'
     if (hasAdminToken) {
       return children
     }
