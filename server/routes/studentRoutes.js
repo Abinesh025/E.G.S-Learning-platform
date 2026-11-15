@@ -13,8 +13,9 @@ const {
 
 const { protectMe } = require('../middleware/authMiddleware')
 const { authorizeRoles } = require('../middleware/roleMiddleware')
+const { ROLES } = require('../common')
 
-router.use(protectMe, authorizeRoles('student'))
+router.use(protectMe, authorizeRoles(ROLES.STUDENT))
 
 router.get('/profile', getStudentProfile)
 router.put('/profile', updateStudentProfile)

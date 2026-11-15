@@ -17,10 +17,11 @@ const {
 
 const { protectMe } = require('../middleware/authMiddleware')
 const { authorizeRoles } = require('../middleware/roleMiddleware')
+const { ROLES } = require('../common')
 
 // ✅ FIXED
 router.use(protectMe)
-router.use(authorizeRoles('staff'))
+router.use(authorizeRoles(ROLES.STAFF))
 
 router.get('/profile', getStaffProfile)
 router.put('/profile', updateStaffProfile)

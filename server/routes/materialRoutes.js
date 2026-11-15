@@ -3,13 +3,14 @@ const router = express.Router()
 const { uploadMaterial, getMaterials, downloadMaterial } = require('../controllers/materialController')
 const { protectMe, protectAny } = require('../middleware/authMiddleware')
 const { authorizeRoles } = require('../middleware/roleMiddleware')
+const { ROLES } = require('../common')
 const { uploadMaterial: cloudinaryUpload } = require('../config/cloudinary')
 
 // Only staff can upload materials
 router.post(
   '/upload',
   protectMe,
-  authorizeRoles('staff', 'admin'),
+  authorizeRoles(ROLES.STAFF, ROLES.ADMIN),
   cloudinaryUpload.single('file'),
   uploadMaterial
 )

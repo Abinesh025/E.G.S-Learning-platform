@@ -10,19 +10,20 @@ const {
 
 const { protectMe } = require('../middleware/authMiddleware')
 const { authorizeRoles } = require('../middleware/roleMiddleware')
+const { ROLES } = require('../common')
 
 // Staff creates test
-router.post('/', protectMe, authorizeRoles('staff', 'admin'), createTest)
-router.get('/all', protectMe, authorizeRoles('staff', 'admin'), getTests)
+router.post('/', protectMe, authorizeRoles(ROLES.STAFF, ROLES.ADMIN), createTest)
+router.get('/all', protectMe, authorizeRoles(ROLES.STAFF, ROLES.ADMIN), getTests)
 
 // Students view tests
-router.get('/', protectMe, authorizeRoles('student'), getTests)
-router.get('/:id', protectMe, authorizeRoles('student'), getTestById)
+router.get('/', protectMe, authorizeRoles(ROLES.STUDENT), getTests)
+router.get('/:id', protectMe, authorizeRoles(ROLES.STUDENT), getTestById)
 
 // Student submits
-router.post('/:id/submit', protectMe, authorizeRoles('student'), submitTest)
+router.post('/:id/submit', protectMe, authorizeRoles(ROLES.STUDENT), submitTest)
 
 // Student results
-router.get('/results/me', protectMe, authorizeRoles('student'), getStudentResults)
+router.get('/results/me', protectMe, authorizeRoles(ROLES.STUDENT), getStudentResults)
 
 module.exports = router
