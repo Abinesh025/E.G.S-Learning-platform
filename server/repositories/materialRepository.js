@@ -99,12 +99,12 @@ exports.getMaterials = async ({ subject, unit, department, semester, course, upl
   const query = `
     SELECT 
       m.*,
-      u.UserId AS UploaderId,
+      u.StaffId AS UploaderId,
       u.Name AS UploaderName,
       u.Email AS UploaderEmail,
-      u.Role AS UploaderRole
+      'staff' AS UploaderRole
     FROM Materials m
-    LEFT JOIN Users u ON m.UploadedBy = u.UserId
+    LEFT JOIN Staff u ON m.UploadedBy = u.StaffId
     ${whereClause}
     ORDER BY m.CreatedAt DESC
   `
@@ -120,12 +120,12 @@ exports.getMaterialById = async (materialId) => {
     .query(`
       SELECT 
         m.*,
-        u.UserId AS UploaderId,
+        u.StaffId AS UploaderId,
         u.Name AS UploaderName,
         u.Email AS UploaderEmail,
-        u.Role AS UploaderRole
+        'staff' AS UploaderRole
       FROM Materials m
-      LEFT JOIN Users u ON m.UploadedBy = u.UserId
+      LEFT JOIN Staff u ON m.UploadedBy = u.StaffId
       WHERE m.MaterialId = @MaterialId
     `)
   return formatMaterial(result.recordset[0])

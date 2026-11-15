@@ -53,8 +53,8 @@ exports.createNotification = async ({
 }) => {
   const pool = await getPool()
   const result = await pool.request()
-    .input('SenderId', sql.Int, senderId)
-    .input('ReceiverId', sql.Int, receiverId)
+    .input('SenderId', sql.NVarChar(50), String(senderId))
+    .input('ReceiverId', sql.NVarChar(50), String(receiverId))
     .input('ReceiverRole', sql.VarChar(10), receiverRole)
     .input('Department', sql.NVarChar(100), department)
     .input('Type', sql.VarChar(30), type)
@@ -82,8 +82,8 @@ exports.createBatchNotifications = async (notifications = []) => {
     for (const n of notifications) {
       const request = new sql.Request(transaction)
       const result = await request
-        .input('SenderId', sql.Int, n.senderId)
-        .input('ReceiverId', sql.Int, n.receiverId)
+        .input('SenderId', sql.NVarChar(50), String(n.senderId))
+        .input('ReceiverId', sql.NVarChar(50), String(n.receiverId))
         .input('ReceiverRole', sql.VarChar(10), n.receiverRole)
         .input('Department', sql.NVarChar(100), n.department)
         .input('Type', sql.VarChar(30), n.type)
@@ -110,13 +110,23 @@ exports.createBatchNotifications = async (notifications = []) => {
 exports.getNotificationsByUser = async (userId) => {
   const pool = await getPool()
   const result = await pool.request()
-    .input('UserId', sql.Int, userId)
+    .input('UserId', sql.NVarChar(50), String(userId))
     .query(`
       SELECT 
         n.*,
-        s.Name AS SenderName, s.Email AS SenderEmail, s.Avatar AS SenderAvatar, s.Role AS SenderRole
+        COALESCE(st.Name, std.Name, a.Name, 'System') AS SenderName,
+        COALESCE(st.Email, std.Email, a.Email, '') AS SenderEmail,
+        COALESCE(st.Avatar, std.Avatar, a.Avatar, '') AS SenderAvatar,
+        CASE 
+          WHEN st.StaffId IS NOT NULL THEN 'staff'
+          WHEN std.StudentId IS NOT NULL THEN 'student'
+          WHEN a.AdminId IS NOT NULL THEN 'admin'
+          ELSE 'system'
+        END AS SenderRole
       FROM Notifications n
-      LEFT JOIN Users s ON n.SenderId = s.UserId
+      LEFT JOIN Staff st ON n.SenderId = CAST(st.StaffId AS NVARCHAR(50))
+      LEFT JOIN Students std ON n.SenderId = std.StudentId
+      LEFT JOIN Admins a ON n.SenderId = CAST(a.AdminId AS NVARCHAR(50))
       WHERE n.ReceiverId = @UserId
       ORDER BY n.CreatedAt DESC
     `)
@@ -127,7 +137,7 @@ exports.markAsRead = async (notificationId, userId) => {
   const pool = await getPool()
   const result = await pool.request()
     .input('NotificationId', sql.Int, notificationId)
-    .input('UserId', sql.Int, userId)
+    .input('UserId', sql.NVarChar(50), String(userId))
     .query(`
       UPDATE Notifications
       SET IsRead = 1, UpdatedAt = SYSUTCDATETIME()
@@ -141,7 +151,7 @@ exports.deleteNotification = async (notificationId, userId) => {
   const pool = await getPool()
   const result = await pool.request()
     .input('NotificationId', sql.Int, notificationId)
-    .input('UserId', sql.Int, userId)
+    .input('UserId', sql.NVarChar(50), String(userId))
     .query(`DELETE FROM Notifications WHERE NotificationId = @NotificationId AND ReceiverId = @UserId`)
   return result.rowsAffected[0] > 0
 }

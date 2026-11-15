@@ -48,8 +48,8 @@ exports.createMessage = async ({
 }) => {
   const pool = await getPool()
   const result = await pool.request()
-    .input('SenderId', sql.Int, senderId)
-    .input('ReceiverId', sql.Int, receiverId || null)
+    .input('SenderId', sql.NVarChar(50), String(senderId))
+    .input('ReceiverId', sql.NVarChar(50), receiverId ? String(receiverId) : null)
     .input('Room', sql.NVarChar(100), room || '')
     .input('Message', sql.NVarChar(sql.MAX), message || '')
     .input('MessageType', sql.VarChar(10), messageType || 'text')
@@ -66,6 +66,16 @@ exports.createMessage = async ({
   return await exports.getMessageById(inserted.MessageId)
 }
 
+const ACCOUNT_SOURCE = `
+  (
+    SELECT StudentId AS AccountId, Name, Email, Avatar, 'student' AS Role FROM Students
+    UNION ALL
+    SELECT CAST(StaffId AS NVARCHAR(50)) AS AccountId, Name, Email, Avatar, 'staff' AS Role FROM Staff
+    UNION ALL
+    SELECT CAST(AdminId AS NVARCHAR(50)) AS AccountId, Name, Email, Avatar, 'admin' AS Role FROM Admins
+  )
+`
+
 exports.getMessageById = async (messageId) => {
   const pool = await getPool()
   const result = await pool.request()
@@ -76,8 +86,8 @@ exports.getMessageById = async (messageId) => {
         s.Name AS SenderName, s.Email AS SenderEmail, s.Avatar AS SenderAvatar, s.Role AS SenderRole,
         r.Name AS ReceiverName, r.Email AS ReceiverEmail, r.Avatar AS ReceiverAvatar, r.Role AS ReceiverRole
       FROM Messages m
-      LEFT JOIN Users s ON m.SenderId = s.UserId
-      LEFT JOIN Users r ON m.ReceiverId = r.UserId
+      LEFT JOIN ${ACCOUNT_SOURCE} s ON m.SenderId = s.AccountId
+      LEFT JOIN ${ACCOUNT_SOURCE} r ON m.ReceiverId = r.AccountId
       WHERE m.MessageId = @MessageId
     `)
   return formatMessage(result.recordset[0])
@@ -86,16 +96,16 @@ exports.getMessageById = async (messageId) => {
 exports.getDirectMessages = async (userId1, userId2) => {
   const pool = await getPool()
   const result = await pool.request()
-    .input('User1', sql.Int, userId1)
-    .input('User2', sql.Int, userId2)
+    .input('User1', sql.NVarChar(50), String(userId1))
+    .input('User2', sql.NVarChar(50), String(userId2))
     .query(`
       SELECT 
         m.*,
         s.Name AS SenderName, s.Email AS SenderEmail, s.Avatar AS SenderAvatar, s.Role AS SenderRole,
         r.Name AS ReceiverName, r.Email AS ReceiverEmail, r.Avatar AS ReceiverAvatar, r.Role AS ReceiverRole
       FROM Messages m
-      LEFT JOIN Users s ON m.SenderId = s.UserId
-      LEFT JOIN Users r ON m.ReceiverId = r.UserId
+      LEFT JOIN ${ACCOUNT_SOURCE} s ON m.SenderId = s.AccountId
+      LEFT JOIN ${ACCOUNT_SOURCE} r ON m.ReceiverId = r.AccountId
       WHERE (m.SenderId = @User1 AND m.ReceiverId = @User2)
          OR (m.SenderId = @User2 AND m.ReceiverId = @User1)
       ORDER BY m.CreatedAt ASC
@@ -112,7 +122,7 @@ exports.getRoomMessages = async (room) => {
         m.*,
         s.Name AS SenderName, s.Email AS SenderEmail, s.Avatar AS SenderAvatar, s.Role AS SenderRole
       FROM Messages m
-      LEFT JOIN Users s ON m.SenderId = s.UserId
+      LEFT JOIN ${ACCOUNT_SOURCE} s ON m.SenderId = s.AccountId
       WHERE m.Room = @Room
       ORDER BY m.CreatedAt ASC
     `)
@@ -122,8 +132,8 @@ exports.getRoomMessages = async (room) => {
 exports.markMessagesAsRead = async (senderId, receiverId) => {
   const pool = await getPool()
   const result = await pool.request()
-    .input('SenderId', sql.Int, senderId)
-    .input('ReceiverId', sql.Int, receiverId)
+    .input('SenderId', sql.NVarChar(50), String(senderId))
+    .input('ReceiverId', sql.NVarChar(50), String(receiverId))
     .query(`
       UPDATE Messages
       SET IsRead = 1, UpdatedAt = SYSUTCDATETIME()

@@ -2,20 +2,22 @@ const { getPool, sql } = require('../config/db')
 
 const formatResult = (row) => {
   if (!row) return null
+  const studentId = row.StudentId || (row.student ? row.student.id || row.student._id : null)
   return {
     _id: row.ResultId,
     id: row.ResultId,
     ResultId: row.ResultId,
-    student: row.StudentId
+    student: studentId
       ? {
-          _id: row.StudentId,
-          id: row.StudentId,
+          _id: studentId,
+          id: studentId,
+          studentId: studentId,
           name: row.StudentName,
           email: row.StudentEmail,
           regnum: row.StudentRegnum || '',
-          studentUniqueId: row.StudentUniqueId || '',
-          uniqueId: row.StudentUniqueId || '',
-          studentCode: row.StudentUniqueId || '',
+          studentUniqueId: studentId,
+          uniqueId: studentId,
+          studentCode: studentId,
           department: row.StudentDept || '',
           batch: row.StudentBatch || '',
         }
@@ -57,7 +59,7 @@ const formatSubmission = (row) => {
 exports.findExistingResult = async (studentId, testId) => {
   const pool = await getPool()
   const result = await pool.request()
-    .input('StudentId', sql.Int, studentId)
+    .input('StudentId', sql.NVarChar(50), String(studentId))
     .input('TestId', sql.Int, testId)
     .query(`SELECT * FROM Results WHERE StudentId = @StudentId AND TestId = @TestId`)
   return formatResult(result.recordset[0])
@@ -82,7 +84,7 @@ exports.createSubmissionAndResult = async ({
     // 1. Insert Result
     const resReq = new sql.Request(transaction)
     const resResult = await resReq
-      .input('StudentId', sql.Int, studentId)
+      .input('StudentId', sql.NVarChar(50), String(studentId))
       .input('TestId', sql.Int, testId)
       .input('Score', sql.Decimal(5, 2), score)
       .input('TotalMarks', sql.Decimal(5, 2), totalMarks)
@@ -97,7 +99,7 @@ exports.createSubmissionAndResult = async ({
     // 2. Insert TestSubmission
     const subReq = new sql.Request(transaction)
     const subResult = await subReq
-      .input('StudentId', sql.Int, studentId)
+      .input('StudentId', sql.NVarChar(50), String(studentId))
       .input('TestId', sql.Int, testId)
       .input('Score', sql.Int, Math.round(score))
       .input('TotalQuestions', sql.Int, totalQuestions)
@@ -140,7 +142,7 @@ exports.createSubmissionAndResult = async ({
 exports.getResultsByStudent = async (studentId) => {
   const pool = await getPool()
   const result = await pool.request()
-    .input('StudentId', sql.Int, studentId)
+    .input('StudentId', sql.NVarChar(50), String(studentId))
     .query(`
       SELECT 
         r.*,
@@ -162,18 +164,17 @@ exports.getResultsByTest = async (testId) => {
     .query(`
       SELECT 
         r.*,
-        u.Name AS StudentName,
-        u.Email AS StudentEmail,
-        COALESCE(s.Regnum, u.Regnum, '') AS StudentRegnum,
-        COALESCE(s.StudentUniqueId, '') AS StudentUniqueId,
-        COALESCE(d.DepartmentName, u.Department, '') AS StudentDept,
-        COALESCE(s.Batch, u.Batch, '') AS StudentBatch,
+        s.Name AS StudentName,
+        s.Email AS StudentEmail,
+        s.Regnum AS StudentRegnum,
+        s.StudentId AS StudentId,
+        COALESCE(d.DepartmentName, '') AS StudentDept,
+        s.Batch AS StudentBatch,
         t.Title AS TestTitle,
         t.Subject AS TestSubject,
         t.Department AS TestDept
       FROM Results r
-      INNER JOIN Users u ON r.StudentId = u.UserId
-      LEFT JOIN Students s ON u.UserId = s.UserId
+      INNER JOIN Students s ON r.StudentId = s.StudentId
       LEFT JOIN Departments d ON s.DepartmentId = d.DepartmentId
       INNER JOIN Tests t ON r.TestId = t.TestId
       WHERE r.TestId = @TestId
@@ -189,11 +190,11 @@ exports.getAllResults = async ({ department, search } = {}) => {
 
   if (department) {
     request.input('Department', sql.NVarChar(100), department.trim())
-    conditions.push('(d.DepartmentName = @Department OR u.Department = @Department OR t.Department = @Department)')
+    conditions.push('(d.DepartmentName = @Department OR t.Department = @Department)')
   }
   if (search) {
     request.input('Search', sql.NVarChar(100), `%${search.trim()}%`)
-    conditions.push('(u.Name LIKE @Search OR s.Regnum LIKE @Search OR s.StudentUniqueId LIKE @Search OR u.Regnum LIKE @Search OR t.Title LIKE @Search)')
+    conditions.push('(s.Name LIKE @Search OR s.Regnum LIKE @Search OR s.StudentId LIKE @Search OR t.Title LIKE @Search)')
   }
 
   const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''
@@ -201,18 +202,17 @@ exports.getAllResults = async ({ department, search } = {}) => {
   const result = await request.query(`
     SELECT 
       r.*,
-      u.Name AS StudentName,
-      u.Email AS StudentEmail,
-      COALESCE(s.Regnum, u.Regnum, '') AS StudentRegnum,
-      COALESCE(s.StudentUniqueId, '') AS StudentUniqueId,
-      COALESCE(d.DepartmentName, u.Department, '') AS StudentDept,
-      COALESCE(s.Batch, u.Batch, '') AS StudentBatch,
+      s.Name AS StudentName,
+      s.Email AS StudentEmail,
+      s.Regnum AS StudentRegnum,
+      s.StudentId AS StudentId,
+      COALESCE(d.DepartmentName, '') AS StudentDept,
+      s.Batch AS StudentBatch,
       t.Title AS TestTitle,
       t.Subject AS TestSubject,
       t.Department AS TestDept
     FROM Results r
-    INNER JOIN Users u ON r.StudentId = u.UserId
-    LEFT JOIN Students s ON u.UserId = s.UserId
+    INNER JOIN Students s ON r.StudentId = s.StudentId
     LEFT JOIN Departments d ON s.DepartmentId = d.DepartmentId
     INNER JOIN Tests t ON r.TestId = t.TestId
     ${whereClause}

@@ -128,7 +128,7 @@ exports.getTests = async ({ department, createdBy } = {}) => {
       u.Name AS CreatorName,
       (SELECT COUNT(*) FROM TestQuestions WHERE TestId = t.TestId) AS QuestionCount
     FROM Tests t
-    LEFT JOIN Users u ON t.CreatedBy = u.UserId
+    LEFT JOIN Staff u ON t.CreatedBy = u.StaffId
     ${whereClause}
     ORDER BY t.CreatedAt DESC
   `
@@ -157,7 +157,7 @@ exports.getTestById = async (testId, includeCorrectAnswer = false) => {
     .query(`
       SELECT t.*, u.Name AS CreatorName
       FROM Tests t
-      LEFT JOIN Users u ON t.CreatedBy = u.UserId
+      LEFT JOIN Staff u ON t.CreatedBy = u.StaffId
       WHERE t.TestId = @TestId
     `)
 

@@ -91,24 +91,26 @@ exports.generateStudentUniqueId = async (departmentId, customRequest = null) => 
   const dept = deptResult.recordset[0]
   const prefix = (dept.PrefixCode || 'STU').trim().toUpperCase()
 
-  // 2. Query maximum sequence currently assigned for this prefix
+  // 2. Query maximum sequence currently assigned for this prefix in Students(StudentId)
   const seqReq = customRequest || pool.request()
   const seqResult = await seqReq
     .input('PrefixPattern', sql.VarChar(15), `${prefix}%`)
     .input('PrefixLen', sql.Int, prefix.length)
     .query(`
-      SELECT MAX(CAST(SUBSTRING(StudentUniqueId, @PrefixLen + 1, 10) AS INT)) AS MaxSeq
+      SELECT MAX(CAST(SUBSTRING(StudentId, @PrefixLen + 1, 10) AS INT)) AS MaxSeq
       FROM Students
-      WHERE StudentUniqueId LIKE @PrefixPattern
-        AND ISNUMERIC(SUBSTRING(StudentUniqueId, @PrefixLen + 1, 10)) = 1
+      WHERE StudentId LIKE @PrefixPattern
+        AND ISNUMERIC(SUBSTRING(StudentId, @PrefixLen + 1, 10)) = 1
     `)
 
   const currentMax = seqResult.recordset[0].MaxSeq || 0
   const nextSeq = currentMax + 1
-  const studentUniqueId = `${prefix}${String(nextSeq).padStart(3, '0')}`
+  const studentId = `${prefix}${String(nextSeq).padStart(3, '0')}`
 
   return {
-    studentUniqueId,
+    studentId,
+    studentUniqueId: studentId,
+    studentRefId: studentId,
     prefix,
     sequenceNumber: nextSeq,
     departmentName: dept.DepartmentName,
