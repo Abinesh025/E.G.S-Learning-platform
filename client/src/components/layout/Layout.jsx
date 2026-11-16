@@ -20,6 +20,7 @@ import {
   Briefcase
 } from 'lucide-react'
 import clsx from 'clsx';
+import { PLACEMENT_ALLOWED_DEPARTMENT_IDS, PLACEMENT_ALLOWED_DEPARTMENTS } from '../../common';
 
 const studentNav = [
   { to: '/student', label: 'Dashboard', icon: LayoutDashboard, end: true },
@@ -258,7 +259,15 @@ export default function Layout({ children }) {
         })}
       </nav>
 
-      {user?.role === 'student' && (user.department === 'Computer Science and Engineering' || user.department === 'Computer Science and Business Systems' || user.department === 'Electronics and Communication Engineering') && (
+      {/* Placement Preparation Module: Enabled for Departments 1, 2, 3, 4 (CSE, CSBS, AIDS, IT) */}
+      {(() => {
+        const userDeptId = Number(user?.departmentId || user?.DepartmentId || user?.deptId || user?.DeptId);
+        const userDeptName = user?.department || user?.Department || user?.departmentName || '';
+        const isPlacementAllowed = user?.role === 'student' && (
+          PLACEMENT_ALLOWED_DEPARTMENT_IDS.includes(userDeptId) ||
+          PLACEMENT_ALLOWED_DEPARTMENTS.includes(userDeptName)
+        );
+        return isPlacementAllowed ? (
         <div className="border-t border-ink-800 px-3 py-2 space-y-0.5">
           <button
             title={collapsed ? "Placement Preparation" : undefined}
@@ -313,7 +322,8 @@ export default function Layout({ children }) {
             </div>
           )}
         </div>
-      )}
+        ) : null
+      })()}
 
       {/* User area removed from sidebar */}
     </aside>

@@ -526,6 +526,27 @@ async function initDatabase() {
         );
         PRINT 'Table Notifications created.';
       END
+      `,
+
+      // 15. PasswordResets Table (Dedicated for secure password recovery across all user roles)
+      `
+      IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'PasswordResets')
+      BEGIN
+        CREATE TABLE PasswordResets (
+            id INT IDENTITY(1,1) NOT NULL,
+            email NVARCHAR(255) NOT NULL,
+            otpHash NVARCHAR(255) NOT NULL,
+            expiresAt DATETIME2 NOT NULL,
+            verified BIT NOT NULL CONSTRAINT DF_PasswordResets_Verified DEFAULT 0,
+            resetToken NVARCHAR(500) NULL,
+            createdAt DATETIME2 NOT NULL CONSTRAINT DF_PasswordResets_CreatedAt DEFAULT SYSUTCDATETIME(),
+            updatedAt DATETIME2 NOT NULL CONSTRAINT DF_PasswordResets_UpdatedAt DEFAULT SYSUTCDATETIME(),
+
+            CONSTRAINT PK_PasswordResets PRIMARY KEY CLUSTERED (id)
+        );
+        CREATE NONCLUSTERED INDEX IX_PasswordResets_Email ON PasswordResets(email);
+        PRINT 'Table PasswordResets created.';
+      END
       `
     ]
 

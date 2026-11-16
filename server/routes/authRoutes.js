@@ -10,7 +10,10 @@ const {
   verifyStaffLoginOtp,
   sendPasswordChangeOtp,
   verifyPasswordChangeOtp,
-  changePassword
+  changePassword,
+  forgotPassword,
+  verifyResetOtp,
+  resetPassword
 } = require('../controllers/authController')
 const { protectMe } = require('../middleware/authMiddleware')
 
@@ -47,5 +50,10 @@ router.post('/verify-staff-login-otp', verifyStaffLoginOtp)
 router.post('/send-password-change-otp', protectMe, sendPasswordChangeOtp)
 router.post('/verify-password-change-otp', protectMe, verifyPasswordChangeOtp)
 router.put('/change-password', protectMe, changePassword)
+
+// ── Public Forgot Password Flow (No auth required) ──
+router.post('/forgot-password', forgotPassword)
+router.post('/verify-reset-otp', verifyResetOtp)
+router.post('/reset-password', resetPassword)
 
 module.exports = router

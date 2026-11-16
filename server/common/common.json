@@ -19,6 +19,14 @@
     "STAFF": 2,
     "STUDENT": 3
   },
+  "PLACEMENT_ALLOWED_DEPARTMENT_IDS": [1, 2, 3, 4],
+  "PLACEMENT_ALLOWED_DEPARTMENTS": [
+    "Computer Science and Engineering",
+    "Computer Science and Business Systems",
+    "Artificial Intelligence and Data Science",
+    "Information Technology"
+  ],
+  "PLACEMENT_ALLOWED_DEPARTMENT_CODES": ["CSE", "CSBS", "AIDS", "IT"],
   "ACADEMIC_YEARS": {
     "FIRST_YEAR": "First Year",
     "SECOND_YEAR": "Second Year",
@@ -103,6 +111,11 @@
     "ADMIN_TOKEN_REQUIRED": "Admin access token required",
     "ADMIN_SESSION_EXPIRED": "Admin session expired. Please re-enter password.",
     "INVALID_ADMIN_TOKEN": "Invalid admin token",
-    "ROLE_NOT_FOUND_IN_DB": "Role not recognized by database role table"
+    "ROLE_NOT_FOUND_IN_DB": "Role not recognized by database role table",
+    "PLACEMENT_ACCESS_DENIED": "Placement module is only accessible to students of departments: CSE, CSBS, AIDS, and IT (Departments 1, 2, 3, 4).",
+    "FORGOT_PASSWORD_SENT": "If an account exists with this email, a verification code has been sent.",
+    "OTP_VERIFIED": "Verification code verified successfully.",
+    "PASSWORD_RESET_SUCCESS": "Password has been reset successfully. Please log in with your new password.",
+    "INVALID_OTP": "Invalid or expired verification code."
   }
 }

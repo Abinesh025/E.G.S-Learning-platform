@@ -5,6 +5,7 @@ import { ThemeProvider } from './context/ThemeContext'
 import Layout  from './components/layout/Layout'
 import LandingPage from './pages/LandingPage'
 import { LoginPage, RegisterPage } from './pages/auth/AuthPages'
+import ForgotPassword from './pages/auth/ForgotPassword'
 import ChangePassword from './pages/auth/ChangePassword'
 import StudentDashboard from './pages/student/StudentDashboard'
 import StudentMaterials from './pages/student/StudentMaterials'
@@ -29,8 +30,9 @@ import { useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import Ai from './pages/DeptContent/Ai'
 import EEE from './pages/DeptContent/EEE'
+import { PLACEMENT_ALLOWED_DEPARTMENT_IDS, PLACEMENT_ALLOWED_DEPARTMENTS } from './common'
 
-function ProtectedRoute({ children, role }) {
+function ProtectedRoute({ children, role, requirePlacementDept = false }) {
   const { user, loading } = useAuth()
   const location = useLocation()
 
@@ -52,6 +54,18 @@ function ProtectedRoute({ children, role }) {
     const redirect = user.role === 'staff' ? '/staff' : user.role === 'admin' ? '/admin' : '/student'
     return <Navigate to={redirect} replace />
   }
+
+  // Department check for placement module (Departments 1, 2, 3, 4 only)
+  if (requirePlacementDept) {
+    const userDeptId = Number(user?.departmentId || user?.DepartmentId || user?.deptId || user?.DeptId)
+    const userDeptName = user?.department || user?.Department || user?.departmentName || ''
+    const isAllowed = PLACEMENT_ALLOWED_DEPARTMENT_IDS.includes(userDeptId) || PLACEMENT_ALLOWED_DEPARTMENTS.includes(userDeptName)
+    if (!isAllowed) {
+      toast.error('Placement module is restricted to departments: CSE, CSBS, AIDS, and IT (Depts 1-4).', { id: 'placement-restricted' })
+      return <Navigate to="/student" replace />
+    }
+  }
+
   return children
 }
 
@@ -74,6 +88,7 @@ const routeTitles = {
   '/': 'Home',
   '/login': 'Login',
   '/register': 'Register',
+  '/forgot-password': 'Forgot Password',
   '/admin-login': 'Admin Login',
   '/student': 'Student Dashboard',
   '/student/materials': 'Materials',
@@ -166,6 +181,7 @@ function AppRoutes() {
         <Route path="/" element={adminGuard(user ? <Navigate to={homeRedirect} replace /> : <LandingPage />)} />
         <Route path="/login" element={adminGuard(user ? <Navigate to={homeRedirect} replace /> : <LoginPage />)} />
         <Route path="/register" element={adminGuard(user ? <Navigate to={homeRedirect} replace /> : <RegisterPage />)} />
+        <Route path="/forgot-password" element={adminGuard(user ? <Navigate to={homeRedirect} replace /> : <ForgotPassword />)} />
         <Route path="/admin-login" element={<AdminLogin />} />
 
         {/* Student routes */}
@@ -178,11 +194,11 @@ function AppRoutes() {
         <Route path="/student/eee" element={<ProtectedRoute role="student"><Layout><EEE /></Layout></ProtectedRoute>} />
         <Route path="/student/mech" element={<ProtectedRoute role="student"><Layout><MechEnggSyllabus /></Layout></ProtectedRoute>} />
         <Route path="/student/civil" element={<ProtectedRoute role="student"><Layout><CivilEnggTopics /></Layout></ProtectedRoute>} />
-        <Route path="/student/placement/on-campus" element={<ProtectedRoute role="student"><Layout><Rounds /></Layout></ProtectedRoute>} />
-        <Route path="/student/placement/off-campus" element={<ProtectedRoute role="student"><Layout><PlacementOffCampus /></Layout></ProtectedRoute>} />
-        <Route path="/student/placement/aptitude-test" element={<ProtectedRoute role="student"><Layout><PlacementOnCampus /></Layout></ProtectedRoute>} />
-        <Route path="/student/placement/registration" element={<ProtectedRoute role="student"><Layout><RegisterRounds /></Layout></ProtectedRoute>} />
-        <Route path="/student/placement/coding-rounds" element={<ProtectedRoute role="student"><Layout><CodingRounds /></Layout></ProtectedRoute>} />
+        <Route path="/student/placement/on-campus" element={<ProtectedRoute role="student" requirePlacementDept={true}><Layout><Rounds /></Layout></ProtectedRoute>} />
+        <Route path="/student/placement/off-campus" element={<ProtectedRoute role="student" requirePlacementDept={true}><Layout><PlacementOffCampus /></Layout></ProtectedRoute>} />
+        <Route path="/student/placement/aptitude-test" element={<ProtectedRoute role="student" requirePlacementDept={true}><Layout><PlacementOnCampus /></Layout></ProtectedRoute>} />
+        <Route path="/student/placement/registration" element={<ProtectedRoute role="student" requirePlacementDept={true}><Layout><RegisterRounds /></Layout></ProtectedRoute>} />
+        <Route path="/student/placement/coding-rounds" element={<ProtectedRoute role="student" requirePlacementDept={true}><Layout><CodingRounds /></Layout></ProtectedRoute>} />
         <Route path="/student/resume" element={<ProtectedRoute role="student"><Layout><Resume /></Layout></ProtectedRoute>} />
 
         {/* Staff routes */}
