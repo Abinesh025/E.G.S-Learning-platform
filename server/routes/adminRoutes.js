@@ -19,6 +19,9 @@ const {
   createStaff,
   updateStaff,
   deleteStaff,
+  validateBulkStaff,
+  uploadBulkStaff,
+  downloadStaffTemplate,
 
   // Students
   getAllStudents,
@@ -55,6 +58,9 @@ router.use(verifyAdminToken);
 router.get("/dashboard", getDashboardStats);
 
 /* ── Staff ── */
+router.get("/staff/sample-template", downloadStaffTemplate);
+router.post("/staff/bulk-validate", uploadExcel.single("file"), validateBulkStaff);
+router.post("/staff/bulk-upload", uploadExcel.single("file"), uploadBulkStaff);
 router.get("/staff", getAllStaff);
 router.post("/staff", createStaff);
 router.put("/staff/:id", updateStaff);

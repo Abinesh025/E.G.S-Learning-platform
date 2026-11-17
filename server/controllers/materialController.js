@@ -1,6 +1,6 @@
 const materialRepository = require('../repositories/materialRepository')
 const userRepository = require('../repositories/userRepository')
-const { cloudinary } = require('../config/cloudinary')
+const { cloudinary, getCloudinaryDownloadUrl } = require('../config/cloudinary')
 const https = require('https')
 const http = require('http')
 const path = require('path')
@@ -108,9 +108,9 @@ exports.uploadMaterial = async (req, res) => {
 
     const parsedSemester = semester ? Number(semester) : null
 
-    let fileUrl = req.file.path
-    if (!fileUrl.startsWith('http')) {
-      const parts = req.file.path.split(/[\/\\]/)
+    let fileUrl = req.file.path || req.file.secure_url || req.file.url
+    if (fileUrl && !fileUrl.startsWith('http')) {
+      const parts = fileUrl.split(/[\/\\]/)
       const filename = parts[parts.length - 1]
       fileUrl = `/uploads/materials/${filename}`
     }
@@ -180,11 +180,15 @@ exports.deleteMaterial = async (req, res) => {
     // Delete from Cloudinary if it's a Cloudinary URL
     if (material.fileUrl && material.fileUrl.includes('cloudinary')) {
       try {
-        const urlParts = material.fileUrl.split('/')
-        const filenameWithExt = urlParts[urlParts.length - 1]
-        const folder = urlParts[urlParts.length - 2]
-        const publicId = `${folder}/${filenameWithExt.split('.')[0]}`
-        await cloudinary.uploader.destroy(publicId, { resource_type: 'raw' })
+        const match = material.fileUrl.match(/\/([^\/]+)\/upload\/(?:v\d+\/)?(.+)$/)
+        if (match) {
+          const resType = match[1]
+          let publicId = match[2]
+          if (resType !== 'raw') {
+            publicId = publicId.replace(/\.[^/.]+$/, '')
+          }
+          await cloudinary.uploader.destroy(publicId, { resource_type: resType })
+        }
       } catch (cloudErr) {
         console.log('Cloudinary delete warning:', cloudErr.message)
       }
@@ -250,8 +254,9 @@ exports.downloadMaterial = async (req, res) => {
     const knownMime = MIME_MAP[ext] || DB_MIME_MAP[dbType]
 
     if (fileUrl.startsWith('http')) {
-      const proto = fileUrl.startsWith('https') ? https : http
-      proto.get(fileUrl, (fileRes) => {
+      const targetUrl = fileUrl.includes('cloudinary.com') ? getCloudinaryDownloadUrl(fileUrl) : fileUrl
+      const proto = targetUrl.startsWith('https') ? https : http
+      proto.get(targetUrl, (fileRes) => {
         const contentType = knownMime || fileRes.headers['content-type'] || 'application/octet-stream'
         res.setHeader('Content-Type', contentType)
         res.setHeader('Content-Disposition', `${disposition}; filename="${filename}"`)

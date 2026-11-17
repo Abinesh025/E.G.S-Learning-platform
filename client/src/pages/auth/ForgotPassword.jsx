@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { KeyRound, Mail, Lock, Eye, EyeOff, ArrowRight, ArrowLeft, CheckCircle2, ShieldCheck, RefreshCw } from 'lucide-react'
+import { KeyRound, Mail, Lock, Eye, EyeOff, ArrowRight, ArrowLeft, CheckCircle2, ShieldCheck, RefreshCw, AlertCircle } from 'lucide-react'
 import api from '../../services/api'
 import toast from 'react-hot-toast'
 
@@ -10,6 +10,8 @@ export default function ForgotPassword() {
   const [loading, setLoading] = useState(false)
   const [email, setEmail] = useState('')
   const [otp, setOtp] = useState('')
+  const [devOtp, setDevOtp] = useState('')
+  const [emailSent, setEmailSent] = useState(true)
   const [resetToken, setResetToken] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -54,12 +56,13 @@ export default function ForgotPassword() {
     setLoading(true)
     try {
       const res = await api.post('/api/auth/forgot-password', { email: trimmedEmail })
-      toast.success(res.data.message || 'Verification code sent to your email!')
+      toast.success(res.data.message || 'Verification code sent!')
       
-      // Auto-fill devOtp in development if provided
       if (res.data.devOtp) {
-        console.log('🔑 [DEV] Received OTP:', res.data.devOtp)
+        setDevOtp(res.data.devOtp)
+        setOtp(res.data.devOtp) // Auto-populate for seamless local testing
       }
+      setEmailSent(res.data.emailSent ?? true)
 
       setStep(2)
       setResendCooldown(60) // 60 seconds cooldown
@@ -208,6 +211,22 @@ export default function ForgotPassword() {
           {/* STEP 2: OTP Verification Form */}
           {step === 2 && (
             <form onSubmit={handleVerifyOtp} className="space-y-4">
+              {devOtp && (
+                <div className="p-3.5 bg-amber-500/10 border border-amber-500/25 rounded-xl text-xs text-amber-300 flex items-start gap-2.5">
+                  <AlertCircle size={18} className="text-amber-400 shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="font-semibold text-amber-200">
+                      Verification Code: <span className="font-mono text-base font-bold tracking-widest text-lime-400 ml-1">{devOtp}</span>
+                    </p>
+                    <p className="text-[11px] text-amber-300/80 mt-1">
+                      {emailSent
+                        ? 'A confirmation copy was also dispatched to your email.'
+                        : 'Code auto-filled. (To receive live emails in your inbox, set your real Gmail credentials in server/.env).'}
+                    </p>
+                  </div>
+                </div>
+              )}
+
               <div>
                 <label className="label">6-Digit Verification Code</label>
                 <input

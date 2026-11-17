@@ -3,6 +3,7 @@ const materialRepository = require('../repositories/materialRepository')
 const testRepository = require('../repositories/testRepository')
 const submissionRepository = require('../repositories/submissionRepository')
 const bulkStudentService = require('../services/bulkStudentService')
+const bulkStaffService = require('../services/bulkStaffService')
 const { getPool } = require('../config/db')
 const bcrypt = require('bcryptjs')
 const { getIo } = require('../socket/chatSocket')
@@ -630,6 +631,111 @@ exports.downloadStudentTemplate = (req, res) => {
     res.setHeader(
       'Content-Disposition',
       'attachment; filename="students_bulk_upload_template.xlsx"'
+    )
+    res.send(buffer)
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to generate template',
+    })
+  }
+}
+
+/**
+ * Validates uploaded Excel file for bulk staff import without saving
+ */
+exports.validateBulkStaff = async (req, res) => {
+  try {
+    if (!req.file || !req.file.buffer) {
+      return res.status(400).json({
+        success: false,
+        message: 'No file uploaded. Please upload a valid .xlsx, .xls, or .csv file.',
+      })
+    }
+
+    const validationResult = await bulkStaffService.validateStaffExcelBuffer(req.file.buffer)
+
+    res.status(200).json({
+      success: true,
+      data: validationResult,
+    })
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    })
+  }
+}
+
+/**
+ * Inserts bulk staff from uploaded file or pre-validated list
+ */
+exports.uploadBulkStaff = async (req, res) => {
+  try {
+    let validStaff = []
+
+    if (req.file && req.file.buffer) {
+      const validation = await bulkStaffService.validateStaffExcelBuffer(req.file.buffer)
+      const skipErrors = req.body.skipErrors === 'true' || req.body.skipErrors === true
+
+      if (!validation.valid && !skipErrors) {
+        return res.status(400).json({
+          success: false,
+          message: `File contains ${validation.errorCount} error(s). Please review errors or enable skip invalid rows.`,
+          data: validation,
+        })
+      }
+
+      validStaff = validation.validStaff
+    } else if (Array.isArray(req.body.staff)) {
+      validStaff = req.body.staff
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: 'No file or valid staff data provided',
+      })
+    }
+
+    if (validStaff.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No valid staff available to import',
+      })
+    }
+
+    const result = await bulkStaffService.insertBulkStaff(validStaff)
+
+    const io = getIo()
+    if (io) io.emit('data_changed', 'staff')
+
+    res.status(201).json({
+      success: true,
+      message: `Successfully imported ${result.insertedCount} staff member(s) into database.`,
+      count: result.insertedCount,
+      data: result.staff,
+    })
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    })
+  }
+}
+
+/**
+ * Downloads sample Excel template for bulk staff upload
+ */
+exports.downloadStaffTemplate = (req, res) => {
+  try {
+    const buffer = bulkStaffService.generateSampleStaffExcelTemplate()
+
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename="staff_bulk_upload_template.xlsx"'
     )
     res.send(buffer)
   } catch (error) {

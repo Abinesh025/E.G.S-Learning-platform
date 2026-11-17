@@ -1,11 +1,12 @@
 import api from '../../services/api'
 import { getSocket } from '../../services/socket'
 import { useAuth } from '../../context/AuthContext'
-import { Pencil, Trash2, Plus, CheckCircle, XCircle } from 'lucide-react'
+import { Pencil, Trash2, Plus, CheckCircle, XCircle, FileSpreadsheet } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useEffect, useState } from 'react'
 import { validateRegNum } from '../../utils/regNumValidator'
 import { DEPART_CHECKER } from '../../utils/deptChecker'
+import BulkStaffUploadModal from '../../components/admin/BulkStaffUploadModal'
 
 const empty = { name: '', email: '', phone: '', department: '', password: '', regnum: '' }
 
@@ -14,6 +15,7 @@ export default function AdminStaff() {
   const [staff, setStaff]       = useState([])
   const [loading, setLoading]   = useState(true)
   const [showModal, setShowModal] = useState(false)
+  const [showBulkModal, setShowBulkModal] = useState(false)
   const [editing, setEditing]   = useState(null)
   const [form, setForm]         = useState(empty)
   const [search, setSearch]     = useState('')
@@ -104,9 +106,17 @@ export default function AdminStaff() {
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-semibold text-ink-100">Staff</h1>
-        <button onClick={openAdd} className="btn-primary flex items-center gap-2 text-sm">
-          <Plus size={15} /> Add Staff
-        </button>
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={() => setShowBulkModal(true)}
+            className="btn-secondary flex items-center gap-2 text-sm py-2 px-3.5"
+          >
+            <FileSpreadsheet size={16} /> Bulk Upload (Excel)
+          </button>
+          <button onClick={openAdd} className="btn-primary flex items-center gap-2 text-sm py-2 px-3.5">
+            <Plus size={16} /> Add Staff
+          </button>
+        </div>
       </div>
 
       <div className="bg-ink-900 border border-ink-800 rounded-xl overflow-hidden">
@@ -251,6 +261,13 @@ export default function AdminStaff() {
           </div>
         </div>
       )}
+
+      {/* Bulk Staff Upload Modal */}
+      <BulkStaffUploadModal
+        isOpen={showBulkModal}
+        onClose={() => setShowBulkModal(false)}
+        onSuccess={fetch}
+      />
     </div>
   )
 }

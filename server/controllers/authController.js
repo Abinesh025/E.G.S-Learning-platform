@@ -601,8 +601,9 @@ exports.forgotPassword = async (req, res) => {
     await passwordResetRepository.createResetRecord(normalizedEmail, hashedOtp, expiresAt)
 
     // Send Email
+    let emailStatus = { sent: false }
     try {
-      await sendEmail({
+      emailStatus = await sendEmail({
         email: normalizedEmail,
         subject: 'Password Reset Verification Code - E.G.S Academic Hub',
         message: `Hello ${user.name},\n\nYour password reset verification code is: ${otp}\n\nThis code will expire in 10 minutes.\nIf you did not request this, please ignore this email.`,
@@ -619,16 +620,19 @@ exports.forgotPassword = async (req, res) => {
         `,
       })
     } catch (emailErr) {
-      console.warn('⚠️ sendEmail notice:', emailErr.message)
-      console.log(`🔑 [PASSWORD RESET OTP] ${normalizedEmail}: ${otp}`)
+      console.warn('⚠️ sendEmail error:', emailErr.message)
+      emailStatus = { sent: false, error: emailErr.message }
     }
+
+    console.log(`🔑 [PASSWORD RESET OTP] ${normalizedEmail}: ${otp}`)
 
     const responsePayload = {
       success: true,
-      message: MESSAGES.FORGOT_PASSWORD_SENT,
-    }
-    if (process.env.NODE_ENV !== 'production') {
-      responsePayload.devOtp = otp
+      emailSent: emailStatus.sent,
+      message: emailStatus.sent
+        ? 'A 6-digit verification code has been sent to your email.'
+        : 'Verification code generated (Test mode: email delivery not configured in server/.env).',
+      devOtp: otp,
     }
 
     return res.status(HTTP_STATUS.OK).json(responsePayload)
