@@ -20,6 +20,8 @@ export const {
   DEPARTMENTS_ARRAY,
   HTTP_STATUS,
   MESSAGES,
+  PAGINATION,
+  PAGINATION_LIMIT_OPTIONS,
 } = common;
 
 export default common;

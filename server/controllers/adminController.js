@@ -205,7 +205,41 @@ exports.deleteStaff = async (req, res) => {
 // ─────────────────────────────────────────────
 exports.getAllStudents = async (req, res) => {
   try {
-    const students = await userRepository.getAllUsers({ role: ROLES.STUDENT })
+    const { page, limit, search, department, departmentId, yearId, year, isActive } = req.query
+    if (page !== undefined || limit !== undefined) {
+      const pageNum = Number(page) || 1
+      const limitNum = Number(limit) || 50
+      const result = await userRepository.getAllUsers({
+        role: ROLES.STUDENT,
+        search,
+        department,
+        departmentId,
+        yearId,
+        year,
+        isActive,
+        page: pageNum,
+        limit: limitNum,
+      })
+      return res.status(200).json({
+        success: true,
+        count: result.users.length,
+        total: result.totalCount,
+        page: result.page,
+        limit: result.limit,
+        totalPages: result.totalPages,
+        data: result.users,
+      })
+    }
+
+    const students = await userRepository.getAllUsers({
+      role: ROLES.STUDENT,
+      search,
+      department,
+      departmentId,
+      yearId,
+      year,
+      isActive,
+    })
     res.status(200).json({
       success: true,
       count: students.length,
@@ -312,7 +346,37 @@ exports.deleteStudent = async (req, res) => {
 // ─────────────────────────────────────────────
 exports.getAllStaff = async (req, res) => {
   try {
-    const staff = await userRepository.getAllUsers({ role: ROLES.STAFF })
+    const { page, limit, search, department, departmentId, isActive } = req.query
+    if (page !== undefined || limit !== undefined) {
+      const pageNum = Number(page) || 1
+      const limitNum = Number(limit) || 50
+      const result = await userRepository.getAllUsers({
+        role: ROLES.STAFF,
+        search,
+        department,
+        departmentId,
+        isActive,
+        page: pageNum,
+        limit: limitNum,
+      })
+      return res.status(200).json({
+        success: true,
+        count: result.users.length,
+        total: result.totalCount,
+        page: result.page,
+        limit: result.limit,
+        totalPages: result.totalPages,
+        data: result.users,
+      })
+    }
+
+    const staff = await userRepository.getAllUsers({
+      role: ROLES.STAFF,
+      search,
+      department,
+      departmentId,
+      isActive,
+    })
     res.status(200).json({ success: true, count: staff.length, data: staff })
   } catch (error) {
     res.status(500).json({ success: false, message: error.message })

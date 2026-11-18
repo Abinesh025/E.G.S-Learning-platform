@@ -6,7 +6,8 @@ import toast from 'react-hot-toast'
 import { useEffect, useState } from 'react'
 import { DEPART_CHECKER } from '../../utils/deptChecker'
 import BulkStudentUploadModal from '../../components/admin/BulkStudentUploadModal'
-import { ACADEMIC_YEARS_ARRAY, STATUS, MIGRATED_STATUS } from '../../common'
+import Pagination from '../../components/common/Pagination'
+import { ACADEMIC_YEARS_ARRAY, STATUS, MIGRATED_STATUS, PAGINATION } from '../../common'
 
 const empty = { name: '', email: '', phone: '', regnum: '', batch: '', department: '', year: 'First Year', password: '', isActive: STATUS.ACTIVE }
 
@@ -21,6 +22,8 @@ export default function AdminStudents() {
   const [search, setSearch]     = useState('')
   const [departmentFilter, setDepartmentFilter] = useState('')
   const [yearFilter, setYearFilter] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize]       = useState(PAGINATION?.DEFAULT_LIMIT || 50)
     
   const fetch = () => {
     setLoading(true)
@@ -95,6 +98,9 @@ export default function AdminStudents() {
     (yearFilter === '' || s.yearName === yearFilter || s.yearCode === yearFilter)
   )
 
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
+  const paginatedStudents = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+
   const ACADEMIC_YEARS = ACADEMIC_YEARS_ARRAY.map(yr => yr.value)
 
   return (
@@ -116,11 +122,16 @@ export default function AdminStudents() {
 
       <div className="bg-ink-900 border border-ink-800 rounded-xl overflow-hidden">
         <div className="p-4 border-b border-ink-800 flex flex-col sm:flex-row gap-3">
-          <input className="input w-full sm:w-64 text-sm" placeholder="Search students..." value={search} onChange={e => setSearch(e.target.value)} />
+          <input
+            className="input w-full sm:w-64 text-sm"
+            placeholder="Search students..."
+            value={search}
+            onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
+          />
           <select 
             className="input w-full sm:w-48 text-sm"
             value={departmentFilter}
-            onChange={e => setDepartmentFilter(e.target.value)}
+            onChange={e => { setDepartmentFilter(e.target.value); setCurrentPage(1); }}
           >
             <option value="">All Departments</option>
             {Object.keys(DEPART_CHECKER).map(dept => (
@@ -130,7 +141,7 @@ export default function AdminStudents() {
           <select 
             className="input w-full sm:w-40 text-sm"
             value={yearFilter}
-            onChange={e => setYearFilter(e.target.value)}
+            onChange={e => { setYearFilter(e.target.value); setCurrentPage(1); }}
           >
             <option value="">All Years</option>
             {ACADEMIC_YEARS.map(yr => (
@@ -142,69 +153,85 @@ export default function AdminStudents() {
         {loading ? (
           <p className="text-ink-500 text-sm p-4">Loading...</p>
         ) : (
-          <div className="overflow-x-auto w-full">
-            <table className="w-full text-sm whitespace-nowrap">
-              <thead className="text-ink-500 text-xs uppercase border-b border-ink-800">
-              <tr>
-                <th className="px-5 py-3 text-left">Name</th>
-                <th className="px-5 py-3 text-left">Department</th>
-                <th className="px-5 py-3 text-left">Student ID</th>
-                <th className="px-5 py-3 text-left">Reg Num</th>
-                <th className="px-5 py-3 text-left">Year</th>
-                <th className="px-5 py-3 text-left">Batch</th>
-                <th className="px-5 py-3 text-left">IsActive</th>
-                <th className="px-5 py-3 text-left">IsMigrated</th>
-                <th className="px-5 py-3 text-left sticky right-0 bg-ink-900 border-l border-ink-800 z-10 shadow-[-4px_0_10px_-4px_rgba(0,0,0,0.5)]">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map(s => (
-                <tr key={s._id} className="border-t border-ink-800 hover:bg-ink-800/40">
-                  <td className="px-5 py-3">
-                    <p className="text-ink-100 font-medium">{s.name}</p>
-                    <p className="text-ink-500 text-xs">{s.email}</p>
-                  </td>
-                  <td className="px-5 py-3 text-ink-300">{s.department || '—'}</td>
-                  <td className="px-5 py-3 text-ink-300 font-mono text-xs">
-                    {s.studentId || s.studentRefId || s.studentUniqueId || s.uniqueId ? (
-                      <span className="px-2 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20 font-semibold tracking-wider">
-                        {s.studentId || s.studentRefId || s.studentUniqueId || s.uniqueId}
-                      </span>
-                    ) : '—'}
-                  </td>
-                  <td className="px-5 py-3 text-ink-300">{s.regnum || '—'}</td>
-                  <td className="px-5 py-3 text-ink-300 font-medium">
-                    <span className="px-2 py-0.5 rounded bg-lime-400/10 text-lime-400 border border-lime-400/20 text-xs font-semibold">
-                      {s.yearName || s.yearCode || 'First Year'}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3 text-ink-300">{s.batch || '—'}</td>
-                  <td className="px-5 py-3">
-                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-semibold ${Number(s.isActive) === 1 ? 'bg-lime-400/10 text-lime-400 border border-lime-400/20' : 'bg-red-400/10 text-red-400 border border-red-400/20'}`} title={Number(s.isActive) === 1 ? 'Active (1)' : 'Inactive (0)'}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${Number(s.isActive) === 1 ? 'bg-lime-400' : 'bg-red-400'}`}></span>
-                      {Number(s.isActive) === 1 ? '1' : '0'}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3">
-                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-semibold ${Number(s.isMigrated) === 1 ? 'bg-purple-400/10 text-purple-400 border border-purple-400/20' : 'bg-ink-800 text-ink-400 border border-ink-700'}`} title={Number(s.isMigrated) === 1 ? 'Migrated (1)' : 'Not Migrated (0)'}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${Number(s.isMigrated) === 1 ? 'bg-purple-400' : 'bg-ink-500'}`}></span>
-                      {Number(s.isMigrated) === 1 ? '1' : '0'}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3 sticky right-0 bg-ink-900 border-l border-ink-800 z-10 shadow-[-4px_0_10px_-4px_rgba(0,0,0,0.5)]">
-                    <div className="flex gap-2">
-                      <button onClick={() => openEdit(s)} className="btn-ghost p-1.5"><Pencil size={14} /></button>
-                      <button onClick={() => handleDelete(s._id)} className="btn-ghost p-1.5 text-red-400 hover:text-red-300"><Trash2 size={14} /></button>
-                    </div>
-                  </td>
+          <>
+            <div className="overflow-x-auto w-full">
+              <table className="w-full text-sm whitespace-nowrap">
+                <thead className="text-ink-500 text-xs uppercase border-b border-ink-800">
+                <tr>
+                  <th className="px-5 py-3 text-left">Name</th>
+                  <th className="px-5 py-3 text-left">Department</th>
+                  <th className="px-5 py-3 text-left">Student ID</th>
+                  <th className="px-5 py-3 text-left">Reg Num</th>
+                  <th className="px-5 py-3 text-left">Year</th>
+                  <th className="px-5 py-3 text-left">Batch</th>
+                  <th className="px-5 py-3 text-left">IsActive</th>
+                  <th className="px-5 py-3 text-left">IsMigrated</th>
+                  <th className="px-5 py-3 text-left sticky right-0 bg-ink-900 border-l border-ink-800 z-10 shadow-[-4px_0_10px_-4px_rgba(0,0,0,0.5)]">Actions</th>
                 </tr>
-              ))}
-              {filtered.length === 0 && (
-                <tr><td colSpan={9} className="px-5 py-8 text-center text-ink-500">No students found</td></tr>
-              )}
-            </tbody>
-          </table>
-          </div>
+              </thead>
+              <tbody>
+                {paginatedStudents.map(s => (
+                  <tr key={s._id} className="border-t border-ink-800 hover:bg-ink-800/40">
+                    <td className="px-5 py-3">
+                      <p className="text-ink-100 font-medium">{s.name}</p>
+                      <p className="text-ink-500 text-xs">{s.email}</p>
+                    </td>
+                    <td className="px-5 py-3 text-ink-300">{s.department || '—'}</td>
+                    <td className="px-5 py-3 text-ink-300 font-mono text-xs">
+                      {s.studentId || s.studentRefId || s.studentUniqueId || s.uniqueId ? (
+                        <span className="px-2 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20 font-semibold tracking-wider">
+                          {s.studentId || s.studentRefId || s.studentUniqueId || s.uniqueId}
+                        </span>
+                      ) : '—'}
+                    </td>
+                    <td className="px-5 py-3 text-ink-300">{s.regnum || '—'}</td>
+                    <td className="px-5 py-3 text-ink-300 font-medium">
+                      <span className="px-2 py-0.5 rounded bg-lime-400/10 text-lime-400 border border-lime-400/20 text-xs font-semibold">
+                        {s.yearName || s.yearCode || 'First Year'}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3 text-ink-300">{s.batch || '—'}</td>
+                    <td className="px-5 py-3">
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-semibold ${Number(s.isActive) === 1 ? 'bg-lime-400/10 text-lime-400 border border-lime-400/20' : 'bg-red-400/10 text-red-400 border border-red-400/20'}`} title={Number(s.isActive) === 1 ? 'Active (1)' : 'Inactive (0)'}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${Number(s.isActive) === 1 ? 'bg-lime-400' : 'bg-red-400'}`}></span>
+                        {Number(s.isActive) === 1 ? '1' : '0'}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3">
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-semibold ${Number(s.isMigrated) === 1 ? 'bg-purple-400/10 text-purple-400 border border-purple-400/20' : 'bg-ink-800 text-ink-400 border border-ink-700'}`} title={Number(s.isMigrated) === 1 ? 'Migrated (1)' : 'Not Migrated (0)'}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${Number(s.isMigrated) === 1 ? 'bg-purple-400' : 'bg-ink-500'}`}></span>
+                        {Number(s.isMigrated) === 1 ? '1' : '0'}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3 sticky right-0 bg-ink-900 border-l border-ink-800 z-10 shadow-[-4px_0_10px_-4px_rgba(0,0,0,0.5)]">
+                      <div className="flex gap-2">
+                        <button onClick={() => openEdit(s)} className="btn-ghost p-1.5"><Pencil size={14} /></button>
+                        <button onClick={() => handleDelete(s._id)} className="btn-ghost p-1.5 text-red-400 hover:text-red-300"><Trash2 size={14} /></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {filtered.length === 0 && (
+                  <tr><td colSpan={9} className="px-5 py-8 text-center text-ink-500">No students found</td></tr>
+                )}
+              </tbody>
+            </table>
+            </div>
+
+            {/* Pagination Controls */}
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={filtered.length}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={(newSize) => {
+                setPageSize(newSize)
+                setCurrentPage(1)
+              }}
+              itemLabel="students"
+            />
+          </>
         )}
       </div>
 

@@ -7,6 +7,8 @@ import { useEffect, useState } from 'react'
 import { validateRegNum } from '../../utils/regNumValidator'
 import { DEPART_CHECKER } from '../../utils/deptChecker'
 import BulkStaffUploadModal from '../../components/admin/BulkStaffUploadModal'
+import Pagination from '../../components/common/Pagination'
+import { PAGINATION } from '../../common'
 
 const empty = { name: '', email: '', phone: '', department: '', password: '', regnum: '' }
 
@@ -20,6 +22,8 @@ export default function AdminStaff() {
   const [form, setForm]         = useState(empty)
   const [search, setSearch]     = useState('')
   const [departmentFilter, setDepartmentFilter] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize]       = useState(PAGINATION?.DEFAULT_LIMIT || 50)
 
  
   const fetch = () => {
@@ -98,9 +102,13 @@ export default function AdminStaff() {
 
   const filtered = staff.filter(s =>
     (s.name.toLowerCase().includes(search.toLowerCase()) ||
-    s.email.toLowerCase().includes(search.toLowerCase())) &&
+    s.email.toLowerCase().includes(search.toLowerCase()) ||
+    (s.regnum && s.regnum.toLowerCase().includes(search.toLowerCase()))) &&
     (departmentFilter === '' || s.department === departmentFilter)
   )
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
+  const paginatedStaff = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize)
 
   return (
     <div className="p-6">
@@ -125,12 +133,12 @@ export default function AdminStaff() {
             className="input w-full sm:w-64 text-sm"
             placeholder="Search staff..."
             value={search}
-            onChange={e => setSearch(e.target.value)}
+            onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
           />
           <select 
             className="input w-full sm:w-48 text-sm"
             value={departmentFilter}
-            onChange={e => setDepartmentFilter(e.target.value)}
+            onChange={e => { setDepartmentFilter(e.target.value); setCurrentPage(1); }}
           >
             <option value="">All Departments</option>
             {Object.keys(DEPART_CHECKER).map(dept => (
@@ -142,53 +150,69 @@ export default function AdminStaff() {
         {loading ? (
           <p className="text-ink-500 text-sm p-4">Loading...</p>
         ) : (
-          <div className="overflow-x-auto w-full">
-            <table className="w-full text-sm whitespace-nowrap">
-              <thead className="text-ink-500 text-xs uppercase border-b border-ink-800">
-              <tr>
-                <th className="px-5 py-3 text-left">Name</th>
-                <th className="px-5 py-3 text-left">Reg. No</th>
-                <th className="px-5 py-3 text-left">Department</th>
-                <th className="px-5 py-3 text-left">Phone</th>
-                <th className="px-5 py-3 text-left">Status</th>
-                <th className="px-5 py-3 text-left sticky right-0 bg-ink-900 border-l border-ink-800 z-10 shadow-[-4px_0_10px_-4px_rgba(0,0,0,0.5)]">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map(s => (
-                <tr key={s._id} className="border-t border-ink-800 hover:bg-ink-800/40">
-                  <td className="px-5 py-3">
-                    <p className="text-ink-100 font-medium">{s.name}</p>
-                    <p className="text-ink-500 text-xs">{s.email}</p>
-                  </td>
-                  <td className="px-5 py-3">
-                    {s.regnum ? (
-                      <span className="badge tag-sky text-xs font-mono">{s.regnum}</span>
-                    ) : (
-                      <span className="text-ink-600 text-xs">—</span>
-                    )}
-                  </td>
-                  <td className="px-5 py-3 text-ink-300">{s.department || '—'}</td>
-                  <td className="px-5 py-3 text-ink-300">{s.phone || '—'}</td>
-                  <td className="px-5 py-3">
-                    <span className={`badge text-xs ${s.isActive !== false ? 'tag-lime' : 'tag-red'}`}>
-                      {s.isActive !== false ? 'Active' : 'Inactive'}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3 sticky right-0 bg-ink-900 border-l border-ink-800 z-10 shadow-[-4px_0_10px_-4px_rgba(0,0,0,0.5)]">
-                    <div className="flex gap-2">
-                      <button onClick={() => openEdit(s)} className="btn-ghost p-1.5"><Pencil size={14} /></button>
-                      <button onClick={() => handleDelete(s._id)} className="btn-ghost p-1.5 text-red-400 hover:text-red-300"><Trash2 size={14} /></button>
-                    </div>
-                  </td>
+          <>
+            <div className="overflow-x-auto w-full">
+              <table className="w-full text-sm whitespace-nowrap">
+                <thead className="text-ink-500 text-xs uppercase border-b border-ink-800">
+                <tr>
+                  <th className="px-5 py-3 text-left">Name</th>
+                  <th className="px-5 py-3 text-left">Reg. No</th>
+                  <th className="px-5 py-3 text-left">Department</th>
+                  <th className="px-5 py-3 text-left">Phone</th>
+                  <th className="px-5 py-3 text-left">Status</th>
+                  <th className="px-5 py-3 text-left sticky right-0 bg-ink-900 border-l border-ink-800 z-10 shadow-[-4px_0_10px_-4px_rgba(0,0,0,0.5)]">Actions</th>
                 </tr>
-              ))}
-              {filtered.length === 0 && (
-                <tr><td colSpan={5} className="px-5 py-8 text-center text-ink-500">No staff found</td></tr>
-              )}
-            </tbody>
-          </table>
-          </div>
+              </thead>
+              <tbody>
+                {paginatedStaff.map(s => (
+                  <tr key={s._id} className="border-t border-ink-800 hover:bg-ink-800/40">
+                    <td className="px-5 py-3">
+                      <p className="text-ink-100 font-medium">{s.name}</p>
+                      <p className="text-ink-500 text-xs">{s.email}</p>
+                    </td>
+                    <td className="px-5 py-3">
+                      {s.regnum ? (
+                        <span className="badge tag-sky text-xs font-mono">{s.regnum}</span>
+                      ) : (
+                        <span className="text-ink-600 text-xs">—</span>
+                      )}
+                    </td>
+                    <td className="px-5 py-3 text-ink-300">{s.department || '—'}</td>
+                    <td className="px-5 py-3 text-ink-300">{s.phone || '—'}</td>
+                    <td className="px-5 py-3">
+                      <span className={`badge text-xs ${s.isActive !== false ? 'tag-lime' : 'tag-red'}`}>
+                        {s.isActive !== false ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3 sticky right-0 bg-ink-900 border-l border-ink-800 z-10 shadow-[-4px_0_10px_-4px_rgba(0,0,0,0.5)]">
+                      <div className="flex gap-2">
+                        <button onClick={() => openEdit(s)} className="btn-ghost p-1.5"><Pencil size={14} /></button>
+                        <button onClick={() => handleDelete(s._id)} className="btn-ghost p-1.5 text-red-400 hover:text-red-300"><Trash2 size={14} /></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {filtered.length === 0 && (
+                  <tr><td colSpan={6} className="px-5 py-8 text-center text-ink-500">No staff found</td></tr>
+                )}
+              </tbody>
+            </table>
+            </div>
+
+            {/* Pagination Controls */}
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={filtered.length}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={(newSize) => {
+                setPageSize(newSize)
+                setCurrentPage(1)
+              }}
+              itemLabel="staff"
+            />
+          </>
         )}
       </div>
 

@@ -618,7 +618,7 @@ exports.updateOtp = async (userId, { otpHash, otpExpiresAt, otpPurpose, otpVerif
   return await exports.findUserById(idStr, resolvedRole)
 }
 
-exports.getAllUsers = async ({ role, department, departmentId, yearId, year, search, isActive } = {}) => {
+exports.getAllUsers = async ({ role, department, departmentId, yearId, year, search, isActive, page, limit } = {}) => {
   const pool = await getPool()
   const request = pool.request()
   const conditions = []
@@ -657,6 +657,34 @@ exports.getAllUsers = async ({ role, department, departmentId, yearId, year, sea
   }
 
   const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''
+
+  if (page !== undefined || limit !== undefined) {
+    const pageNum = Math.max(1, Number(page) || 1)
+    const limitNum = Math.max(1, Number(limit) || 50)
+    const offset = (pageNum - 1) * limitNum
+
+    request.input('Offset', sql.Int, offset)
+    request.input('PageLimit', sql.Int, limitNum)
+
+    const result = await request.query(`
+      ${UNIFIED_ACCOUNTS_CTE}
+      SELECT *, COUNT(*) OVER() AS TotalRowsCount
+      FROM UnifiedAccounts
+      ${whereClause}
+      ORDER BY CreatedAt DESC
+      OFFSET @Offset ROWS FETCH NEXT @PageLimit ROWS ONLY
+    `)
+
+    const totalCount = result.recordset.length > 0 ? result.recordset[0].TotalRowsCount : 0
+    return {
+      users: result.recordset.map(formatUser),
+      totalCount,
+      page: pageNum,
+      limit: limitNum,
+      totalPages: Math.ceil(totalCount / limitNum),
+    }
+  }
+
   const result = await request.query(`
     ${UNIFIED_ACCOUNTS_CTE}
     SELECT * FROM UnifiedAccounts

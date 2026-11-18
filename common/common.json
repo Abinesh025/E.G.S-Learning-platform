@@ -117,5 +117,16 @@
     "OTP_VERIFIED": "Verification code verified successfully.",
     "PASSWORD_RESET_SUCCESS": "Password has been reset successfully. Please log in with your new password.",
     "INVALID_OTP": "Invalid or expired verification code."
-  }
+  },
+  "PAGINATION": {
+    "DEFAULT_PAGE": 1,
+    "DEFAULT_LIMIT": 50,
+    "LIMIT_OPTIONS": [25, 50, 100, 200]
+  },
+  "PAGINATION_LIMIT_OPTIONS": [
+    { "key": "LIMIT_25", "value": 25, "label": "25 per page" },
+    { "key": "LIMIT_50", "value": 50, "label": "50 per page" },
+    { "key": "LIMIT_100", "value": 100, "label": "100 per page" },
+    { "key": "LIMIT_200", "value": 200, "label": "200 per page" }
+  ]
 }
