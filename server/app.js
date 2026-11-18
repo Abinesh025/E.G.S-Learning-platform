@@ -51,6 +51,11 @@ app.use('/api/notifications', notificationRoutes)
 app.use('/api/departments', departmentRoutes)
 app.use('/api/years', yearRoutes)
 
+// 🛡️ Admin login aliases for browser navigation & API requests
+const { verifyPassword } = require('./controllers/authController')
+app.get('/api/admin-login', (req, res) => res.redirect('/admin-login'))
+app.post('/api/admin-login', verifyPassword)
+
 // ❤️ Root
 app.get('/', (req, res) => {
   res.send('E.G.S Learning Platform API is running...')

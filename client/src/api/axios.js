@@ -1,4 +1,5 @@
 import axios from "axios";
+import { STORAGE_KEYS } from "../common";
 
 // Create axios instance
 const axiosInstance = axios.create({
@@ -13,7 +14,7 @@ const axiosInstance = axios.create({
 // Request Interceptor (optional - add token)
 axiosInstance.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("token"); // if you store JWT
+    const token = localStorage.getItem(STORAGE_KEYS?.TOKEN || "token"); // if you store JWT
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;

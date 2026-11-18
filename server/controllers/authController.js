@@ -1,6 +1,11 @@
 const userRepository = require('../repositories/userRepository')
 const bcrypt = require('bcryptjs')
-const generateToken = require('../config/jwt')
+const {
+  generateToken,
+  generateAccessToken,
+  generateRefreshToken,
+  verifyRefreshToken,
+} = require('../config/jwt')
 const { validateRegNum } = require('../utils/regNumValidator')
 const { validateName } = require('../utils/nameValidator')
 const { validatePassword } = require('../utils/passwordValidator')
@@ -9,7 +14,7 @@ const sendEmail = require('../utils/sendEmail')
 const jwt = require('jsonwebtoken')
 const roleRepository = require('../repositories/roleRepository')
 const passwordResetRepository = require('../repositories/passwordResetRepository')
-const { ROLES, HTTP_STATUS, MESSAGES } = require('../common')
+const { ROLES, HTTP_STATUS, MESSAGES, TOKEN_CONFIG } = require('../common')
 
 // ─────────────────────────────────────────────
 // REGISTER
@@ -97,11 +102,15 @@ exports.register = async (req, res) => {
       semester: semester ? Number(semester) : null,
     })
 
-    const token = generateToken(user._id, user.Role || user.role)
+    const staffRole = user.Role || user.role
+    const accessToken = generateAccessToken(user._id, staffRole)
+    const refreshToken = generateRefreshToken(user._id, staffRole)
 
     res.status(201).json({
       success: true,
-      token,
+      token: accessToken,
+      accessToken,
+      refreshToken,
       user: {
         _id: user._id,
         name: user.Name || user.name,
@@ -203,7 +212,8 @@ exports.login = async (req, res) => {
     }
 
     // Normal Login (Student or Admin)
-    const token = generateToken(user._id, userRole)
+    const accessToken = generateAccessToken(user._id, userRole)
+    const refreshToken = generateRefreshToken(user._id, userRole)
     let adminToken = null
     if (userRole === ROLES.ADMIN) {
       adminToken = jwt.sign(
@@ -216,7 +226,9 @@ exports.login = async (req, res) => {
     res.status(200).json({
       success: true,
       requiresOtp: false,
-      token,
+      token: accessToken,
+      accessToken,
+      refreshToken,
       adminToken,
       user: {
         _id: user._id,
@@ -429,12 +441,15 @@ exports.verifyStaffLoginOtp = async (req, res) => {
       otpVerified: true,
     })
 
-    const userRole = user.Role || user.role
-    const token = generateToken(user._id, userRole)
+    const staffRole = user.Role || user.role
+    const accessToken = generateAccessToken(user._id, staffRole)
+    const refreshToken = generateRefreshToken(user._id, staffRole)
 
     res.status(200).json({
       success: true,
-      token,
+      token: accessToken,
+      accessToken,
+      refreshToken,
       user: {
         _id: user._id,
         name: user.Name || user.name,
@@ -781,6 +796,89 @@ exports.resetPassword = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: error.message,
+    })
+  }
+}
+
+// ─────────────────────────────────────────────
+// REFRESH TOKEN
+// ─────────────────────────────────────────────
+exports.refreshToken = async (req, res) => {
+  try {
+    const rawRefreshToken = req.body?.refreshToken || req.headers['x-refresh-token']
+
+    if (!rawRefreshToken) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
+        success: false,
+        message: MESSAGES.REFRESH_TOKEN_REQUIRED || 'Refresh token is required',
+      })
+    }
+
+    let decoded
+    try {
+      decoded = verifyRefreshToken(rawRefreshToken)
+    } catch (err) {
+      return res.status(HTTP_STATUS.UNAUTHORIZED).json({
+        success: false,
+        message: MESSAGES.INVALID_REFRESH_TOKEN || 'Invalid or expired refresh token',
+      })
+    }
+
+    if (!decoded || decoded.userID === undefined || decoded.userID === null) {
+      return res.status(HTTP_STATUS.UNAUTHORIZED).json({
+        success: false,
+        message: MESSAGES.INVALID_REFRESH_TOKEN || 'Invalid or expired refresh token',
+      })
+    }
+
+    if (decoded.tokenType && decoded.tokenType !== (TOKEN_CONFIG?.REFRESH_TOKEN_TYPE || 'refresh')) {
+      return res.status(HTTP_STATUS.UNAUTHORIZED).json({
+        success: false,
+        message: MESSAGES.INVALID_TOKEN_TYPE || 'Invalid token type',
+      })
+    }
+
+    let user
+    if (decoded.userID === 0 && decoded.role === ROLES.ADMIN) {
+      user = { _id: 0, Name: 'Administrator', Email: 'admin@egspec.edu.in', Role: ROLES.ADMIN }
+    } else {
+      user = await userRepository.findUserById(decoded.userID, decoded.role)
+    }
+
+    if (!user) {
+      return res.status(HTTP_STATUS.UNAUTHORIZED).json({
+        success: false,
+        message: MESSAGES.USER_NOT_FOUND,
+      })
+    }
+
+    const userRole = decoded.role || user.Role || user.role
+    const newAccessToken = generateAccessToken(user._id, userRole)
+    const newRefreshToken = generateRefreshToken(user._id, userRole)
+
+    return res.status(HTTP_STATUS.OK).json({
+      success: true,
+      message: MESSAGES.TOKEN_REFRESHED_SUCCESS || 'Token refreshed successfully',
+      token: newAccessToken,
+      accessToken: newAccessToken,
+      refreshToken: newRefreshToken,
+      user: {
+        _id: user._id,
+        name: user.Name || user.name,
+        email: user.Email || user.email,
+        role: userRole,
+        department: user.Department || user.department || '',
+        departmentId: user.DepartmentId || user.departmentId || null,
+        regnum: user.Regnum || user.regnum || '',
+        avatar: user.Avatar || user.avatar || null,
+        semester: user.Semester || user.semester || null,
+      },
+    })
+  } catch (error) {
+    console.error('Error in refreshToken controller:', error)
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: error.message || 'Internal server error',
     })
   }
 }

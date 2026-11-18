@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const userRepository = require('../repositories/userRepository');
 const roleRepository = require('../repositories/roleRepository');
-const { ROLES, HTTP_STATUS, MESSAGES } = require('../common');
+const { ROLES, HTTP_STATUS, MESSAGES, TOKEN_CONFIG } = require('../common');
 
 exports.protectMe = async (req, res, next) => {
   try {
@@ -22,6 +22,11 @@ exports.protectMe = async (req, res, next) => {
 
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    // Refresh token cannot be used directly as an access token
+    if (decoded.tokenType && decoded.tokenType !== (TOKEN_CONFIG?.ACCESS_TOKEN_TYPE || 'access')) {
+      return res.status(HTTP_STATUS.UNAUTHORIZED).json({ message: MESSAGES.TOKEN_FAILED });
+    }
 
     // Validate that role exists in database Roles table
     if (decoded.role) {
@@ -77,6 +82,11 @@ exports.protectAny = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(bearerToken, process.env.JWT_SECRET);
+
+    // Refresh token cannot be used directly as an access token
+    if (decoded.tokenType && decoded.tokenType !== (TOKEN_CONFIG?.ACCESS_TOKEN_TYPE || 'access')) {
+      return res.status(HTTP_STATUS.UNAUTHORIZED).json({ message: MESSAGES.TOKEN_FAILED });
+    }
 
     // Validate role in DB
     if (decoded.role) {

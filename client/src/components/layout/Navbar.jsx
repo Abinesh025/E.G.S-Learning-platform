@@ -9,6 +9,7 @@ import { getSocket } from '../../services/socket'
 import toast from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
 import clsx from 'clsx'
+import { STORAGE_KEYS } from '../../common'
 
 export default function Navbar({ onMenuClick, onEditProfile, onLogout, onExitAdmin, isAdminRoute, sidebarCollapsed }) {
     const { user } = useAuth()
@@ -46,7 +47,7 @@ export default function Navbar({ onMenuClick, onEditProfile, onLogout, onExitAdm
         if (user && (user.role === 'student' || user.role === 'staff')) {
             fetchNotifications();
             
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem(STORAGE_KEYS?.TOKEN || 'token');
             const socket = getSocket(token);
             
             socket.emit('join', user._id);

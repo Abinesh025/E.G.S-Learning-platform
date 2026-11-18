@@ -13,7 +13,8 @@ const {
   changePassword,
   forgotPassword,
   verifyResetOtp,
-  resetPassword
+  resetPassword,
+  refreshToken
 } = require('../controllers/authController')
 const { protectMe } = require('../middleware/authMiddleware')
 
@@ -43,6 +44,8 @@ const uploadAvatar = multer({
 
 router.post('/register', register)
 router.post('/login', login)
+router.post('/admin-login', verifyPassword)
+router.post('/refresh-token', refreshToken)
 router.get('/profile', protectMe, getMe)
 router.post('/verify-password', verifyPassword)
 router.put('/profile', protectMe, uploadAvatar.single('avatar'), updateProfile)

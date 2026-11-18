@@ -22,6 +22,9 @@ export const {
   MESSAGES,
   PAGINATION,
   PAGINATION_LIMIT_OPTIONS,
+  TOKEN_CONFIG,
+  STORAGE_KEYS,
+  AUTH_ENDPOINTS,
 } = common;
 
 export default common;
