@@ -1,11 +1,15 @@
 import api from '../../services/api'
 import { getSocket } from '../../services/socket'
 import { useAuth } from '../../context/AuthContext'
-import { Pencil, Trash2, Plus, Download, Eye, ArrowLeft } from 'lucide-react'
+import { Pencil, Trash2, Plus, Download, Eye, ArrowLeft, Upload } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { useState, useEffect } from 'react'
-import MaterialViewer from '../../components/MaterialViewer' // Added missing import for useState and useEffect
+import MaterialViewer from '../../components/MaterialViewer'
+import BulkMaterialUploadModal from '../../components/admin/BulkMaterialUploadModal'
+import LoadingSpinner from '../../components/common/LoadingSpinner'
+import Pagination from '../../components/common/Pagination'
+import { PAGINATION } from '../../common'
 
 const empty = { title: '', description: '', subject: '', department: '', unit: '', topic: '', fileType: 'pdf' }
 
@@ -14,9 +18,12 @@ export default function AdminMaterials() {
   const [materials, setMaterials] = useState([])
   const [loading, setLoading]   = useState(true)
   const [showModal, setShowModal] = useState(false)
+  const [showBulkModal, setShowBulkModal] = useState(false)
   const [editing, setEditing]   = useState(null)
   const [form, setForm]         = useState(empty)
   const [search, setSearch]     = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize]       = useState(PAGINATION?.DEFAULT_LIMIT || 50)
   const [file, setFile]         = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const [selectedMaterial, setSelectedMaterial] = useState(null)
@@ -125,6 +132,9 @@ export default function AdminMaterials() {
     m.subject?.toLowerCase().includes(search.toLowerCase())
   )
 
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
+  const paginatedMaterials = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       <Link to="/admin" className="inline-flex items-center gap-2 text-ink-400 hover:text-sky-400 transition-colors mb-2 text-sm font-500">
@@ -132,68 +142,96 @@ export default function AdminMaterials() {
       </Link>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-semibold text-ink-100">Materials</h1>
-        <button onClick={openAdd} className="btn-primary flex items-center gap-2 text-sm bg-sky-500 hover:bg-sky-400">
-          <Plus size={15} /> Add Material
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowBulkModal(true)}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium bg-ink-800 hover:bg-ink-700 text-ink-200 border border-ink-700 transition"
+          >
+            <Upload size={15} className="text-sky-400" /> Bulk Upload
+          </button>
+          <button onClick={openAdd} className="btn-primary flex items-center gap-2 text-sm bg-sky-500 hover:bg-sky-400">
+            <Plus size={15} /> Add Material
+          </button>
+        </div>
       </div>
 
       <div className="bg-ink-900 border border-ink-800 rounded-xl overflow-hidden">
         <div className="p-4 border-b border-ink-800">
-          <input className="input w-full sm:w-64 text-sm" placeholder="Search materials..." value={search} onChange={e => setSearch(e.target.value)} />
+          <input
+            className="input w-full sm:w-64 text-sm"
+            placeholder="Search materials..."
+            value={search}
+            onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
+          />
         </div>
 
         {loading ? (
-          <p className="text-ink-500 text-sm p-4">Loading...</p>
+          <LoadingSpinner />
         ) : (
-          <div className="overflow-x-auto w-full">
-            <table className="w-full text-sm whitespace-nowrap">
-              <thead className="text-ink-500 text-xs uppercase border-b border-ink-800">
-              <tr>
-                <th className="px-5 py-3 text-left">Title</th>
-                <th className="px-5 py-3 text-left">Subject & Topic</th>
-                <th className="px-5 py-3 text-left">Type</th>
-                <th className="px-5 py-3 text-left sticky right-0 bg-ink-900 border-l border-ink-800 z-10 shadow-[-4px_0_10px_-4px_rgba(0,0,0,0.5)]">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map(m => (
-                <tr key={m._id} className="border-t border-ink-800 hover:bg-ink-800/40">
-                  <td className="px-5 py-3">
-                    <p className="text-ink-100 font-medium">{m.title}</p>
-                    <p className="text-ink-500 text-xs truncate max-w-xs">{m.description || 'No description'}</p>
-                  </td>
-                  <td className="px-5 py-3 text-ink-300">
-                    <span className="block">{m.subject} - {m.unit}</span>
-                    <span className="text-xs text-ink-500">{m.topic}</span>
-                  </td>
-                  <td className="px-5 py-3 text-ink-300">
-                    <span className="badge tag-lime text-xs">{m.fileType?.toUpperCase()}</span>
-                    {m.fileUrl && (
-                      <span className="ml-1 text-[10px] text-ink-500 font-mono uppercase">
-                        {m.fileUrl.split('.').pop()?.split('?')[0]?.toUpperCase() || ''}
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-5 py-3 sticky right-0 bg-ink-900 border-l border-ink-800 z-10 shadow-[-4px_0_10px_-4px_rgba(0,0,0,0.5)]">
-                    <div className="flex gap-2">
-                      <button onClick={() => setSelectedMaterial(m)} className="btn-ghost p-1.5 hover:text-lime-300">
-                        <Eye size={14} />
-                      </button>
-                      <button onClick={() => handleDownload(m)} className="btn-ghost p-1.5 hover:text-sky-400">
-                        <Download size={14} />
-                      </button>
-                      <button onClick={() => openEdit(m)} className="btn-ghost p-1.5"><Pencil size={14} /></button>
-                      <button onClick={() => handleDelete(m._id)} className="btn-ghost p-1.5 text-red-400 hover:text-red-300"><Trash2 size={14} /></button>
-                    </div>
-                  </td>
+          <>
+            <div className="overflow-x-auto w-full">
+              <table className="w-full text-sm whitespace-nowrap">
+                <thead className="text-ink-500 text-xs uppercase border-b border-ink-800">
+                <tr>
+                  <th className="px-5 py-3 text-left">Title</th>
+                  <th className="px-5 py-3 text-left">Subject & Topic</th>
+                  <th className="px-5 py-3 text-left">Type</th>
+                  <th className="px-5 py-3 text-left sticky right-0 bg-ink-900 border-l border-ink-800 z-10 shadow-[-4px_0_10px_-4px_rgba(0,0,0,0.5)]">Actions</th>
                 </tr>
-              ))}
-              {filtered.length === 0 && (
-                <tr><td colSpan={4} className="px-5 py-8 text-center text-ink-500">No materials found</td></tr>
-              )}
-            </tbody>
-          </table>
-          </div>
+              </thead>
+              <tbody>
+                {paginatedMaterials.map(m => (
+                  <tr key={m._id} className="border-t border-ink-800 hover:bg-ink-800/40">
+                    <td className="px-5 py-3">
+                      <p className="text-ink-100 font-medium">{m.title}</p>
+                      <p className="text-ink-500 text-xs truncate max-w-xs">{m.description || 'No description'}</p>
+                    </td>
+                    <td className="px-5 py-3 text-ink-300">
+                      <span className="block">{m.subject} - {m.unit}</span>
+                      <span className="text-xs text-ink-500">{m.topic}</span>
+                    </td>
+                    <td className="px-5 py-3 text-ink-300">
+                      <span className="badge tag-lime text-xs">{m.fileType?.toUpperCase()}</span>
+                      {m.fileUrl && (
+                        <span className="ml-1 text-[10px] text-ink-500 font-mono uppercase">
+                          {m.fileUrl.split('.').pop()?.split('?')[0]?.toUpperCase() || ''}
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-5 py-3 sticky right-0 bg-ink-900 border-l border-ink-800 z-10 shadow-[-4px_0_10px_-4px_rgba(0,0,0,0.5)]">
+                      <div className="flex gap-2">
+                        <button onClick={() => setSelectedMaterial(m)} className="btn-ghost p-1.5 hover:text-lime-300">
+                          <Eye size={14} />
+                        </button>
+                        <button onClick={() => handleDownload(m)} className="btn-ghost p-1.5 hover:text-sky-400">
+                          <Download size={14} />
+                        </button>
+                        <button onClick={() => openEdit(m)} className="btn-ghost p-1.5"><Pencil size={14} /></button>
+                        <button onClick={() => handleDelete(m._id)} className="btn-ghost p-1.5 text-red-400 hover:text-red-300"><Trash2 size={14} /></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {filtered.length === 0 && (
+                  <tr><td colSpan={4} className="px-5 py-8 text-center text-ink-500">No materials found</td></tr>
+                )}
+              </tbody>
+            </table>
+            </div>
+
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={filtered.length}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={(newSize) => {
+                setPageSize(newSize)
+                setCurrentPage(1)
+              }}
+              itemLabel="materials"
+            />
+          </>
         )}
       </div>
 
@@ -259,6 +297,13 @@ export default function AdminMaterials() {
           </div>
         </div>
       )}
+
+      {/* Bulk Material Upload Modal */}
+      <BulkMaterialUploadModal
+        isOpen={showBulkModal}
+        onClose={() => setShowBulkModal(false)}
+        onSuccess={fetch}
+      />
     </div>
   )
 }

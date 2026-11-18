@@ -91,7 +91,13 @@ api.interceptors.response.use(
         failedQueue.push({ resolve, reject })
       })
         .then(newToken => {
-          originalRequest.headers.Authorization = `Bearer ${newToken}`
+          if (originalRequest?.headers) {
+            if (typeof originalRequest.headers.set === 'function') {
+              originalRequest.headers.set('Authorization', `Bearer ${newToken}`)
+            } else {
+              originalRequest.headers.Authorization = `Bearer ${newToken}`
+            }
+          }
           return api(originalRequest)
         })
         .catch(queueErr => Promise.reject(queueErr))
@@ -122,7 +128,11 @@ api.interceptors.response.use(
       }
       api.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`
       if (originalRequest?.headers) {
-        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`
+        if (typeof originalRequest.headers.set === 'function') {
+          originalRequest.headers.set('Authorization', `Bearer ${newAccessToken}`)
+        } else {
+          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`
+        }
       }
 
       // Inform application components / AuthContext of token update

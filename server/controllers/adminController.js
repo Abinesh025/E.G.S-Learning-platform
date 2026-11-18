@@ -4,6 +4,9 @@ const testRepository = require('../repositories/testRepository')
 const submissionRepository = require('../repositories/submissionRepository')
 const bulkStudentService = require('../services/bulkStudentService')
 const bulkStaffService = require('../services/bulkStaffService')
+const bulkMaterialService = require('../services/bulkMaterialService')
+const bulkTestService = require('../services/bulkTestService')
+const bulkResultService = require('../services/bulkResultService')
 const { getPool } = require('../config/db')
 const bcrypt = require('bcryptjs')
 const { getIo } = require('../socket/chatSocket')
@@ -449,8 +452,31 @@ exports.createStudent = async (req, res) => {
 // ─────────────────────────────────────────────
 exports.getAllMaterials = async (req, res) => {
   try {
-    const materials = await materialRepository.getMaterials()
-    res.status(200).json({ success: true, data: materials })
+    const { page, limit, search, department, subject, semester, course } = req.query
+    if (page !== undefined || limit !== undefined) {
+      const pageNum = Number(page) || 1
+      const limitNum = Number(limit) || 50
+      const result = await materialRepository.getMaterials({
+        page: pageNum,
+        limit: limitNum,
+        search,
+        department,
+        subject,
+        semester,
+        course,
+      })
+      return res.status(200).json({
+        success: true,
+        count: result.materials.length,
+        total: result.totalCount,
+        page: result.page,
+        limit: result.limit,
+        totalPages: result.totalPages,
+        data: result.materials,
+      })
+    }
+    const materials = await materialRepository.getMaterials({ search, department, subject, semester, course })
+    res.status(200).json({ success: true, count: materials.length, data: materials })
   } catch (error) {
     res.status(500).json({ success: false, message: error.message })
   }
@@ -503,8 +529,28 @@ exports.deleteMaterial = async (req, res) => {
 // ─────────────────────────────────────────────
 exports.getAllTests = async (req, res) => {
   try {
-    const tests = await testRepository.getTests({ department: req.query.department })
-    res.status(200).json({ success: true, data: tests })
+    const { page, limit, search, department } = req.query
+    if (page !== undefined || limit !== undefined) {
+      const pageNum = Number(page) || 1
+      const limitNum = Number(limit) || 50
+      const result = await testRepository.getTests({
+        page: pageNum,
+        limit: limitNum,
+        search,
+        department,
+      })
+      return res.status(200).json({
+        success: true,
+        count: result.tests.length,
+        total: result.totalCount,
+        page: result.page,
+        limit: result.limit,
+        totalPages: result.totalPages,
+        data: result.tests,
+      })
+    }
+    const tests = await testRepository.getTests({ department: req.query.department, search })
+    res.status(200).json({ success: true, count: tests.length, data: tests })
   } catch (error) {
     res.status(500).json({ success: false, message: error.message })
   }
@@ -576,8 +622,30 @@ exports.deleteTest = async (req, res) => {
 // ─────────────────────────────────────────────
 exports.getAllResults = async (req, res) => {
   try {
-    const results = await submissionRepository.getAllResults()
-    res.status(200).json({ success: true, data: results })
+    const { page, limit, search, department, testId, studentId } = req.query
+    if (page !== undefined || limit !== undefined) {
+      const pageNum = Number(page) || 1
+      const limitNum = Number(limit) || 50
+      const result = await submissionRepository.getAllResults({
+        page: pageNum,
+        limit: limitNum,
+        search,
+        department,
+        testId,
+        studentId,
+      })
+      return res.status(200).json({
+        success: true,
+        count: result.results.length,
+        total: result.totalCount,
+        page: result.page,
+        limit: result.limit,
+        totalPages: result.totalPages,
+        data: result.results,
+      })
+    }
+    const results = await submissionRepository.getAllResults({ department, search, testId, studentId })
+    res.status(200).json({ success: true, count: results.length, data: results })
   } catch (error) {
     res.status(500).json({ success: false, message: error.message })
   }
@@ -809,3 +877,215 @@ exports.downloadStaffTemplate = (req, res) => {
     })
   }
 }
+
+// ─────────────────────────────────────────────
+// BULK MATERIALS (MIGRATION)
+// ─────────────────────────────────────────────
+
+exports.downloadMaterialTemplate = (req, res) => {
+  try {
+    const buffer = bulkMaterialService.generateSampleMaterialExcelTemplate()
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    res.setHeader('Content-Disposition', 'attachment; filename="materials_bulk_upload_template.xlsx"')
+    res.send(buffer)
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to generate materials template' })
+  }
+}
+
+exports.validateBulkMaterials = async (req, res) => {
+  try {
+    if (!req.file || !req.file.buffer) {
+      return res.status(400).json({
+        success: false,
+        message: 'No file uploaded. Please upload a valid .xlsx, .xls, or .csv file.',
+      })
+    }
+    const validationResult = await bulkMaterialService.validateMaterialExcelBuffer(req.file.buffer)
+    res.status(200).json({ success: true, data: validationResult })
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message })
+  }
+}
+
+exports.uploadBulkMaterials = async (req, res) => {
+  try {
+    let validMaterials = []
+    if (req.file && req.file.buffer) {
+      const validation = await bulkMaterialService.validateMaterialExcelBuffer(req.file.buffer)
+      const skipErrors = req.body.skipErrors === 'true' || req.body.skipErrors === true
+
+      if (!validation.valid && !skipErrors) {
+        return res.status(400).json({
+          success: false,
+          message: `File contains ${validation.errorCount} error(s). Please review errors or check skip invalid rows.`,
+          data: validation,
+        })
+      }
+      validMaterials = validation.validMaterials
+    } else if (Array.isArray(req.body.materials)) {
+      validMaterials = req.body.materials
+    } else {
+      return res.status(400).json({ success: false, message: 'No materials data provided' })
+    }
+
+    if (validMaterials.length === 0) {
+      return res.status(400).json({ success: false, message: 'No valid materials to import' })
+    }
+
+    const result = await bulkMaterialService.insertBulkMaterials(validMaterials)
+    const io = getIo()
+    if (io) io.emit('data_changed', 'material')
+
+    res.status(201).json({
+      success: true,
+      message: `Successfully imported ${result.insertedCount} learning material(s).`,
+      count: result.insertedCount,
+      data: result.materials,
+    })
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message })
+  }
+}
+
+// ─────────────────────────────────────────────
+// BULK TESTS (MIGRATION)
+// ─────────────────────────────────────────────
+
+exports.downloadTestTemplate = (req, res) => {
+  try {
+    const buffer = bulkTestService.generateSampleTestExcelTemplate()
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    res.setHeader('Content-Disposition', 'attachment; filename="tests_bulk_upload_template.xlsx"')
+    res.send(buffer)
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to generate tests template' })
+  }
+}
+
+exports.validateBulkTests = async (req, res) => {
+  try {
+    if (!req.file || !req.file.buffer) {
+      return res.status(400).json({
+        success: false,
+        message: 'No file uploaded. Please upload a valid .xlsx, .xls, or .csv file.',
+      })
+    }
+    const validationResult = await bulkTestService.validateTestExcelBuffer(req.file.buffer)
+    res.status(200).json({ success: true, data: validationResult })
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message })
+  }
+}
+
+exports.uploadBulkTests = async (req, res) => {
+  try {
+    let validTests = []
+    if (req.file && req.file.buffer) {
+      const validation = await bulkTestService.validateTestExcelBuffer(req.file.buffer)
+      const skipErrors = req.body.skipErrors === 'true' || req.body.skipErrors === true
+
+      if (!validation.valid && !skipErrors) {
+        return res.status(400).json({
+          success: false,
+          message: `File contains ${validation.errorCount} error(s). Please review errors or check skip invalid rows.`,
+          data: validation,
+        })
+      }
+      validTests = validation.validTests
+    } else if (Array.isArray(req.body.tests)) {
+      validTests = req.body.tests
+    } else {
+      return res.status(400).json({ success: false, message: 'No tests data provided' })
+    }
+
+    if (validTests.length === 0) {
+      return res.status(400).json({ success: false, message: 'No valid tests to import' })
+    }
+
+    const result = await bulkTestService.insertBulkTests(validTests)
+    const io = getIo()
+    if (io) io.emit('data_changed', 'test')
+
+    res.status(201).json({
+      success: true,
+      message: `Successfully imported ${result.insertedTestsCount} test(s) with ${result.insertedQuestionsCount} question(s).`,
+      count: result.insertedTestsCount,
+      questionsCount: result.insertedQuestionsCount,
+      data: result.tests,
+    })
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message })
+  }
+}
+
+// ─────────────────────────────────────────────
+// BULK RESULTS (MIGRATION)
+// ─────────────────────────────────────────────
+
+exports.downloadResultTemplate = (req, res) => {
+  try {
+    const buffer = bulkResultService.generateSampleResultExcelTemplate()
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    res.setHeader('Content-Disposition', 'attachment; filename="results_bulk_upload_template.xlsx"')
+    res.send(buffer)
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to generate results template' })
+  }
+}
+
+exports.validateBulkResults = async (req, res) => {
+  try {
+    if (!req.file || !req.file.buffer) {
+      return res.status(400).json({
+        success: false,
+        message: 'No file uploaded. Please upload a valid .xlsx, .xls, or .csv file.',
+      })
+    }
+    const validationResult = await bulkResultService.validateResultExcelBuffer(req.file.buffer)
+    res.status(200).json({ success: true, data: validationResult })
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message })
+  }
+}
+
+exports.uploadBulkResults = async (req, res) => {
+  try {
+    let validResults = []
+    if (req.file && req.file.buffer) {
+      const validation = await bulkResultService.validateResultExcelBuffer(req.file.buffer)
+      const skipErrors = req.body.skipErrors === 'true' || req.body.skipErrors === true
+
+      if (!validation.valid && !skipErrors) {
+        return res.status(400).json({
+          success: false,
+          message: `File contains ${validation.errorCount} error(s). Please review errors or check skip invalid rows.`,
+          data: validation,
+        })
+      }
+      validResults = validation.validResults
+    } else if (Array.isArray(req.body.results)) {
+      validResults = req.body.results
+    } else {
+      return res.status(400).json({ success: false, message: 'No results data provided' })
+    }
+
+    if (validResults.length === 0) {
+      return res.status(400).json({ success: false, message: 'No valid results to import' })
+    }
+
+    const result = await bulkResultService.insertBulkResults(validResults)
+    const io = getIo()
+    if (io) io.emit('data_changed', 'result')
+
+    res.status(201).json({
+      success: true,
+      message: `Successfully imported ${result.insertedCount} student test result(s).`,
+      count: result.insertedCount,
+      data: result.results,
+    })
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message })
+  }
+}
+

@@ -37,16 +37,25 @@ const {
   createMaterial,
   updateMaterial,
   deleteMaterial,
+  downloadMaterialTemplate,
+  validateBulkMaterials,
+  uploadBulkMaterials,
 
   // Tests
   getAllTests,
   createTest,
   updateTest,
   deleteTest,
+  downloadTestTemplate,
+  validateBulkTests,
+  uploadBulkTests,
 
   // Results
   getAllResults,
   deleteResult,
+  downloadResultTemplate,
+  validateBulkResults,
+  uploadBulkResults,
 } = require("../controllers/adminController");
 
 const { uploadMaterial: uploadMaterialHandler, downloadMaterial } = require("../controllers/materialController");
@@ -76,6 +85,9 @@ router.put("/students/:id", updateStudent);
 router.delete("/students/:id", deleteStudent);
 
 /* ── Materials ── */
+router.get("/materials/sample-template", downloadMaterialTemplate);
+router.post("/materials/bulk-validate", uploadExcel.single("file"), validateBulkMaterials);
+router.post("/materials/bulk-upload", uploadExcel.single("file"), uploadBulkMaterials);
 router.get("/materials", getAllMaterials);
 router.post("/materials", createMaterial);
 router.post("/materials/upload", uploadMaterial.single('file'), uploadMaterialHandler);
@@ -85,12 +97,18 @@ router.delete("/materials/:id", deleteMaterial);
 router.get("/materials/download/:id", downloadMaterial);
 
 /* ── Tests ── */
+router.get("/tests/sample-template", downloadTestTemplate);
+router.post("/tests/bulk-validate", uploadExcel.single("file"), validateBulkTests);
+router.post("/tests/bulk-upload", uploadExcel.single("file"), uploadBulkTests);
 router.get("/tests", getAllTests);
 router.post("/tests", createTest);
 router.put("/tests/:id", updateTest);
 router.delete("/tests/:id", deleteTest);
 
 /* ── Results ── */
+router.get("/results/sample-template", downloadResultTemplate);
+router.post("/results/bulk-validate", uploadExcel.single("file"), validateBulkResults);
+router.post("/results/bulk-upload", uploadExcel.single("file"), uploadBulkResults);
 router.get("/results", getAllResults);
 router.delete("/results/:id", deleteResult);
 

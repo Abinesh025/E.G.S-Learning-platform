@@ -38,6 +38,13 @@ exports.protectMe = async (req, res, next) => {
       }
     }
 
+    // Admin user handling
+    const isIdZero = decoded.userID === 0 || decoded.userID === '0' || decoded.userID === '000000000000000000000000';
+    if (isIdZero && decoded.role === ROLES.ADMIN) {
+      req.user = { _id: '0', UserId: '0', role: ROLES.ADMIN, name: 'Administrator', email: 'admin@egspec.edu' };
+      return next();
+    }
+
     // Get user from SQL Server
     const user = await userRepository.findUserById(decoded.userID, decoded.role);
 

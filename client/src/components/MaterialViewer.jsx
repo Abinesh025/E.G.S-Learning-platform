@@ -475,9 +475,8 @@ function PreviewPanel({ loading, error, blobUrl, title, onDownload, renderConten
   return (
     <div className="w-full h-[60vh] sm:h-[75vh] flex flex-col">
       {loading && (
-        <div className="flex flex-col items-center justify-center flex-1 gap-3 text-ink-400">
-          <Loader size={28} className="animate-spin text-lime-400" />
-          <span className="text-sm">Loading preview…</span>
+        <div className="flex items-center justify-center flex-1 text-ink-400">
+          <Loader size={32} className="animate-spin text-lime-400" />
         </div>
       )}
       {error && !loading && (

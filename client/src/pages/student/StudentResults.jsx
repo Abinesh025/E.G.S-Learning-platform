@@ -4,6 +4,9 @@ import { getSocket } from '../../services/socket'
 import { useAuth } from '../../context/AuthContext'
 import { BarChart3, TrendingUp, Award, CheckCircle, XCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
+import LoadingSpinner from '../../components/common/LoadingSpinner'
+import Pagination from '../../components/common/Pagination'
+import { PAGINATION } from '../../common'
 
 // Compute percentage for a result (server may store .percentage or we derive it)
 const getPct = (r) => {
@@ -19,6 +22,8 @@ export default function StudentResults() {
   const { token } = useAuth()
   const [results, setResults] = useState([])
   const [loading, setLoading] = useState(true)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize]       = useState(PAGINATION?.DEFAULT_LIMIT || 50)
 
   useEffect(() => {
     const fetchItems = () => {
@@ -66,70 +71,91 @@ export default function StudentResults() {
           <h2 className="section-title">All Results</h2>
         </div>
         {loading ? (
-          <div className="p-8 text-center text-ink-500 text-sm">Loading…</div>
+          <LoadingSpinner />
         ) : results.length === 0 ? (
           <div className="p-12 text-center">
             <BarChart3 size={32} className="text-ink-700 mx-auto mb-3" />
             <p className="text-ink-500 text-sm">No results yet. Take a test!</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[480px]">
-              <thead>
-                <tr className="border-b border-ink-800">
-                  <th className="text-left px-5 py-3 text-ink-500 font-500 text-xs uppercase tracking-wider">Test</th>
-                  <th className="text-left px-5 py-3 text-ink-500 font-500 text-xs uppercase tracking-wider">Score</th>
-                  <th className="text-left px-5 py-3 text-ink-500 font-500 text-xs uppercase tracking-wider hidden sm:table-cell">Progress</th>
-                  <th className="text-left px-5 py-3 text-ink-500 font-500 text-xs uppercase tracking-wider">Status</th>
-                  <th className="text-left px-5 py-3 text-ink-500 font-500 text-xs uppercase tracking-wider">Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {results.map((r, i) => {
-                  const pct = getPct(r)
-                  const passed = pct >= PASS_THRESHOLD
-                  return (
-                    <tr key={r._id || i} className="table-row">
-                      <td className="px-5 py-3 text-ink-200 max-w-[160px] truncate">{r.test?.title || 'Test'}</td>
-                      <td className="px-5 py-3">
-                        <span className={`badge ${pct >= 75 ? 'tag-lime' : pct >= PASS_THRESHOLD ? 'tag-amber' : 'tag-red'}`}>
-                          {r.totalMarks > 0 ? `${r.score}/${r.totalMarks}` : `${pct}%`}
-                        </span>
-                      </td>
-                      <td className="px-5 py-3 w-40 hidden sm:table-cell">
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1 h-1.5 bg-ink-800 rounded-full">
-                            <div
-                              className={`h-full rounded-full ${pct >= 75 ? 'bg-lime-300' : pct >= PASS_THRESHOLD ? 'bg-sky-300' : 'bg-red-400'}`}
-                              style={{ width: `${Math.min(pct, 100)}%` }}
-                            />
-                          </div>
-                          <span className="text-xs text-ink-500 w-8">{pct}%</span>
-                        </div>
-                      </td>
-                      <td className="px-5 py-3">
-                        {passed ? (
-                          <span className="inline-flex items-center gap-1 text-xs font-600 text-green-400">
-                            <CheckCircle size={13} /> Pass
-                          </span>
-                        ) : (
-                          <span className="inline-flex flex-col">
-                            <span className="inline-flex items-center gap-1 text-xs font-600 text-red-400">
-                              <XCircle size={13} /> Fail
-                            </span>
-                            <span className="text-[10px] text-red-500/70 mt-0.5">Need Improvement</span>
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-5 py-3 text-ink-500 text-xs">
-                        {r.createdAt ? new Date(r.createdAt).toLocaleDateString('en-IN') : '—'}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
+          (() => {
+            const totalPages = Math.max(1, Math.ceil(results.length / pageSize))
+            const paginatedResults = results.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+            return (
+              <>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm min-w-[480px]">
+                    <thead>
+                      <tr className="border-b border-ink-800">
+                        <th className="text-left px-5 py-3 text-ink-500 font-500 text-xs uppercase tracking-wider">Test</th>
+                        <th className="text-left px-5 py-3 text-ink-500 font-500 text-xs uppercase tracking-wider">Score</th>
+                        <th className="text-left px-5 py-3 text-ink-500 font-500 text-xs uppercase tracking-wider hidden sm:table-cell">Progress</th>
+                        <th className="text-left px-5 py-3 text-ink-500 font-500 text-xs uppercase tracking-wider">Status</th>
+                        <th className="text-left px-5 py-3 text-ink-500 font-500 text-xs uppercase tracking-wider">Date</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginatedResults.map((r, i) => {
+                        const pct = getPct(r)
+                        const passed = pct >= PASS_THRESHOLD
+                        return (
+                          <tr key={r._id || i} className="table-row">
+                            <td className="px-5 py-3 text-ink-200 max-w-[160px] truncate">{r.test?.title || 'Test'}</td>
+                            <td className="px-5 py-3">
+                              <span className={`badge ${pct >= 75 ? 'tag-lime' : pct >= PASS_THRESHOLD ? 'tag-amber' : 'tag-red'}`}>
+                                {r.totalMarks > 0 ? `${r.score}/${r.totalMarks}` : `${pct}%`}
+                              </span>
+                            </td>
+                            <td className="px-5 py-3 w-40 hidden sm:table-cell">
+                              <div className="flex items-center gap-2">
+                                <div className="flex-1 h-1.5 bg-ink-800 rounded-full">
+                                  <div
+                                    className={`h-full rounded-full ${pct >= 75 ? 'bg-lime-300' : pct >= PASS_THRESHOLD ? 'bg-sky-300' : 'bg-red-400'}`}
+                                    style={{ width: `${Math.min(pct, 100)}%` }}
+                                  />
+                                </div>
+                                <span className="text-xs text-ink-500 w-8">{pct}%</span>
+                              </div>
+                            </td>
+                            <td className="px-5 py-3">
+                              {passed ? (
+                                <span className="inline-flex items-center gap-1 text-xs font-600 text-green-400">
+                                  <CheckCircle size={13} /> Pass
+                                </span>
+                              ) : (
+                                <span className="inline-flex flex-col">
+                                  <span className="inline-flex items-center gap-1 text-xs font-600 text-red-400">
+                                    <XCircle size={13} /> Fail
+                                  </span>
+                                  <span className="text-[10px] text-red-500/70 mt-0.5">Need Improvement</span>
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-5 py-3 text-ink-500 text-xs">
+                              {r.createdAt ? new Date(r.createdAt).toLocaleDateString('en-IN') : '—'}
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  totalItems={results.length}
+                  pageSize={pageSize}
+                  onPageChange={setCurrentPage}
+                  onPageSizeChange={(newSize) => {
+                    setPageSize(newSize)
+                    setCurrentPage(1)
+                  }}
+                  itemLabel="results"
+                />
+              </>
+            )
+          })()
         )}
       </div>
     </div>

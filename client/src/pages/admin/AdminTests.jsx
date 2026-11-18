@@ -4,10 +4,14 @@ import { getSocket } from '../../services/socket'
 import { useAuth } from '../../context/AuthContext'
 import {
   FileText, Plus, Trash2, Pencil, X, Check,
-  ChevronDown, ChevronUp, Users, Clock, Hash, Search, ArrowLeft
+  ChevronDown, ChevronUp, Users, Clock, Hash, Search, ArrowLeft, Upload
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { DEPART_CHECKER } from '../../utils/deptChecker'
+import BulkTestUploadModal from '../../components/admin/BulkTestUploadModal'
+import LoadingSpinner from '../../components/common/LoadingSpinner'
+import Pagination from '../../components/common/Pagination'
+import { PAGINATION } from '../../common'
 
 const TABS = ['All Tests', 'Create Test', 'Student Results']
 
@@ -31,21 +35,27 @@ export default function AdminTest() {
   const [expandedTest, setExpandedTest] = useState(null)
   const [search, setSearch] = useState('')
   const [departmentFilter, setDepartmentFilter] = useState('')
+  const [testPage, setTestPage] = useState(1)
+  const [testPageSize, setTestPageSize] = useState(PAGINATION?.DEFAULT_LIMIT || 50)
   const [resultSearch, setResultSearch] = useState('')
   const [resultDeptFilter, setResultDeptFilter] = useState('')
+  const [resultPage, setResultPage] = useState(1)
+  const [resultPageSize, setResultPageSize] = useState(PAGINATION?.DEFAULT_LIMIT || 50)
   const [editId, setEditId] = useState(null)
   const [deleteId, setDeleteId] = useState(null)
   const [toast, setToast] = useState(null)
+  const [showBulkModal, setShowBulkModal] = useState(false)
+
+  const fetchTests = () => {
+    setLoading(true)
+    api.get('/api/admin/tests')
+      .then(res => setTests(res.data?.data ?? []))
+      .catch(err => showToast(err.response?.data?.message || 'Failed to fetch tests', 'error'))
+      .finally(() => setLoading(false))
+  }
 
   // ── fetch tests ──────────────────────────────────────────────
   useEffect(() => {
-    const fetchTests = () => {
-      setLoading(true)
-      api.get('/api/admin/tests')
-        .then(res => setTests(res.data?.data ?? []))
-        .catch(err => showToast(err.response?.data?.message || 'Failed to fetch tests', 'error'))
-        .finally(() => setLoading(false))
-    }
     fetchTests()
     const socket = getSocket(token)
     const handleDataChanged = (type) => { if (type === 'test') fetchTests() }
@@ -159,6 +169,8 @@ export default function AdminTest() {
     t.subject?.toLowerCase().includes(search.toLowerCase()))) &&
     (departmentFilter === '' || t.assignedTo === departmentFilter || String(t.assignedTo ?? '').includes(departmentFilter))
   )
+  const totalTestPages = Math.max(1, Math.ceil(filtered.length / testPageSize))
+  const paginatedTests = filtered.slice((testPage - 1) * testPageSize, testPage * testPageSize)
 
   const filteredResults = results.filter(r => {
     const dept = (r.student?.department ?? '').toLowerCase()
@@ -170,6 +182,8 @@ export default function AdminTest() {
     const matchDept = resultDeptFilter === '' || dept === resultDeptFilter.toLowerCase()
     return matchSearch && matchDept
   })
+  const totalResultPages = Math.max(1, Math.ceil(filteredResults.length / resultPageSize))
+  const paginatedResults = filteredResults.slice((resultPage - 1) * resultPageSize, resultPage * resultPageSize)
 
   // ─────────────────────────────────────────────────────────────
   return (
@@ -229,7 +243,7 @@ export default function AdminTest() {
             <div className="relative flex-1 min-w-[160px]">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-500" />
               <input
-                value={search} onChange={e => setSearch(e.target.value)}
+                value={search} onChange={e => { setSearch(e.target.value); setTestPage(1); }}
                 placeholder="Search tests…"
                 className="w-full pl-8 pr-3 py-2 bg-ink-900 border border-ink-800 rounded-lg text-sm
                   text-ink-100 placeholder-ink-600 focus:outline-none focus:border-ink-600"
@@ -238,13 +252,19 @@ export default function AdminTest() {
             <select 
               className="px-3 py-2 bg-ink-900 border border-ink-800 rounded-lg text-sm text-ink-100 focus:outline-none focus:border-ink-600"
               value={departmentFilter}
-              onChange={e => setDepartmentFilter(e.target.value)}
+              onChange={e => { setDepartmentFilter(e.target.value); setTestPage(1); }}
             >
               <option value="">All Departments</option>
               {Object.keys(DEPART_CHECKER).map(dept => (
                 <option key={dept} value={dept}>{dept}</option>
               ))}
             </select>
+            <button
+              onClick={() => setShowBulkModal(true)}
+              className="flex items-center gap-2 px-3.5 py-2 bg-ink-800 hover:bg-ink-700 text-ink-200 border border-ink-700 rounded-lg text-sm font-medium transition whitespace-nowrap"
+            >
+              <Upload size={14} className="text-lime-400" /> Bulk Upload Tests
+            </button>
             <button onClick={() => { setEditId(null); setForm(EMPTY_FORM); setActiveTab(1) }}
               className="flex items-center gap-2 px-4 py-2 bg-lime-400/10 border border-lime-400/30
                 text-lime-400 rounded-lg text-sm hover:bg-lime-400/20 transition whitespace-nowrap">
@@ -253,15 +273,16 @@ export default function AdminTest() {
           </div>
 
           {loading ? (
-            <p className="text-ink-500 text-sm">Loading…</p>
+            <LoadingSpinner />
           ) : filtered.length === 0 ? (
             <div className="bg-ink-900 border border-ink-800 rounded-xl p-8 text-center">
               <FileText size={28} className="text-ink-700 mx-auto mb-2" />
               <p className="text-ink-500 text-sm">No tests found</p>
             </div>
           ) : (
-            <div className="flex flex-col gap-3">
-              {filtered.map(test => (
+            <>
+              <div className="flex flex-col gap-3">
+              {paginatedTests.map(test => (
                 <div key={test._id} className="bg-ink-900 border border-ink-800 rounded-xl overflow-hidden">
                   {/* row */}
                   <div className="flex items-center justify-between p-4">
@@ -339,7 +360,21 @@ export default function AdminTest() {
                 </div>
               ))}
             </div>
-          )}
+
+            <Pagination
+              currentPage={testPage}
+              totalPages={totalTestPages}
+              totalItems={filtered.length}
+              pageSize={testPageSize}
+              onPageChange={setTestPage}
+              onPageSizeChange={(newSize) => {
+                setTestPageSize(newSize)
+                setTestPage(1)
+              }}
+              itemLabel="tests"
+            />
+          </>
+        )}
         </div>
       )}
 
@@ -454,7 +489,7 @@ export default function AdminTest() {
       {activeTab === 2 && (
         <div>
           {resultsLoading ? (
-            <p className="text-ink-500 text-sm">Loading…</p>
+            <LoadingSpinner />
           ) : results.length === 0 ? (
             <div className="bg-ink-900 border border-ink-800 rounded-xl p-8 text-center">
               <BarChart3Icon size={28} className="text-ink-700 mx-auto mb-2" />
@@ -466,7 +501,7 @@ export default function AdminTest() {
                 <div className="relative flex-1 max-w-xs">
                   <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-500" />
                   <input
-                    value={resultSearch} onChange={e => setResultSearch(e.target.value)}
+                    value={resultSearch} onChange={e => { setResultSearch(e.target.value); setResultPage(1); }}
                     placeholder="Search students, tests…"
                     className="w-full pl-8 pr-3 py-2 bg-ink-900 border border-ink-800 rounded-xl text-sm
                       text-ink-100 placeholder-ink-600 focus:outline-none focus:border-ink-600"
@@ -474,7 +509,7 @@ export default function AdminTest() {
                 </div>
                 <select
                   value={resultDeptFilter}
-                  onChange={e => setResultDeptFilter(e.target.value)}
+                  onChange={e => { setResultDeptFilter(e.target.value); setResultPage(1); }}
                   className="px-3 py-2 bg-ink-900 border border-ink-800 rounded-xl text-sm text-ink-100 focus:outline-none focus:border-ink-600"
                 >
                   <option value="">All Departments</option>
@@ -493,7 +528,7 @@ export default function AdminTest() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredResults.map((r, i) => {
+                    {paginatedResults.map((r, i) => {
                       const pct = r.total ? Math.round((r.score / r.total) * 100) : 0
                       return (
                         <tr key={r._id ?? i} className="border-b border-ink-800/50 hover:bg-ink-800/40 transition">
@@ -531,10 +566,29 @@ export default function AdminTest() {
                   </tbody>
                 </table>
               </div>
+
+              <Pagination
+                currentPage={resultPage}
+                totalPages={totalResultPages}
+                totalItems={filteredResults.length}
+                pageSize={resultPageSize}
+                onPageChange={setResultPage}
+                onPageSizeChange={(newSize) => {
+                  setResultPageSize(newSize)
+                  setResultPage(1)
+                }}
+                itemLabel="results"
+              />
             </div>
           )}
         </div>
       )}
+      {/* Bulk Test Upload Modal */}
+      <BulkTestUploadModal
+        isOpen={showBulkModal}
+        onClose={() => setShowBulkModal(false)}
+        onSuccess={fetchTests}
+      />
     </div>
   )
 }

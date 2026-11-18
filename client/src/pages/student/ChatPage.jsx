@@ -5,6 +5,7 @@ import { getSocket } from '../../services/socket'
 import { Send, MessageSquare, Mic, Square, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
+import LoadingSpinner from '../../components/common/LoadingSpinner'
 
 export default function ChatPage() {
   const { user, token } = useAuth()
@@ -177,7 +178,7 @@ export default function ChatPage() {
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {loading && (
-          <div className="text-center text-ink-500 text-sm py-8">Loading messages…</div>
+          <LoadingSpinner minHeight="min-h-[140px]" />
         )}
         {messages?.map((m, i) => {
           const isMe = m.sender?._id === user?._id || m.sender === user?._id

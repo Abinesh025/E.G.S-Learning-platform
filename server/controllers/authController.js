@@ -102,9 +102,9 @@ exports.register = async (req, res) => {
       semester: semester ? Number(semester) : null,
     })
 
-    const staffRole = user.Role || user.role
-    const accessToken = generateAccessToken(user._id, staffRole)
-    const refreshToken = generateRefreshToken(user._id, staffRole)
+    const finalRole = (user.Role || user.role || userRole).toLowerCase()
+    const accessToken = generateAccessToken(user._id, finalRole)
+    const refreshToken = generateRefreshToken(user._id, finalRole)
 
     res.status(201).json({
       success: true,
@@ -115,7 +115,7 @@ exports.register = async (req, res) => {
         _id: user._id,
         name: user.Name || user.name,
         email: user.Email || user.email,
-        role: user.Role || user.role,
+        role: finalRole,
         department: user.Department || user.department || '',
         departmentId: user.DepartmentId || user.departmentId || null,
         regnum: user.Regnum || user.regnum || '',
@@ -219,7 +219,7 @@ exports.login = async (req, res) => {
       adminToken = jwt.sign(
         { type: 'admin-access', grantedAt: Date.now(), userId: user._id, role: ROLES.ADMIN },
         process.env.JWT_SECRET,
-        { expiresIn: '10m' }
+        { expiresIn: '1d' }
       )
     }
 
@@ -264,7 +264,21 @@ exports.login = async (req, res) => {
 // ─────────────────────────────────────────────
 exports.getMe = async (req, res) => {
   try {
-    const user = await userRepository.findUserById(req.user._id)
+    const isIdZero = req.user?._id === 0 || req.user?._id === '0' || req.user?._id === '000000000000000000000000'
+    if (isIdZero || req.user?.role === ROLES.ADMIN) {
+      return res.status(200).json({
+        success: true,
+        user: {
+          _id: req.user._id || '0',
+          id: req.user._id || '0',
+          name: req.user.name || 'Administrator',
+          email: req.user.email || 'admin@egspec.edu',
+          role: ROLES.ADMIN,
+        },
+      })
+    }
+
+    const user = await userRepository.findUserById(req.user._id, req.user.role)
 
     if (!user) {
       return res.status(404).json({
@@ -312,9 +326,9 @@ exports.verifyPassword = async (req, res) => {
     }
 
     const adminToken = jwt.sign(
-      { type: 'admin-access', grantedAt: Date.now() },
+      { type: 'admin-access', grantedAt: Date.now(), userId: 0, role: ROLES.ADMIN },
       process.env.JWT_SECRET,
-      { expiresIn: '10m' }
+      { expiresIn: '1d' }
     )
 
     console.log(`[ADMIN] ✅ Admin access granted at ${new Date().toISOString()}`)
@@ -441,9 +455,9 @@ exports.verifyStaffLoginOtp = async (req, res) => {
       otpVerified: true,
     })
 
-    const staffRole = user.Role || user.role
-    const accessToken = generateAccessToken(user._id, staffRole)
-    const refreshToken = generateRefreshToken(user._id, staffRole)
+    const userRole = (user.Role || user.role || ROLES.STAFF).toLowerCase()
+    const accessToken = generateAccessToken(user._id, userRole)
+    const refreshToken = generateRefreshToken(user._id, userRole)
 
     res.status(200).json({
       success: true,
@@ -839,8 +853,8 @@ exports.refreshToken = async (req, res) => {
     }
 
     let user
-    if (decoded.userID === 0 && decoded.role === ROLES.ADMIN) {
-      user = { _id: 0, Name: 'Administrator', Email: 'admin@egspec.edu.in', Role: ROLES.ADMIN }
+    if ((decoded.userID === 0 || decoded.userID === '0' || decoded.userID === '000000000000000000000000') && decoded.role === ROLES.ADMIN) {
+      user = { _id: '0', Name: 'Administrator', Email: 'admin@egspec.edu', Role: ROLES.ADMIN }
     } else {
       user = await userRepository.findUserById(decoded.userID, decoded.role)
     }

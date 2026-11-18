@@ -13,6 +13,9 @@ const typeConfig = {
   file: { icon: File, color: 'tag-red' },
 }
 import MaterialViewer from '../../components/MaterialViewer'
+import LoadingSpinner from '../../components/common/LoadingSpinner'
+import Pagination from '../../components/common/Pagination'
+import { PAGINATION } from '../../common'
 
 export default function StaffMaterials() {
   const { user } = useAuth()
@@ -25,6 +28,8 @@ export default function StaffMaterials() {
   const [filterDept, setFilterDept] = useState('')
   const [filterSem, setFilterSem] = useState('')
   const [filterCourse, setFilterCourse] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize]       = useState(PAGINATION?.DEFAULT_LIMIT || 50)
   const [form, setForm] = useState({
     title: '',
     type: 'notes',
@@ -142,6 +147,9 @@ export default function StaffMaterials() {
     if (filterCourse && !m.course?.toLowerCase().includes(filterCourse.toLowerCase())) return false
     return true
   })
+
+  const totalPages = Math.max(1, Math.ceil(filteredMaterials.length / pageSize))
+  const paginatedMaterials = filteredMaterials.slice((currentPage - 1) * pageSize, currentPage * pageSize)
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
       <Link to="/staff" className="inline-flex items-center gap-2 text-ink-400 hover:text-lime-300 transition-colors mb-2 text-sm font-500">
@@ -164,7 +172,7 @@ export default function StaffMaterials() {
           <select 
             className="input w-full" 
             value={filterDept} 
-            onChange={e => setFilterDept(e.target.value)}
+            onChange={e => { setFilterDept(e.target.value); setCurrentPage(1); }}
           >
             <option value="">All Departments</option>
             {Object.keys(DEPART_CHECKER).map(dept => (
@@ -176,7 +184,7 @@ export default function StaffMaterials() {
           <select 
             className="input w-full" 
             value={filterSem} 
-            onChange={e => setFilterSem(e.target.value)}
+            onChange={e => { setFilterSem(e.target.value); setCurrentPage(1); }}
           >
             <option value="">All Semesters</option>
             {[1, 2, 3, 4, 5, 6, 7, 8].map(sem => (
@@ -190,7 +198,7 @@ export default function StaffMaterials() {
             className="input w-full"
             placeholder="Search course..."
             value={filterCourse}
-            onChange={e => setFilterCourse(e.target.value)}
+            onChange={e => { setFilterCourse(e.target.value); setCurrentPage(1); }}
           />
         </div>
       </div>
@@ -334,14 +342,15 @@ export default function StaffMaterials() {
       {/* List of materials */}
       <div className="card overflow-hidden">
         {loading ? (
-          <div className="p-8 text-center text-ink-500 text-sm">Loading…</div>
+          <LoadingSpinner />
         ) : filteredMaterials.length === 0 ? (
           <div className="p-12 text-center">
             <BookOpen size={32} className="text-ink-700 mx-auto mb-3" />
             <p className="text-ink-500 text-sm">No materials uploaded yet</p>
           </div>
         ) : (
-          <table className="w-full text-sm">
+          <>
+            <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-ink-800">
                 <th className="text-left px-5 py-3 text-ink-500 font-500 text-xs uppercase tracking-wider">Title</th>
@@ -351,7 +360,7 @@ export default function StaffMaterials() {
               </tr>
             </thead>
             <tbody>
-              {Array.isArray(filteredMaterials) && filteredMaterials.map((m, i) => {
+              {Array.isArray(paginatedMaterials) && paginatedMaterials.map((m, i) => {
                 const cfg = typeConfig[m.type] || typeConfig.file
                 const Icon = cfg.icon
                 return (
@@ -424,6 +433,20 @@ export default function StaffMaterials() {
               })}
             </tbody>
           </table>
+
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={filteredMaterials.length}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={(newSize) => {
+              setPageSize(newSize)
+              setCurrentPage(1)
+            }}
+            itemLabel="materials"
+          />
+        </>
         )}
       </div>
 

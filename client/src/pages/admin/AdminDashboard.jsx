@@ -4,6 +4,7 @@ import api from '../../services/api'
 import { Users, GraduationCap, BookOpen, FileText, BarChart3 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import MetaData from '../../components/layout/MetaData'
+import LoadingSpinner from '../../components/common/LoadingSpinner'
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState({
@@ -36,7 +37,7 @@ export default function AdminDashboard() {
       <h1 className="text-xl font-semibold text-ink-100 mb-6">Dashboard</h1>
 
       {loading ? (
-        <p className="text-ink-500 text-sm">Loading...</p>
+        <LoadingSpinner />
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
           {cards.map(({ label, value, icon: Icon, color, link }) => (

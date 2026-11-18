@@ -24,8 +24,16 @@ export function AuthProvider({ children }) {
     if (token) {
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`
       api.get(AUTH_ENDPOINTS?.PROFILE || '/api/auth/profile')
-        .then(res => setUser(res.data.user))
-        .catch(() => { logout() })
+        .then(res => {
+          if (res.data?.user) {
+            setUser(res.data.user)
+          }
+        })
+        .catch(err => {
+          if (err.response?.status === 401) {
+            logout()
+          }
+        })
         .finally(() => setLoading(false))
     } else {
       setLoading(false)
@@ -46,6 +54,9 @@ export function AuthProvider({ children }) {
       localStorage.setItem(STORAGE_KEYS?.TOKEN || 'token', tokenToStore)
       if (rt) {
         localStorage.setItem(STORAGE_KEYS?.REFRESH_TOKEN || 'refreshToken', rt)
+      }
+      if (u && u.role !== 'admin') {
+        sessionStorage.removeItem(STORAGE_KEYS?.ADMIN_TOKEN || 'adminToken')
       }
       api.defaults.headers.common['Authorization'] = `Bearer ${tokenToStore}`
       setToken(tokenToStore)
@@ -72,6 +83,7 @@ export function AuthProvider({ children }) {
       if (rt) {
         localStorage.setItem(STORAGE_KEYS?.REFRESH_TOKEN || 'refreshToken', rt)
       }
+      sessionStorage.removeItem(STORAGE_KEYS?.ADMIN_TOKEN || 'adminToken')
       api.defaults.headers.common['Authorization'] = `Bearer ${tokenToStore}`
       setToken(tokenToStore)
       setUser(u)
@@ -91,6 +103,7 @@ export function AuthProvider({ children }) {
     if (rt) {
       localStorage.setItem(STORAGE_KEYS?.REFRESH_TOKEN || 'refreshToken', rt)
     }
+    sessionStorage.removeItem(STORAGE_KEYS?.ADMIN_TOKEN || 'adminToken')
     api.defaults.headers.common['Authorization'] = `Bearer ${tokenToStore}`
     setToken(tokenToStore)
     setUser(u)
@@ -100,6 +113,7 @@ export function AuthProvider({ children }) {
   const logout = () => {
     localStorage.removeItem(STORAGE_KEYS?.TOKEN || 'token')
     localStorage.removeItem(STORAGE_KEYS?.REFRESH_TOKEN || 'refreshToken')
+    sessionStorage.removeItem(STORAGE_KEYS?.ADMIN_TOKEN || 'adminToken')
     delete api.defaults.headers.common['Authorization']
     setToken(null)
     setUser(null)

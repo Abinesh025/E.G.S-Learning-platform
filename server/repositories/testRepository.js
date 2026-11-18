@@ -105,8 +105,8 @@ exports.createTestWithQuestions = async ({
   }
 }
 
-// Get all tests (optionally filtered by department or createdBy)
-exports.getTests = async ({ department, createdBy } = {}) => {
+// Get all tests (optionally filtered by department, createdBy, search, or paginated)
+exports.getTests = async ({ department, createdBy, search, page, limit } = {}) => {
   const pool = await getPool()
   const request = pool.request()
   const conditions = []
@@ -119,21 +119,14 @@ exports.getTests = async ({ department, createdBy } = {}) => {
     request.input('CreatedBy', sql.Int, createdBy)
     conditions.push('t.CreatedBy = @CreatedBy')
   }
+  if (search) {
+    request.input('Search', sql.NVarChar(100), `%${search.trim()}%`)
+    conditions.push('(t.Title LIKE @Search OR t.Subject LIKE @Search OR t.Department LIKE @Search)')
+  }
 
   const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''
 
-  const query = `
-    SELECT 
-      t.*,
-      u.Name AS CreatorName,
-      (SELECT COUNT(*) FROM TestQuestions WHERE TestId = t.TestId) AS QuestionCount
-    FROM Tests t
-    LEFT JOIN Staff u ON t.CreatedBy = u.StaffId
-    ${whereClause}
-    ORDER BY t.CreatedAt DESC
-  `
-  const result = await request.query(query)
-  return result.recordset.map((row) => ({
+  const formatTest = (row) => ({
     _id: row.TestId,
     id: row.TestId,
     TestId: row.TestId,
@@ -146,7 +139,51 @@ exports.getTests = async ({ department, createdBy } = {}) => {
     questionCount: row.QuestionCount,
     createdAt: row.CreatedAt,
     updatedAt: row.UpdatedAt,
-  }))
+  })
+
+  if (page !== undefined || limit !== undefined) {
+    const pageNum = Math.max(1, Number(page) || 1)
+    const limitNum = Math.max(1, Number(limit) || 50)
+    const offset = (pageNum - 1) * limitNum
+
+    request.input('Offset', sql.Int, offset)
+    request.input('PageLimit', sql.Int, limitNum)
+
+    const query = `
+      SELECT 
+        t.*,
+        u.Name AS CreatorName,
+        (SELECT COUNT(*) FROM TestQuestions WHERE TestId = t.TestId) AS QuestionCount,
+        COUNT(*) OVER() AS TotalRowsCount
+      FROM Tests t
+      LEFT JOIN Staff u ON t.CreatedBy = u.StaffId
+      ${whereClause}
+      ORDER BY t.CreatedAt DESC
+      OFFSET @Offset ROWS FETCH NEXT @PageLimit ROWS ONLY
+    `
+    const result = await request.query(query)
+    const totalCount = result.recordset.length > 0 ? result.recordset[0].TotalRowsCount : 0
+    return {
+      tests: result.recordset.map(formatTest),
+      totalCount,
+      page: pageNum,
+      limit: limitNum,
+      totalPages: Math.ceil(totalCount / limitNum),
+    }
+  }
+
+  const query = `
+    SELECT 
+      t.*,
+      u.Name AS CreatorName,
+      (SELECT COUNT(*) FROM TestQuestions WHERE TestId = t.TestId) AS QuestionCount
+    FROM Tests t
+    LEFT JOIN Staff u ON t.CreatedBy = u.StaffId
+    ${whereClause}
+    ORDER BY t.CreatedAt DESC
+  `
+  const result = await request.query(query)
+  return result.recordset.map(formatTest)
 }
 
 // Get single test with its questions and options

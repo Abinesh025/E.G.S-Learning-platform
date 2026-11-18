@@ -1,14 +1,21 @@
 import api from '../../services/api'
-import { Trash2, Search } from 'lucide-react'
+import { Trash2, Search, Upload } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { DEPART_CHECKER } from '../../utils/deptChecker'
+import BulkResultUploadModal from '../../components/admin/BulkResultUploadModal'
+import LoadingSpinner from '../../components/common/LoadingSpinner'
+import Pagination from '../../components/common/Pagination'
+import { PAGINATION } from '../../common'
 
 export default function AdminResults() {
   const [results, setResults] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [deptFilter, setDeptFilter] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize]       = useState(PAGINATION?.DEFAULT_LIMIT || 50)
+  const [showBulkModal, setShowBulkModal] = useState(false)
 
   const fetchResults = () => {
     setLoading(true)
@@ -42,16 +49,27 @@ export default function AdminResults() {
     return matchSearch && matchDept
   })
 
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
+  const paginatedResults = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+
   return (
     <div className="p-6">
-      <h1 className="text-xl font-semibold text-ink-100 mb-5">Results</h1>
+      <div className="flex items-center justify-between mb-5">
+        <h1 className="text-xl font-semibold text-ink-100">Results</h1>
+        <button
+          onClick={() => setShowBulkModal(true)}
+          className="flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium bg-ink-800 hover:bg-ink-700 text-ink-200 border border-ink-700 transition"
+        >
+          <Upload size={15} className="text-amber-400" /> Bulk Upload Results
+        </button>
+      </div>
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3 mb-4">
         <div className="relative flex-1 min-w-[180px] max-w-xs">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-500" />
           <input
-            value={search} onChange={e => setSearch(e.target.value)}
+            value={search} onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
             placeholder="Search student, test…"
             className="w-full pl-8 pr-3 py-2 bg-ink-900 border border-ink-800 rounded-lg text-sm
               text-ink-100 placeholder-ink-600 focus:outline-none focus:border-ink-600"
@@ -59,7 +77,7 @@ export default function AdminResults() {
         </div>
         <select
           value={deptFilter}
-          onChange={e => setDeptFilter(e.target.value)}
+          onChange={e => { setDeptFilter(e.target.value); setCurrentPage(1); }}
           className="px-3 py-2 bg-ink-900 border border-ink-800 rounded-lg text-sm text-ink-100 focus:outline-none focus:border-ink-600"
         >
           <option value="">All Departments</option>
@@ -69,9 +87,10 @@ export default function AdminResults() {
 
       <div className="bg-ink-900 border border-ink-800 rounded-xl overflow-hidden">
         {loading ? (
-          <p className="text-ink-500 text-sm p-4">Loading...</p>
+          <LoadingSpinner />
         ) : (
-          <div className="overflow-x-auto">
+          <>
+            <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[640px]">
               <thead className="text-ink-500 text-xs uppercase border-b border-ink-800">
                 <tr>
@@ -86,7 +105,7 @@ export default function AdminResults() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map(r => {
+                {paginatedResults.map(r => {
                   const pct    = r.test?.totalMarks ? Math.round((r.score / r.test.totalMarks) * 100) : 0
                   const passed = r.score >= (r.test?.passingMarks || 0)
                   return (
@@ -140,8 +159,29 @@ export default function AdminResults() {
               </tbody>
             </table>
           </div>
+
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={filtered.length}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={(newSize) => {
+              setPageSize(newSize)
+              setCurrentPage(1)
+            }}
+            itemLabel="results"
+          />
+        </>
         )}
       </div>
+
+      {/* Bulk Result Upload Modal */}
+      <BulkResultUploadModal
+        isOpen={showBulkModal}
+        onClose={() => setShowBulkModal(false)}
+        onSuccess={fetchResults}
+      />
     </div>
   )
 }

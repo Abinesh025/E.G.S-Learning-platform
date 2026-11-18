@@ -139,29 +139,69 @@ exports.createSubmissionAndResult = async ({
   }
 }
 
-exports.getResultsByStudent = async (studentId) => {
+exports.getResultsByStudent = async (studentId, { page, limit } = {}) => {
   const pool = await getPool()
-  const result = await pool.request()
-    .input('StudentId', sql.NVarChar(50), String(studentId))
-    .query(`
+  const request = pool.request().input('StudentId', sql.NVarChar(50), String(studentId))
+
+  if (page !== undefined || limit !== undefined) {
+    const pageNum = Math.max(1, Number(page) || 1)
+    const limitNum = Math.max(1, Number(limit) || 50)
+    const offset = (pageNum - 1) * limitNum
+
+    request.input('Offset', sql.Int, offset)
+    request.input('PageLimit', sql.Int, limitNum)
+
+    const result = await request.query(`
       SELECT 
         r.*,
         t.Title AS TestTitle,
         t.Subject AS TestSubject,
-        t.Department AS TestDept
+        t.Department AS TestDept,
+        COUNT(*) OVER() AS TotalRowsCount
       FROM Results r
       INNER JOIN Tests t ON r.TestId = t.TestId
       WHERE r.StudentId = @StudentId
       ORDER BY r.CreatedAt DESC
+      OFFSET @Offset ROWS FETCH NEXT @PageLimit ROWS ONLY
     `)
+
+    const totalCount = result.recordset.length > 0 ? result.recordset[0].TotalRowsCount : 0
+    return {
+      results: result.recordset.map(formatResult),
+      totalCount,
+      page: pageNum,
+      limit: limitNum,
+      totalPages: Math.ceil(totalCount / limitNum),
+    }
+  }
+
+  const result = await request.query(`
+    SELECT 
+      r.*,
+      t.Title AS TestTitle,
+      t.Subject AS TestSubject,
+      t.Department AS TestDept
+    FROM Results r
+    INNER JOIN Tests t ON r.TestId = t.TestId
+    WHERE r.StudentId = @StudentId
+    ORDER BY r.CreatedAt DESC
+  `)
   return result.recordset.map(formatResult)
 }
 
-exports.getResultsByTest = async (testId) => {
+exports.getResultsByTest = async (testId, { page, limit } = {}) => {
   const pool = await getPool()
-  const result = await pool.request()
-    .input('TestId', sql.Int, testId)
-    .query(`
+  const request = pool.request().input('TestId', sql.Int, Number(testId))
+
+  if (page !== undefined || limit !== undefined) {
+    const pageNum = Math.max(1, Number(page) || 1)
+    const limitNum = Math.max(1, Number(limit) || 50)
+    const offset = (pageNum - 1) * limitNum
+
+    request.input('Offset', sql.Int, offset)
+    request.input('PageLimit', sql.Int, limitNum)
+
+    const result = await request.query(`
       SELECT 
         r.*,
         s.Name AS StudentName,
@@ -172,18 +212,50 @@ exports.getResultsByTest = async (testId) => {
         s.Batch AS StudentBatch,
         t.Title AS TestTitle,
         t.Subject AS TestSubject,
-        t.Department AS TestDept
+        t.Department AS TestDept,
+        COUNT(*) OVER() AS TotalRowsCount
       FROM Results r
       INNER JOIN Students s ON r.StudentId = s.StudentId
       LEFT JOIN Departments d ON s.DepartmentId = d.DepartmentId
       INNER JOIN Tests t ON r.TestId = t.TestId
       WHERE r.TestId = @TestId
       ORDER BY r.Score DESC
+      OFFSET @Offset ROWS FETCH NEXT @PageLimit ROWS ONLY
     `)
+
+    const totalCount = result.recordset.length > 0 ? result.recordset[0].TotalRowsCount : 0
+    return {
+      results: result.recordset.map(formatResult),
+      totalCount,
+      page: pageNum,
+      limit: limitNum,
+      totalPages: Math.ceil(totalCount / limitNum),
+    }
+  }
+
+  const result = await request.query(`
+    SELECT 
+      r.*,
+      s.Name AS StudentName,
+      s.Email AS StudentEmail,
+      s.Regnum AS StudentRegnum,
+      s.StudentId AS StudentId,
+      COALESCE(d.DepartmentName, '') AS StudentDept,
+      s.Batch AS StudentBatch,
+      t.Title AS TestTitle,
+      t.Subject AS TestSubject,
+      t.Department AS TestDept
+    FROM Results r
+    INNER JOIN Students s ON r.StudentId = s.StudentId
+    LEFT JOIN Departments d ON s.DepartmentId = d.DepartmentId
+    INNER JOIN Tests t ON r.TestId = t.TestId
+    WHERE r.TestId = @TestId
+    ORDER BY r.Score DESC
+  `)
   return result.recordset.map(formatResult)
 }
 
-exports.getAllResults = async ({ department, search } = {}) => {
+exports.getAllResults = async ({ department, search, testId, studentId, page, limit } = {}) => {
   const pool = await getPool()
   const request = pool.request()
   const conditions = []
@@ -192,12 +264,60 @@ exports.getAllResults = async ({ department, search } = {}) => {
     request.input('Department', sql.NVarChar(100), department.trim())
     conditions.push('(d.DepartmentName = @Department OR t.Department = @Department)')
   }
+  if (testId) {
+    request.input('TestId', sql.Int, Number(testId))
+    conditions.push('r.TestId = @TestId')
+  }
+  if (studentId) {
+    request.input('StudentId', sql.NVarChar(50), String(studentId).trim())
+    conditions.push('r.StudentId = @StudentId')
+  }
   if (search) {
     request.input('Search', sql.NVarChar(100), `%${search.trim()}%`)
     conditions.push('(s.Name LIKE @Search OR s.Regnum LIKE @Search OR s.StudentId LIKE @Search OR t.Title LIKE @Search)')
   }
 
   const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''
+
+  if (page !== undefined || limit !== undefined) {
+    const pageNum = Math.max(1, Number(page) || 1)
+    const limitNum = Math.max(1, Number(limit) || 50)
+    const offset = (pageNum - 1) * limitNum
+
+    request.input('Offset', sql.Int, offset)
+    request.input('PageLimit', sql.Int, limitNum)
+
+    const result = await request.query(`
+      SELECT 
+        r.*,
+        s.Name AS StudentName,
+        s.Email AS StudentEmail,
+        s.Regnum AS StudentRegnum,
+        s.StudentId AS StudentId,
+        COALESCE(d.DepartmentName, '') AS StudentDept,
+        s.Batch AS StudentBatch,
+        t.Title AS TestTitle,
+        t.Subject AS TestSubject,
+        t.Department AS TestDept,
+        COUNT(*) OVER() AS TotalRowsCount
+      FROM Results r
+      INNER JOIN Students s ON r.StudentId = s.StudentId
+      LEFT JOIN Departments d ON s.DepartmentId = d.DepartmentId
+      INNER JOIN Tests t ON r.TestId = t.TestId
+      ${whereClause}
+      ORDER BY r.CreatedAt DESC
+      OFFSET @Offset ROWS FETCH NEXT @PageLimit ROWS ONLY
+    `)
+
+    const totalCount = result.recordset.length > 0 ? result.recordset[0].TotalRowsCount : 0
+    return {
+      results: result.recordset.map(formatResult),
+      totalCount,
+      page: pageNum,
+      limit: limitNum,
+      totalPages: Math.ceil(totalCount / limitNum),
+    }
+  }
 
   const result = await request.query(`
     SELECT 

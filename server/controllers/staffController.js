@@ -124,11 +124,34 @@ exports.updateMaterial = async (req, res) => {
 // ─────────────────────────────────────────────
 exports.getMyMaterials = async (req, res) => {
   try {
-    const { semester, course } = req.query
+    const { semester, course, page, limit, search } = req.query
+    if (page !== undefined || limit !== undefined) {
+      const pageNum = Number(page) || 1
+      const limitNum = Number(limit) || 50
+      const result = await materialRepository.getMaterials({
+        uploadedBy: req.user._id,
+        semester,
+        course,
+        search,
+        page: pageNum,
+        limit: limitNum,
+      })
+      return res.status(200).json({
+        success: true,
+        count: result.materials.length,
+        total: result.totalCount,
+        page: result.page,
+        limit: result.limit,
+        totalPages: result.totalPages,
+        data: result.materials,
+      })
+    }
+
     const materials = await materialRepository.getMaterials({
       uploadedBy: req.user._id,
       semester,
       course,
+      search,
     })
 
     res.status(200).json({
@@ -196,7 +219,28 @@ exports.deleteMaterial = async (req, res) => {
 // ─────────────────────────────────────────────
 exports.getMyTests = async (req, res) => {
   try {
-    const tests = await testRepository.getTests({ createdBy: req.user._id })
+    const { page, limit, search } = req.query
+    if (page !== undefined || limit !== undefined) {
+      const pageNum = Number(page) || 1
+      const limitNum = Number(limit) || 50
+      const result = await testRepository.getTests({
+        createdBy: req.user._id,
+        search,
+        page: pageNum,
+        limit: limitNum,
+      })
+      return res.status(200).json({
+        success: true,
+        count: result.tests.length,
+        total: result.totalCount,
+        page: result.page,
+        limit: result.limit,
+        totalPages: result.totalPages,
+        data: result.tests,
+      })
+    }
+
+    const tests = await testRepository.getTests({ createdBy: req.user._id, search })
 
     res.status(200).json({
       success: true,
@@ -255,6 +299,25 @@ exports.deleteTest = async (req, res) => {
 // ─────────────────────────────────────────────
 exports.getTestResults = async (req, res) => {
   try {
+    const { page, limit } = req.query
+    if (page !== undefined || limit !== undefined) {
+      const pageNum = Number(page) || 1
+      const limitNum = Number(limit) || 50
+      const result = await submissionRepository.getResultsByTest(req.params.testId, {
+        page: pageNum,
+        limit: limitNum,
+      })
+      return res.status(200).json({
+        success: true,
+        count: result.results.length,
+        total: result.totalCount,
+        page: result.page,
+        limit: result.limit,
+        totalPages: result.totalPages,
+        data: result.results,
+      })
+    }
+
     const results = await submissionRepository.getResultsByTest(req.params.testId)
 
     res.status(200).json({

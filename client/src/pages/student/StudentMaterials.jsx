@@ -12,6 +12,8 @@ const typeConfig = {
   file: { icon: File, color: 'tag-red', label: 'File' },
 }
 import MaterialViewer from '../../components/MaterialViewer'
+import Pagination from '../../components/common/Pagination'
+import { PAGINATION } from '../../common'
 
 import { Link } from 'react-router-dom'
 import { DEPART_CHECKER } from '../../utils/deptChecker'
@@ -25,6 +27,8 @@ export default function StudentMaterials() {
   const [departmentFilter, setDepartmentFilter] = useState('')
   const [semesterFilter, setSemesterFilter] = useState(user?.semester || '')
   const [courseFilter, setCourseFilter] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize]       = useState(PAGINATION?.DEFAULT_LIMIT || 50)
   const [selectedMaterial, setSelectedMaterial] = useState(null)
 
   // Auto-set semester filter once user loads
@@ -62,6 +66,9 @@ export default function StudentMaterials() {
     return matchSearch && matchFilter
   })
 
+  const totalPages = Math.max(1, Math.ceil((filtered?.length || 0) / pageSize))
+  const paginatedMaterials = (filtered || []).slice((currentPage - 1) * pageSize, currentPage * pageSize)
+
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       <Link to="/student" className="inline-flex items-center gap-2 text-ink-400 hover:text-lime-300 transition-colors mb-2 text-sm font-500">
@@ -82,14 +89,14 @@ export default function StudentMaterials() {
               className="input pl-9 w-full"
               placeholder="Search materials…"
               value={search}
-              onChange={e => setSearch(e.target.value)}
+              onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
             />
           </div>
           <div>
             <select 
               className="input w-full"
               value={departmentFilter}
-              onChange={e => setDepartmentFilter(e.target.value)}
+              onChange={e => { setDepartmentFilter(e.target.value); setCurrentPage(1); }}
             >
               <option value="">All Departments</option>
               {Object.keys(DEPART_CHECKER).map(dept => (
@@ -101,7 +108,7 @@ export default function StudentMaterials() {
             <select 
               className="input w-full"
               value={semesterFilter}
-              onChange={e => setSemesterFilter(e.target.value)}
+              onChange={e => { setSemesterFilter(e.target.value); setCurrentPage(1); }}
             >
               <option value="">All Semesters</option>
               {[1, 2, 3, 4, 5, 6, 7, 8].map(sem => (
@@ -115,7 +122,7 @@ export default function StudentMaterials() {
               className="input w-full"
               placeholder="Search course name/code…"
               value={courseFilter}
-              onChange={e => setCourseFilter(e.target.value)}
+              onChange={e => { setCourseFilter(e.target.value); setCurrentPage(1); }}
             />
           </div>
         </div>
@@ -152,67 +159,82 @@ export default function StudentMaterials() {
       ) : filtered.length === 0 ? (
         <EmptyState message="No materials found" />
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map(m => {
-            const mType = m.fileType || m.type
-            const cfg = typeConfig[mType] || typeConfig.file
-            const Icon = cfg.icon
-            return (
-              <div 
-                key={m._id} 
-                className="card p-5 hover:border-ink-700 transition-all group flex flex-col h-full cursor-pointer"
-                onClick={() => setSelectedMaterial(m)}
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="w-10 h-10 bg-ink-800 rounded-xl flex items-center justify-center">
-                    <Icon size={18} className="text-ink-400 group-hover:text-lime-300 transition-colors" />
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {paginatedMaterials.map(m => {
+              const mType = m.fileType || m.type
+              const cfg = typeConfig[mType] || typeConfig.file
+              const Icon = cfg.icon
+              return (
+                <div 
+                  key={m._id} 
+                  className="card p-5 hover:border-ink-700 transition-all group flex flex-col h-full cursor-pointer"
+                  onClick={() => setSelectedMaterial(m)}
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="w-10 h-10 bg-ink-800 rounded-xl flex items-center justify-center">
+                      <Icon size={18} className="text-ink-400 group-hover:text-lime-300 transition-colors" />
+                    </div>
+                    <span className={cfg.color}>{cfg.label}</span>
                   </div>
-                  <span className={cfg.color}>{cfg.label}</span>
-                </div>
-                <h3 className="text-ink-100 font-500 text-sm mb-1 line-clamp-2 group-hover:text-lime-300 transition-colors">{m.title}</h3>
-                
-                <div className="flex flex-wrap items-center gap-1.5 mb-4 mt-2">
-                  {m.semester && (
-                    <span className="text-[10px] bg-lime-400/10 text-lime-400 px-1.5 py-0.5 rounded font-500">
-                      Sem {m.semester}
-                    </span>
-                  )}
-                  {m.course && (
-                    <span className="text-[10px] bg-sky-400/10 text-sky-400 px-1.5 py-0.5 rounded font-500">
-                      {m.course}
-                    </span>
-                  )}
-                  {m.subject && (
-                    <span className="text-[10px] bg-ink-800 text-ink-400 px-1.5 py-0.5 rounded">
-                      {m.subject}
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex items-center justify-between mt-auto pt-3 border-t border-ink-800">
-                  <span className="text-ink-600 text-xs">
-                    {m.uploadedBy?.name || 'Instructor'}
-                  </span>
-                  <div className="flex gap-2" onClick={e => e.stopPropagation()}>
-                    {m.fileUrl && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedMaterial(m);
-                          }}
-                          className="btn-ghost py-1 px-2 text-xs flex items-center gap-1"
-                          title="View"
-                        >
-                          {mType === 'video' || mType === 'voice' ? <Play size={12} /> : <Eye size={12} />} 
-                          {mType === 'voice' ? 'Listen' : mType === 'video' ? 'Watch' : 'View'}
-                        </button>
+                  <h3 className="text-ink-100 font-500 text-sm mb-1 line-clamp-2 group-hover:text-lime-300 transition-colors">{m.title}</h3>
+                  
+                  <div className="flex flex-wrap items-center gap-1.5 mb-4 mt-2">
+                    {m.semester && (
+                      <span className="text-[10px] bg-lime-400/10 text-lime-400 px-1.5 py-0.5 rounded font-500">
+                        Sem {m.semester}
+                      </span>
+                    )}
+                    {m.course && (
+                      <span className="text-[10px] bg-sky-400/10 text-sky-400 px-1.5 py-0.5 rounded font-500">
+                        {m.course}
+                      </span>
+                    )}
+                    {m.subject && (
+                      <span className="text-[10px] bg-ink-800 text-ink-400 px-1.5 py-0.5 rounded">
+                        {m.subject}
+                      </span>
                     )}
                   </div>
+
+                  <div className="flex items-center justify-between mt-auto pt-3 border-t border-ink-800">
+                    <span className="text-ink-600 text-xs">
+                      {m.uploadedBy?.name || 'Instructor'}
+                    </span>
+                    <div className="flex gap-2" onClick={e => e.stopPropagation()}>
+                      {m.fileUrl && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedMaterial(m);
+                            }}
+                            className="btn-ghost py-1 px-2 text-xs flex items-center gap-1"
+                            title="View"
+                          >
+                            {mType === 'video' || mType === 'voice' ? <Play size={12} /> : <Eye size={12} />} 
+                            {mType === 'voice' ? 'Listen' : mType === 'video' ? 'Watch' : 'View'}
+                          </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            )
-          })}
-        </div>
+              )
+            })}
+          </div>
+
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={filtered?.length || 0}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={(newSize) => {
+              setPageSize(newSize)
+              setCurrentPage(1)
+            }}
+            itemLabel="materials"
+          />
+        </>
       )}
       
       {/* Material Viewer Modal */}

@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react'
 import { DEPART_CHECKER } from '../../utils/deptChecker'
 import BulkStudentUploadModal from '../../components/admin/BulkStudentUploadModal'
 import Pagination from '../../components/common/Pagination'
+import LoadingSpinner from '../../components/common/LoadingSpinner'
 import { ACADEMIC_YEARS_ARRAY, STATUS, MIGRATED_STATUS, PAGINATION } from '../../common'
 
 const empty = { name: '', email: '', phone: '', regnum: '', batch: '', department: '', year: 'First Year', password: '', isActive: STATUS.ACTIVE }
@@ -151,7 +152,7 @@ export default function AdminStudents() {
         </div>
 
         {loading ? (
-          <p className="text-ink-500 text-sm p-4">Loading...</p>
+          <LoadingSpinner />
         ) : (
           <>
             <div className="overflow-x-auto w-full">

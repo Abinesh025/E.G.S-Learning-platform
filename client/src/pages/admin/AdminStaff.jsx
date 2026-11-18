@@ -8,6 +8,7 @@ import { validateRegNum } from '../../utils/regNumValidator'
 import { DEPART_CHECKER } from '../../utils/deptChecker'
 import BulkStaffUploadModal from '../../components/admin/BulkStaffUploadModal'
 import Pagination from '../../components/common/Pagination'
+import LoadingSpinner from '../../components/common/LoadingSpinner'
 import { PAGINATION } from '../../common'
 
 const empty = { name: '', email: '', phone: '', department: '', password: '', regnum: '' }
@@ -148,7 +149,7 @@ export default function AdminStaff() {
         </div>
 
         {loading ? (
-          <p className="text-ink-500 text-sm p-4">Loading...</p>
+          <LoadingSpinner />
         ) : (
           <>
             <div className="overflow-x-auto w-full">

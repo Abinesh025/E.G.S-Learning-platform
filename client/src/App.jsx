@@ -71,11 +71,8 @@ function ProtectedRoute({ children, role, requirePlacementDept = false }) {
 
 function LoadingScreen() {
   return (
-    <div className="min-h-screen bg-ink-950 flex items-center justify-center">
-      <div className="flex flex-col items-center gap-3">
-        <div className="w-8 h-8 border-2 border-lime-300 border-t-transparent rounded-full animate-spin" />
-        <p className="text-ink-500 text-sm">Loading…</p>
-      </div>
+    <div className="min-h-screen bg-ink-950 flex items-center justify-center p-6">
+      <div className="w-10 h-10 border-3 border-lime-400 border-t-transparent rounded-full animate-spin" />
     </div>
   )
 }
@@ -145,8 +142,8 @@ function AppRoutes() {
 
     const resetTimer = () => {
       clearTimeout(timeoutId)
-      // Only set timer if admin is logged in
-      if (sessionStorage.getItem('adminToken')) {
+      // Only set timer if admin is logged in and actively on an admin route
+      if (sessionStorage.getItem('adminToken') && window.location.pathname.startsWith('/admin')) {
         timeoutId = setTimeout(() => {
           sessionStorage.removeItem('adminToken')
           toast.error('Admin session expired due to inactivity')

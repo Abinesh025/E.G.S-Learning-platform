@@ -64,7 +64,7 @@ exports.createMaterial = async ({
   return formatMaterial(result.recordset[0])
 }
 
-exports.getMaterials = async ({ subject, unit, department, semester, course, uploadedBy } = {}) => {
+exports.getMaterials = async ({ subject, unit, department, semester, course, uploadedBy, search, page, limit } = {}) => {
   const pool = await getPool()
   const request = pool.request()
   const conditions = []
@@ -93,8 +93,46 @@ exports.getMaterials = async ({ subject, unit, department, semester, course, upl
     request.input('UploadedBy', sql.Int, uploadedBy)
     conditions.push('m.UploadedBy = @UploadedBy')
   }
+  if (search) {
+    request.input('Search', sql.NVarChar(100), `%${search.trim()}%`)
+    conditions.push('(m.Title LIKE @Search OR m.Subject LIKE @Search OR m.Topic LIKE @Search OR m.Description LIKE @Search)')
+  }
 
   const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''
+
+  if (page !== undefined || limit !== undefined) {
+    const pageNum = Math.max(1, Number(page) || 1)
+    const limitNum = Math.max(1, Number(limit) || 50)
+    const offset = (pageNum - 1) * limitNum
+
+    request.input('Offset', sql.Int, offset)
+    request.input('PageLimit', sql.Int, limitNum)
+
+    const query = `
+      SELECT 
+        m.*,
+        u.StaffId AS UploaderId,
+        u.Name AS UploaderName,
+        u.Email AS UploaderEmail,
+        'staff' AS UploaderRole,
+        COUNT(*) OVER() AS TotalRowsCount
+      FROM Materials m
+      LEFT JOIN Staff u ON m.UploadedBy = u.StaffId
+      ${whereClause}
+      ORDER BY m.CreatedAt DESC
+      OFFSET @Offset ROWS FETCH NEXT @PageLimit ROWS ONLY
+    `
+
+    const result = await request.query(query)
+    const totalCount = result.recordset.length > 0 ? result.recordset[0].TotalRowsCount : 0
+    return {
+      materials: result.recordset.map(formatMaterial),
+      totalCount,
+      page: pageNum,
+      limit: limitNum,
+      totalPages: Math.ceil(totalCount / limitNum),
+    }
+  }
 
   const query = `
     SELECT 

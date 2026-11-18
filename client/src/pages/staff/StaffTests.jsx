@@ -5,6 +5,9 @@ import { FileText, Plus, Trash2, X, PlusCircle, MinusCircle, ArrowLeft } from 'l
 import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { DEPART_CHECKER } from '../../utils/deptChecker'
+import LoadingSpinner from '../../components/common/LoadingSpinner'
+import Pagination from '../../components/common/Pagination'
+import { PAGINATION } from '../../common'
 
 const emptyQuestion = () => ({ question: '', options: ['', '', '', ''], correctAnswer: 0 })
 
@@ -14,6 +17,8 @@ export default function StaffTests() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize]       = useState(PAGINATION?.DEFAULT_LIMIT || 50)
   const [form, setForm] = useState({ title: '', subject: ' ', department: user?.department || '', duration: 30, questions: [emptyQuestion()] })
 
   useEffect(() => {
@@ -187,49 +192,70 @@ const handleSave = async (e) => {
       {/* Tests list */}
       <div className="card overflow-hidden">
         {loading ? (
-          <div className="p-8 text-center text-ink-500 text-sm">Loading…</div>
+          <LoadingSpinner />
         ) : tests.length === 0 ? (
           <div className="p-12 text-center">
             <FileText size={32} className="text-ink-700 mx-auto mb-3" />
             <p className="text-ink-500 text-sm">No tests yet. Create your first one!</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[480px]">
-              <thead>
-                <tr className="border-b border-ink-800">
-                  <th className="text-left px-5 py-3 text-ink-500 font-500 text-xs uppercase tracking-wider">Title</th>
-                  <th className="text-left px-5 py-3 text-ink-500 font-500 text-xs uppercase tracking-wider hidden sm:table-cell">Department</th>
-                  <th className="text-left px-5 py-3 text-ink-500 font-500 text-xs uppercase tracking-wider">Questions</th>
-                  <th className="text-left px-5 py-3 text-ink-500 font-500 text-xs uppercase tracking-wider hidden sm:table-cell">Duration</th>
-                  <th className="text-left px-5 py-3 text-ink-500 font-500 text-xs uppercase tracking-wider hidden sm:table-cell">Created</th>
-                  <th className="px-5 py-3" />
-                </tr>
-              </thead>
-              <tbody>
-                {tests.map((t, i) => (
-                  <tr key={t._id || i} className="table-row">
-                    <td className="px-5 py-3 text-ink-200 font-500 max-w-[140px] truncate">{t.title}</td>
-                    <td className="px-5 py-3 hidden sm:table-cell">
-                      {t.department
-                        ? <span className="tag-sky badge">{t.department}</span>
-                        : <span className="text-ink-600 text-xs">—</span>}
-                    </td>
-                    <td className="px-5 py-3"><span className="tag-sky badge">{t.questions?.length || 0} Qs</span></td>
-                    <td className="px-5 py-3 text-ink-400 hidden sm:table-cell">{t.duration || 30} min</td>
-                    <td className="px-5 py-3 text-ink-500 text-xs hidden sm:table-cell">
-                      {t.createdAt ? new Date(t.createdAt).toLocaleDateString('en-IN') : '—'}
-                    </td>
-                    <td className="px-5 py-3 text-right">
-                      <button onClick={() => handleDelete(t._id)} className="btn-ghost py-1 px-2 text-red-400 hover:text-red-300 hover:bg-red-400/10">
-                        <Trash2 size={14} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          (() => {
+            const totalPages = Math.max(1, Math.ceil(tests.length / pageSize))
+            const paginatedTests = tests.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+            return (
+              <>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm min-w-[480px]">
+                    <thead>
+                      <tr className="border-b border-ink-800">
+                        <th className="text-left px-5 py-3 text-ink-500 font-500 text-xs uppercase tracking-wider">Title</th>
+                        <th className="text-left px-5 py-3 text-ink-500 font-500 text-xs uppercase tracking-wider hidden sm:table-cell">Department</th>
+                        <th className="text-left px-5 py-3 text-ink-500 font-500 text-xs uppercase tracking-wider">Questions</th>
+                        <th className="text-left px-5 py-3 text-ink-500 font-500 text-xs uppercase tracking-wider hidden sm:table-cell">Duration</th>
+                        <th className="text-left px-5 py-3 text-ink-500 font-500 text-xs uppercase tracking-wider hidden sm:table-cell">Created</th>
+                        <th className="px-5 py-3" />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginatedTests.map((t, i) => (
+                        <tr key={t._id || i} className="table-row">
+                          <td className="px-5 py-3 text-ink-200 font-500 max-w-[140px] truncate">{t.title}</td>
+                          <td className="px-5 py-3 hidden sm:table-cell">
+                            {t.department
+                              ? <span className="tag-sky badge">{t.department}</span>
+                              : <span className="text-ink-600 text-xs">—</span>}
+                          </td>
+                          <td className="px-5 py-3"><span className="tag-sky badge">{t.questions?.length || 0} Qs</span></td>
+                          <td className="px-5 py-3 text-ink-400 hidden sm:table-cell">{t.duration || 30} min</td>
+                          <td className="px-5 py-3 text-ink-500 text-xs hidden sm:table-cell">
+                            {t.createdAt ? new Date(t.createdAt).toLocaleDateString('en-IN') : '—'}
+                          </td>
+                          <td className="px-5 py-3 text-right">
+                            <button onClick={() => handleDelete(t._id)} className="btn-ghost py-1 px-2 text-red-400 hover:text-red-300 hover:bg-red-400/10">
+                              <Trash2 size={14} />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  totalItems={tests.length}
+                  pageSize={pageSize}
+                  onPageChange={setCurrentPage}
+                  onPageSizeChange={(newSize) => {
+                    setPageSize(newSize)
+                    setCurrentPage(1)
+                  }}
+                  itemLabel="tests"
+                />
+              </>
+            )
+          })()
         )}
       </div>
     </div>
