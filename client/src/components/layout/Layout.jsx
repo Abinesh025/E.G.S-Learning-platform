@@ -17,7 +17,8 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Lock,
-  Briefcase
+  Briefcase,
+  Activity
 } from 'lucide-react'
 import clsx from 'clsx';
 import { PLACEMENT_ALLOWED_DEPARTMENT_IDS, PLACEMENT_ALLOWED_DEPARTMENTS } from '../../common';
@@ -62,6 +63,8 @@ const adminNav = [
   { to: '/admin/materials', label: 'Materials', icon: BookOpen },
   { to: '/admin/tests', label: 'Tests', icon: FileText },
   { to: '/admin/results', label: 'Results', icon: BarChart3 },
+  { to: '/admin/logs', label: 'System Logs', icon: Activity },
+  { to: '/admin/settings', label: 'Settings', icon: Settings },
 ]
 
 export default function Layout({ children }) {
@@ -428,7 +431,7 @@ export default function Layout({ children }) {
                         </div>
                         {/* Settings Button */}
                         <button
-                            onClick={() => navigate('/settings')}
+                            onClick={() => navigate(isAdminRoute ? '/admin/settings' : '/settings')}
                             className="w-10 h-10 rounded-xl flex items-center justify-center border border-gray-200 hover:bg-gray-100 transition-all duration-200"
                             title="Settings"
                         >

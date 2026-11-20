@@ -21,7 +21,9 @@ export default function AdminStudents() {
   const [editing, setEditing]   = useState(null)
   const [form, setForm]         = useState(empty)
   const [search, setSearch]     = useState('')
-  const [departmentFilter, setDepartmentFilter] = useState('')
+  const [departmentFilter, setDepartmentFilter] = useState(() => {
+    return new URLSearchParams(window.location.search).get('dept') || ''
+  })
   const [yearFilter, setYearFilter] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize]       = useState(PAGINATION?.DEFAULT_LIMIT || 50)

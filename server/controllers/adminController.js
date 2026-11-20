@@ -14,14 +14,18 @@ const { validateRegNum } = require('../utils/regNumValidator')
 const { validateName } = require('../utils/nameValidator')
 const { validatePassword } = require('../utils/passwordValidator')
 const { ROLES } = require('../common')
+const logger = require('../utils/logger')
+const fs = require('fs')
 
 // ─────────────────────────────────────────────
-// DASHBOARD STATS
+// DASHBOARD STATS (GLOBAL & DEPARTMENT-WISE)
 // ─────────────────────────────────────────────
 exports.getDashboardStats = async (req, res) => {
   try {
     const pool = await getPool()
-    const q = await pool.request().query(`
+
+    // 1. Overall Aggregated Totals
+    const qOverall = await pool.request().query(`
       SELECT 
         (SELECT COUNT(*) FROM Staff) AS totalStaff,
         (SELECT COUNT(*) FROM Students) AS totalStudents,
@@ -29,16 +33,50 @@ exports.getDashboardStats = async (req, res) => {
         (SELECT COUNT(*) FROM Tests) AS totalTests,
         (SELECT COUNT(*) FROM Results) AS totalResults
     `)
-    const row = q.recordset[0]
+    const overall = qOverall.recordset[0] || {}
+
+    // 2. Department-Wise Breakdown for Staff and Students
+    const qDepts = await pool.request().query(`
+      SELECT 
+        d.DepartmentId AS departmentId,
+        d.DepartmentName AS departmentName,
+        d.DepartmentCode AS departmentCode,
+        d.PrefixCode AS prefixCode,
+        (SELECT COUNT(*) FROM Staff st WHERE st.DepartmentId = d.DepartmentId) AS staffCount,
+        (SELECT COUNT(*) FROM Students s WHERE s.DepartmentId = d.DepartmentId) AS studentCount,
+        (SELECT COUNT(*) FROM Materials m WHERE m.Department = d.DepartmentName OR m.Department = d.DepartmentCode) AS materialCount,
+        (SELECT COUNT(*) FROM Tests t WHERE t.Department = d.DepartmentName OR t.Department = d.DepartmentCode) AS testCount
+      FROM Departments d
+      ORDER BY d.DepartmentId ASC
+    `)
+
+    const departments = (qDepts.recordset || []).map(dept => {
+      const staffCount = Number(dept.staffCount) || 0
+      const studentCount = Number(dept.studentCount) || 0
+      const materialCount = Number(dept.materialCount) || 0
+      const testCount = Number(dept.testCount) || 0
+      return {
+        departmentId: dept.departmentId,
+        departmentName: dept.departmentName,
+        departmentCode: dept.departmentCode,
+        prefixCode: dept.prefixCode,
+        staffCount,
+        studentCount,
+        materialCount,
+        testCount,
+        totalMembers: staffCount + studentCount,
+      }
+    })
 
     res.status(200).json({
       success: true,
       data: {
-        totalStaff: row.totalStaff,
-        totalStudents: row.totalStudents,
-        totalMaterials: row.totalMaterials,
-        totalTests: row.totalTests,
-        totalResults: row.totalResults,
+        totalStaff: overall.totalStaff || 0,
+        totalStudents: overall.totalStudents || 0,
+        totalMaterials: overall.totalMaterials || 0,
+        totalTests: overall.totalTests || 0,
+        totalResults: overall.totalResults || 0,
+        departments,
       },
     })
   } catch (error) {
@@ -1088,4 +1126,57 @@ exports.uploadBulkResults = async (req, res) => {
     res.status(500).json({ success: false, message: error.message })
   }
 }
+
+// ─────────────────────────────────────────────
+// SYSTEM & APPLICATION LOGS
+// ─────────────────────────────────────────────
+exports.getAdminLogs = async (req, res) => {
+  try {
+    const { type = 'all', page = 1, limit = 50, search = '', level = 'ALL' } = req.query
+    const result = logger.getRecentLogs({ type, page, limit, search, level })
+    const stats = logger.getStats()
+
+    res.status(200).json({
+      success: true,
+      data: {
+        logs: result.logs,
+        total: result.total,
+        page: result.page,
+        totalPages: result.totalPages,
+        limit: result.limit,
+        stats,
+      },
+    })
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message })
+  }
+}
+
+exports.clearAdminLogs = async (req, res) => {
+  try {
+    const { type = 'all' } = req.query
+    const result = logger.clearLogs(type)
+    logger.action('CLEAR_LOGS', `Admin cleared log files: type=${type}`)
+    res.status(200).json(result)
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message })
+  }
+}
+
+exports.downloadAdminLogs = async (req, res) => {
+  try {
+    const { type = 'application' } = req.query
+    const filePath = logger.getLogFilePath(type)
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ success: false, message: 'Log file not found' })
+    }
+
+    const dateStr = new Date().toISOString().slice(0, 10)
+    res.download(filePath, `${type}-log-${dateStr}.log`)
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message })
+  }
+}
+
 

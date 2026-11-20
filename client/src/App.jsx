@@ -23,6 +23,7 @@ import AdminStudents from './pages/admin/AdminStudents'
 import AdminMaterials from './pages/admin/AdminMaterials'
 import AdminTests from './pages/admin/AdminTests'
 import AdminResults from './pages/admin/AdminResults'
+import AdminLogs from './pages/admin/AdminLogs'
 import AdminLogin from './pages/admin/AdminLogin'
 import toast from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
@@ -38,13 +39,20 @@ function ProtectedRoute({ children, role, requirePlacementDept = false }) {
 
   if (loading) return <LoadingScreen />
 
+  const hasAdminToken = !!sessionStorage.getItem('adminToken') || user?.role === 'admin'
+
   // Admin Security - Requires JWT token from session storage or admin user
   if (role === 'admin') {
-    const hasAdminToken = !!sessionStorage.getItem('adminToken') || user?.role === 'admin'
     if (hasAdminToken) {
       return children
     }
     return <Navigate to="/admin-login" replace />
+  }
+
+  // Universal Protected Route (when role is undefined or null):
+  // If in admin mode, allow admin to access universal routes (settings, change-password, etc.)
+  if (!role && hasAdminToken) {
+    return children
   }
 
   if (!user) return <Navigate to="/login" replace />
@@ -103,6 +111,8 @@ const routeTitles = {
   '/admin/materials': 'Materials Management',
   '/admin/tests': 'Tests Management',
   '/admin/results': 'Results Management',
+  '/admin/logs': 'System & Application Logs',
+  '/admin/settings': 'Settings',
   '/student/placement/on-campus': 'On-Campus Placement Rounds',
   '/student/placement/aptitude-test': 'Online Aptitude Test',
   '/student/placement/registration': 'Registration Round Guide',
@@ -212,6 +222,8 @@ function AppRoutes() {
         <Route path="/admin/materials" element={<ProtectedRoute role="admin"><Layout><AdminMaterials /></Layout></ProtectedRoute>} />
         <Route path="/admin/tests" element={<ProtectedRoute role="admin"><Layout><AdminTests /></Layout></ProtectedRoute>} />
         <Route path="/admin/results" element={<ProtectedRoute role="admin"><Layout><AdminResults /></Layout></ProtectedRoute>} />
+        <Route path="/admin/logs" element={<ProtectedRoute role="admin"><Layout><AdminLogs /></Layout></ProtectedRoute>} />
+        <Route path="/admin/settings" element={<ProtectedRoute role="admin"><Layout><Settings /></Layout></ProtectedRoute>} />
         
         {/* Universal Protected Routes */}
         <Route path="/change-password" element={<ProtectedRoute><Layout><ChangePassword /></Layout></ProtectedRoute>} />

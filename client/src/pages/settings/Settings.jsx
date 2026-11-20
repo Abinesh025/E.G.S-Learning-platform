@@ -19,6 +19,11 @@ export default function Settings() {
   }, [location.state?.tab])
 
   const handleLogout = () => {
+    if (sessionStorage.getItem('adminToken')) {
+      sessionStorage.removeItem('adminToken')
+      navigate('/admin-login')
+      return
+    }
     logout()
     navigate('/login')
   }

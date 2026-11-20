@@ -16,6 +16,10 @@ if (process.env.DB_USER && process.env.DB_PASSWORD && process.env.DB_PASSWORD !=
 
 const config = {
   connectionString,
+  requestTimeout: 60000,
+  options: {
+    requestTimeout: 60000,
+  },
   pool: {
     max: 15,
     min: 0,

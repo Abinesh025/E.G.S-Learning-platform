@@ -22,7 +22,9 @@ export default function AdminStaff() {
   const [editing, setEditing]   = useState(null)
   const [form, setForm]         = useState(empty)
   const [search, setSearch]     = useState('')
-  const [departmentFilter, setDepartmentFilter] = useState('')
+  const [departmentFilter, setDepartmentFilter] = useState(() => {
+    return new URLSearchParams(window.location.search).get('dept') || ''
+  })
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize]       = useState(PAGINATION?.DEFAULT_LIMIT || 50)
 

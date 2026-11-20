@@ -326,21 +326,21 @@ export default function Navbar({ onMenuClick, onEditProfile, onLogout, onExitAdm
                                 {settingsDropdownOpen && (
                                     <div className="absolute right-0 top-full mt-2 w-56 bg-[#111111] dark:bg-ink-950 border border-ink-800 rounded-2xl shadow-2xl p-2 z-[100] animate-in fade-in zoom-in-95 duration-200 origin-top-right flex flex-col gap-1">
                                         <button 
-                                            onClick={() => { setSettingsDropdownOpen(false); navigate('/settings', { state: { tab: 'profile' }}) }}
+                                            onClick={() => { setSettingsDropdownOpen(false); navigate(isAdminRoute ? '/admin/settings' : '/settings', { state: { tab: 'profile' }}) }}
                                             className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-[15px] font-medium text-ink-300 hover:text-white hover:bg-[#2A2A2A] transition-colors w-full"
                                         >
                                             <User size={18} />
                                             <span>Profile Details</span>
                                         </button>
                                         <button 
-                                            onClick={() => { setSettingsDropdownOpen(false); navigate('/settings', { state: { tab: 'theme' }}) }}
+                                            onClick={() => { setSettingsDropdownOpen(false); navigate(isAdminRoute ? '/admin/settings' : '/settings', { state: { tab: 'theme' }}) }}
                                             className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-[15px] font-medium text-ink-300 hover:text-white hover:bg-[#2A2A2A] transition-colors w-full"
                                         >
                                             <Palette size={18} />
                                             <span>Change Theme</span>
                                         </button>
                                         <button 
-                                            onClick={() => { setSettingsDropdownOpen(false); navigate('/settings', { state: { tab: 'about' }}) }}
+                                            onClick={() => { setSettingsDropdownOpen(false); navigate(isAdminRoute ? '/admin/settings' : '/settings', { state: { tab: 'about' }}) }}
                                             className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-[15px] font-medium text-ink-300 hover:text-white hover:bg-[#2A2A2A] transition-colors w-full"
                                         >
                                             <Info size={18} />

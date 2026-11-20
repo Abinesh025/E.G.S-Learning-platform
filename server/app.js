@@ -4,6 +4,11 @@ const morgan = require('morgan')
 const path = require('path')
 const cookieParser = require('cookie-parser')
 
+// 📝 Logger & Error Sanitizer
+const logger = require('./utils/logger')
+const { responseSanitizer } = require('./middleware/responseSanitizer')
+const { sanitizeErrorMessage } = require('./utils/errorSanitizer')
+
 // 🚀 Route files
 const authRoutes = require('./routes/authRoutes')
 const staffRoutes = require('./routes/staffRoutes')
@@ -29,7 +34,9 @@ app.use(
 app.use(express.json({ limit: '10mb' }))
 app.use(express.urlencoded({ limit: '10mb', extended: true }))
 app.use(cookieParser())
-app.use(morgan('dev'))
+
+// 🛡️ Dedicated Response Sanitizer & Application HTTP Logger
+app.use(responseSanitizer)
 
 // ❤️ Health Check
 app.get('/health', (req, res) => {
@@ -63,13 +70,23 @@ app.get('/', (req, res) => {
 
 // ❌ 404 Handler
 app.use((req, res, next) => {
-  res.status(404).json({ message: 'Route not found' })
+  res.status(404).json({ success: false, message: 'Requested resource or route was not found.' })
 })
 
 // ⚠️ Global Error Handler
 app.use((err, req, res, next) => {
-  console.error(err.stack)
-  res.status(500).json({ message: 'Server Error', error: err.message })
+  // 1. Log full technical details & stack trace into dedicated Logger
+  logger.error(err, {
+    url: req.originalUrl,
+    method: req.method,
+    ip: req.ip,
+    user: req.user ? `${req.user.email || req.user.name} (${req.user.role})` : 'guest',
+  })
+
+  // 2. Return ONLY clean, user-understandable message to the client
+  const userMessage = sanitizeErrorMessage(err)
+  const statusCode = err.status || err.statusCode || 500
+  res.status(statusCode).json({ success: false, message: userMessage })
 })
 
 module.exports = app

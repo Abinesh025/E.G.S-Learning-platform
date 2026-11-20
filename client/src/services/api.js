@@ -47,6 +47,16 @@ api.interceptors.response.use(
   async err => {
     const originalRequest = err.config
 
+    // Double safeguard: sanitize technical errors so UI always shows user-friendly messages
+    if (err?.response?.data?.message && typeof err.response.data.message === 'string') {
+      const msg = err.response.data.message
+      if (/mssql|msnodesqlv8|syntax error|cannot read propert|is not a function|violation of.*constraint|invalid (column|object)|at\s+.*:\d+:\d+/i.test(msg)) {
+        err.response.data.message = 'An unexpected error occurred while processing your request. Please try again later.'
+      }
+    } else if (!err?.response && err?.message && /network error|econnrefused/i.test(err.message)) {
+      err.message = 'Unable to connect to the server. Please check your connection and try again.'
+    }
+
     // If there is no response or error is not 401, reject immediately
     if (!err.response || err.response.status !== 401) {
       return Promise.reject(err)

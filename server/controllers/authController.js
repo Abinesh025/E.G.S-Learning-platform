@@ -15,6 +15,7 @@ const jwt = require('jsonwebtoken')
 const roleRepository = require('../repositories/roleRepository')
 const passwordResetRepository = require('../repositories/passwordResetRepository')
 const { ROLES, HTTP_STATUS, MESSAGES, TOKEN_CONFIG } = require('../common')
+const logger = require('../utils/logger')
 
 // ─────────────────────────────────────────────
 // REGISTER
@@ -195,6 +196,8 @@ exports.login = async (req, res) => {
           html: `<p>Your OTP is <b>${otp}</b>. This OTP is valid for 5 minutes. Do not share it with anyone.</p>`,
         })
 
+        logger.action('AUTH_OTP_SENT', `Staff login OTP dispatched to ${email}`, { email, ip: req.ip })
+
         return res.status(200).json({
           success: true,
           requiresOtp: true,
@@ -222,6 +225,12 @@ exports.login = async (req, res) => {
         { expiresIn: '1d' }
       )
     }
+
+    logger.action('USER_LOGIN', `User ${user.Email || user.email || email} logged in as ${userRole}`, {
+      userId: user._id,
+      role: userRole,
+      ip: req.ip,
+    })
 
     res.status(200).json({
       success: true,
@@ -318,7 +327,7 @@ exports.verifyPassword = async (req, res) => {
     const adminSecret = process.env.ADMIN_SECRET || 'egspec@2026'
 
     if (password !== adminSecret) {
-      console.log(`[ADMIN] Failed login attempt at ${new Date().toISOString()}`)
+      logger.warn(`Failed admin login attempt from IP ${req.ip}`, { ip: req.ip })
       return res.status(401).json({
         success: false,
         message: 'Incorrect password',
@@ -331,7 +340,7 @@ exports.verifyPassword = async (req, res) => {
       { expiresIn: '1d' }
     )
 
-    console.log(`[ADMIN] ✅ Admin access granted at ${new Date().toISOString()}`)
+    logger.action('ADMIN_LOGIN', 'Admin authenticated successfully', { ip: req.ip })
 
     res.status(200).json({
       success: true,
@@ -458,6 +467,13 @@ exports.verifyStaffLoginOtp = async (req, res) => {
     const userRole = (user.Role || user.role || ROLES.STAFF).toLowerCase()
     const accessToken = generateAccessToken(user._id, userRole)
     const refreshToken = generateRefreshToken(user._id, userRole)
+
+    logger.action('STAFF_LOGIN', `Staff verified OTP and logged in: ${email}`, {
+      userId: user._id,
+      email,
+      role: userRole,
+      ip: req.ip,
+    })
 
     res.status(200).json({
       success: true,
@@ -869,6 +885,11 @@ exports.refreshToken = async (req, res) => {
     const userRole = decoded.role || user.Role || user.role
     const newAccessToken = generateAccessToken(user._id, userRole)
     const newRefreshToken = generateRefreshToken(user._id, userRole)
+
+    logger.action('TOKEN_REFRESH', `Access token refreshed for user ${user._id} (${userRole})`, {
+      userId: user._id,
+      role: userRole,
+    })
 
     return res.status(HTTP_STATUS.OK).json({
       success: true,

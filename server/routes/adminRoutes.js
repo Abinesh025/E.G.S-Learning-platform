@@ -56,6 +56,11 @@ const {
   downloadResultTemplate,
   validateBulkResults,
   uploadBulkResults,
+
+  // Logs
+  getAdminLogs,
+  clearAdminLogs,
+  downloadAdminLogs,
 } = require("../controllers/adminController");
 
 const { uploadMaterial: uploadMaterialHandler, downloadMaterial } = require("../controllers/materialController");
@@ -111,5 +116,10 @@ router.post("/results/bulk-validate", uploadExcel.single("file"), validateBulkRe
 router.post("/results/bulk-upload", uploadExcel.single("file"), uploadBulkResults);
 router.get("/results", getAllResults);
 router.delete("/results/:id", deleteResult);
+
+/* ── Logs ── */
+router.get("/logs", getAdminLogs);
+router.delete("/logs", clearAdminLogs);
+router.get("/logs/download", downloadAdminLogs);
 
 module.exports = router;
